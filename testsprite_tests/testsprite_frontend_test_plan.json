@@ -1,0 +1,516 @@
+[
+  {
+    "id": "TC001",
+    "title": "Generate QR code with all customization options",
+    "description": "Verify that users can generate a QR code applying colors, dot styles, corner styles, logo upload, and watermark toggle, and that the resulting QR code visually reflects these customizations.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the QR code generator page"
+      },
+      {
+        "type": "action",
+        "description": "Select custom colors for QR code foreground and background"
+      },
+      {
+        "type": "action",
+        "description": "Choose dot types and corner styles from available options"
+      },
+      {
+        "type": "action",
+        "description": "Upload a logo image to embed within the QR code"
+      },
+      {
+        "type": "action",
+        "description": "Toggle watermark on"
+      },
+      {
+        "type": "action",
+        "description": "Input valid content (e.g., URL) for QR code generation"
+      },
+      {
+        "type": "action",
+        "description": "Click generate button"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm QR code is generated successfully and all selected customizations (colors, dots, corners, logo, watermark) are visible and correctly applied"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Generate QR code with basic options as anonymous user",
+    "description": "Validate that an anonymous (not signed-in) user can create a QR code with basic customizations and download it as PNG and SVG.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access the homepage as an anonymous user"
+      },
+      {
+        "type": "action",
+        "description": "Input a URL for QR code content"
+      },
+      {
+        "type": "action",
+        "description": "Use basic customization options only (color changes allowed for anonymous)"
+      },
+      {
+        "type": "action",
+        "description": "Generate the QR code"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify QR code is generated successfully"
+      },
+      {
+        "type": "action",
+        "description": "Download QR code as PNG"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify PNG file downloads correctly and is scannable"
+      },
+      {
+        "type": "action",
+        "description": "Download QR code as SVG"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify SVG file downloads correctly and renders properly"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "User registration and authentication workflows",
+    "description": "Ensure new users can sign up, existing users can sign in, and that sessions persist across page reloads with secure handling.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to sign-up page"
+      },
+      {
+        "type": "action",
+        "description": "Provide valid new user details and submit registration form"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm registration success with automatic sign-in or redirect to sign-in page"
+      },
+      {
+        "type": "action",
+        "description": "Log out if automatically signed in"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to sign-in page"
+      },
+      {
+        "type": "action",
+        "description": "Enter valid registered user credentials and submit form"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm successful login and access to the user dashboard"
+      },
+      {
+        "type": "action",
+        "description": "Reload the browser page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that user session persists and user remains logged in"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Dashboard QR code management and analytics",
+    "description": "Verify that signed-in users can save generated QR codes, view a list of their codes, examine detailed scan analytics including scan counts and download statistics, and that all data is accurate.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Sign in as a registered user"
+      },
+      {
+        "type": "action",
+        "description": "Generate and save a new QR code with advanced options"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to user dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the new QR code appears in the saved codes list"
+      },
+      {
+        "type": "action",
+        "description": "Click on the QR code entry to view analytics"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm scan counts, download statistics, and other analytics data are displayed and accurate"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Dynamic QR code features enforcement: expiration and scan limits",
+    "description": "Test that dynamic QR codes respect expiration dates and scan limits by disabling redirection or showing error after limits are reached or after expiration.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a dynamic QR code with expiration date set to past date"
+      },
+      {
+        "type": "action",
+        "description": "Scan the QR code"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that scanning results in an expiration message or no redirection"
+      },
+      {
+        "type": "action",
+        "description": "Create a dynamic QR code with scan limit set to 1"
+      },
+      {
+        "type": "action",
+        "description": "Scan the QR code once"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify successful redirection or content served"
+      },
+      {
+        "type": "action",
+        "description": "Scan the QR code a second time"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify scan limit exceeded behavior with no redirection and appropriate feedback"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "API CRUD operations on QR codes",
+    "description": "Validate API endpoints for creating, updating, deleting, bulk operations, and exporting QR codes respond correctly with proper authentication and data integrity.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Make authenticated POST request to API to create a new QR code with specified content and customization"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify API returns created QR code details with unique ID"
+      },
+      {
+        "type": "action",
+        "description": "Make authenticated PUT request to update an existing QR code's content and styling"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify API responds with updated QR code data reflecting changes"
+      },
+      {
+        "type": "action",
+        "description": "Make authenticated DELETE request to delete a specific QR code by ID"
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure API confirms successful deletion and QR code no longer exists"
+      },
+      {
+        "type": "action",
+        "description": "Make bulk operation request to update or delete multiple QR codes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify bulk operations complete accurately with expected counts and no partial failures"
+      },
+      {
+        "type": "action",
+        "description": "Request export API to download QR code data in CSV or JSON format"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify exported data matches user's QR code records"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "QR code scanning with analytics tracking",
+    "description": "Confirm that scanning a public or dynamic QR code triggers the redirect functionality and increments scan count analytics properly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Locate or generate a QR code with known URL"
+      },
+      {
+        "type": "action",
+        "description": "Use a QR code scanning component or device to scan the code"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify redirection to the correct content URL"
+      },
+      {
+        "type": "action",
+        "description": "Access user dashboard or analytics API"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm scan count for the QR code has incremented by one"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "URL shortening service and custom domain linking",
+    "description": "Validate that URLs can be shortened and optionally linked to custom domains and that short URLs resolve correctly through QR codes and scanning.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Generate a short URL for a given long URL using the shortening service"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm returned short URL is valid and unique"
+      },
+      {
+        "type": "action",
+        "description": "Assign a custom domain to a short URL through the API or user dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify domain is assigned without errors"
+      },
+      {
+        "type": "action",
+        "description": "Scan QR code linked to the short URL and custom domain"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that scanning redirects correctly to the original long URL"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Dark mode and light mode toggle",
+    "description": "Check the theme toggle switches UI between dark and light modes correctly, persists user preference, and does not cause UI glitches or content loss.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access settings or main UI where theme toggle exists"
+      },
+      {
+        "type": "action",
+        "description": "Toggle theme from light to dark"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all UI components switch to dark theme colors properly with no layout or content issues"
+      },
+      {
+        "type": "action",
+        "description": "Reload the page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dark mode preference persists after reload"
+      },
+      {
+        "type": "action",
+        "description": "Toggle theme back to light"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify UI switches to light theme correctly"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Route protection and error boundary handling",
+    "description": "Verify that protected routes are accessible only to authenticated users and that error boundaries catch exceptions to show user-friendly error messages.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to access dashboard route as an anonymous user"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm user is redirected to sign-in page or shown access denied message"
+      },
+      {
+        "type": "action",
+        "description": "Simulate an error in a component protected by error boundary"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error boundary displays user-friendly error UI with retry or navigation options"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to access API endpoints without authentication"
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure API returns 401 Unauthorized or appropriate status code"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Watermark toggle functionality",
+    "description": "Test that watermark toggling applies or removes branding from QR codes without affecting scannability or visual integrity.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Generate a QR code with watermark toggled ON"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify watermark is visibly present on the QR code"
+      },
+      {
+        "type": "action",
+        "description": "Scan the QR code and confirm it redirects correctly"
+      },
+      {
+        "type": "action",
+        "description": "Generate a QR code with watermark toggled OFF"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify watermark is not present"
+      },
+      {
+        "type": "action",
+        "description": "Scan the watermark-free QR code and confirm correct redirection"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Responsive and accessible UI verification",
+    "description": "Ensure the UI components and pages adapt to different screen sizes (desktop, tablet, mobile) and comply with accessibility standards (keyboard navigation, ARIA attributes).",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Load the application on multiple viewport sizes (desktop, tablet, mobile)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that all UI elements are correctly displayed, usable, and not clipped or overlapping"
+      },
+      {
+        "type": "action",
+        "description": "Navigate the UI using only keyboard inputs (tab, enter, space)"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm all interactive elements are reachable and usable via keyboard"
+      },
+      {
+        "type": "action",
+        "description": "Use accessibility audit tools to scan pages"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no major accessibility violations are found"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Invalid inputs and error message handling in QR code generation",
+    "description": "Test system response when users input invalid content (empty, malformed URL) or unsupported file types for logo upload ensuring correct error messages are shown.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Attempt to generate a QR code with empty content input"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify appropriate validation error is displayed preventing generation"
+      },
+      {
+        "type": "action",
+        "description": "Input malformed URL as content and attempt generation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify clear error message indicating invalid URL input"
+      },
+      {
+        "type": "action",
+        "description": "Try uploading unsupported file type (e.g., .exe) as logo"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm error message about invalid file type and no logo applied"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Download QR code in multiple formats",
+    "description": "Ensure QR codes can be downloaded correctly as PNG and SVG formats, and files are valid, scannable, and match current customizations.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Generate a QR code with custom styles"
+      },
+      {
+        "type": "action",
+        "description": "Download the QR code as PNG"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the PNG file downloads correctly and can be opened and scanned"
+      },
+      {
+        "type": "action",
+        "description": "Download the QR code as SVG"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the SVG file downloads correctly, renders properly, and scans successfully"
+      }
+    ]
+  }
+]

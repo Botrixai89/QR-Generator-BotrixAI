@@ -1,0 +1,24 @@
+-- Add missing columns to QrCode table
+ALTER TABLE public."QrCode" 
+ADD COLUMN IF NOT EXISTS "isDynamic" BOOLEAN DEFAULT false;
+
+ALTER TABLE public."QrCode" 
+ADD COLUMN IF NOT EXISTS "dynamicContent" JSONB;
+
+ALTER TABLE public."QrCode" 
+ADD COLUMN IF NOT EXISTS "scanCount" INTEGER DEFAULT 0;
+
+ALTER TABLE public."QrCode" 
+ADD COLUMN IF NOT EXISTS "lastScannedAt" TIMESTAMP WITH TIME ZONE;
+
+ALTER TABLE public."QrCode" 
+ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN DEFAULT true;
+
+ALTER TABLE public."QrCode" 
+ADD COLUMN IF NOT EXISTS "expiresAt" TIMESTAMP WITH TIME ZONE;
+
+ALTER TABLE public."QrCode" 
+ADD COLUMN IF NOT EXISTS "maxScans" INTEGER;
+
+ALTER TABLE public."QrCode" 
+ADD COLUMN IF NOT EXISTS "redirectUrl" TEXT;

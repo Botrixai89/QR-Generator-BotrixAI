@@ -1,0 +1,18 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3001",
+  "loginUser": "ankush.kumar210701@gmail.com",
+  "loginPassword": "123456",
+  "executionArgs": {
+    "projectName": "qr_generator",
+    "projectPath": "D:\\qr_generator",
+    "testIds": [],
+    "additionalInstruction": "",
+    "envs": {
+      "API_KEY": "sk-user-yt5QICFLMnIn9N6Nj65exbs5ggcsX7FmUTX8QG-6bCRb1ireX1jhcd5ca9__rTDcp0eQSi_kA-Keb_VA7y0P2Fa2KAtRdD0L4VZwGoyxq59VO7Xj5LD-2R1yY7tPqaBBQCc"
+    }
+  },
+  "proxy": "http://809d6d32-cb29-4bcc-b318-f5fe794e134c:BlHla4yV1Z6MFPMStwgxcKkgAjr1qSVx@tun.testsprite.com:8080"
+}

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Quality Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .quality-info {
+            background: #f0f8ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .qr-preview {
+            width: 300px;
+            height: 300px;
+            border: 1px solid #ccc;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>QR Code Quality Enhancement Test</h1>
+    
+    <div class="test-section">
+        <h2>Quality Settings Comparison</h2>
+        <div class="quality-info">
+            <strong>Web Quality (2x):</strong> 600x600px - Optimized for web display<br>
+            <strong>Print Quality (4x):</strong> 1200x1200px - Suitable for print materials<br>
+            <strong>Ultra-HD Quality (8x):</strong> 2400x2400px - Maximum quality for large prints
+        </div>
+        
+        <div class="qr-preview" id="qrPreview">
+            <p>QR Code will appear here</p>
+        </div>
+        
+        <div>
+            <label>Select Quality:</label><br>
+            <button onclick="setQuality('web')">Web (2x)</button>
+            <button onclick="setQuality('print')">Print (4x)</button>
+            <button onclick="setQuality('ultra-hd')">Ultra-HD (8x)</button>
+        </div>
+        
+        <div>
+            <button onclick="downloadPNG()">Download PNG</button>
+            <button onclick="downloadSVG()">Download SVG</button>
+        </div>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        let currentQuality = 'ultra-hd';
+        let qrSvg = null;
+
+        // Mock QR code generation (in real app, this would use QRCodeStyling)
+        function generateQRCode() {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '300');
+            svg.setAttribute('height', '300');
+            svg.setAttribute('viewBox', '0 0 300 300');
+            
+            // Simple QR pattern for testing
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('width', '300');
+            rect.setAttribute('height', '300');
+            rect.setAttribute('fill', 'white');
+            svg.appendChild(rect);
+            
+            // Add some pattern to simulate QR code
+            for (let i = 0; i < 20; i++) {
+                for (let j = 0; j < 20; j++) {
+                    if ((i + j) % 3 === 0) {
+                        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        dot.setAttribute('x', i * 15);
+                        dot.setAttribute('y', j * 15);
+                        dot.setAttribute('width', '15');
+                        dot.setAttribute('height', '15');
+                        dot.setAttribute('fill', 'black');
+                        svg.appendChild(dot);
+                    }
+                }
+            }
+            
+            return svg;
+        }
+
+        function setQuality(quality) {
+            currentQuality = quality;
+            updateStatus(`Quality set to: ${quality}`);
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = `<div style="color: green; margin: 10px 0;">${message}</div>`;
+        }
+
+        function downloadPNG() {
+            const qualitySettings = {
+                'web': { scale: 2, suffix: 'Web' },
+                'print': { scale: 4, suffix: 'Print' },
+                'ultra-hd': { scale: 8, suffix: 'HD' }
+            };
+            
+            const settings = qualitySettings[currentQuality];
+            updateStatus(`Generating ${settings.suffix}-quality PNG (${settings.scale}x scaling)...`);
+            
+            // Create high-resolution canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const baseSize = 300;
+            canvas.width = baseSize * settings.scale;
+            canvas.height = baseSize * settings.scale;
+            
+            // Enable high DPI rendering
+            ctx.scale(settings.scale, settings.scale);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            // Set background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, baseSize, baseSize);
+            
+            // Generate QR code SVG
+            const svg = generateQRCode();
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, baseSize, baseSize);
+                
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `qr-code-${settings.suffix}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        
+                        updateStatus(`${settings.suffix}-quality PNG downloaded successfully! (${canvas.width}x${canvas.height}px)`);
+                    }
+                    URL.revokeObjectURL(svgUrl);
+                }, 'image/png', 1.0);
+            };
+            img.src = svgUrl;
+        }
+
+        function downloadSVG() {
+            const svg = generateQRCode();
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            const link = document.createElement('a');
+            link.href = svgUrl;
+            link.download = 'qr-code.svg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(svgUrl);
+            
+            updateStatus('SVG downloaded successfully!');
+        }
+
+        // Initialize
+        window.onload = function() {
+            const preview = document.getElementById('qrPreview');
+            const svg = generateQRCode();
+            preview.innerHTML = '';
+            preview.appendChild(svg);
+            updateStatus('QR Code quality test ready. Select a quality level and download to test.');
+        };
+    </script>
+</body>
+</html>

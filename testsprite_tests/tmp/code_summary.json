@@ -1,0 +1,144 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "Next.js 14 (App Router)",
+    "React",
+    "NextAuth.js",
+    "Supabase",
+    "PostCSS",
+    "ESLint",
+    "Node.js"
+  ],
+  "features": [
+    {
+      "name": "Authentication (NextAuth)",
+      "description": "Email/password registration and credential-based sign-in using NextAuth, with session handling and protected routes.",
+      "files": [
+        "src/app/api/auth/[...nextauth]/route.ts",
+        "src/app/api/auth/register/route.ts",
+        "src/lib/auth.ts",
+        "src/types/next-auth.d.ts",
+        "src/components/providers/session-provider.tsx",
+        "src/app/auth/signin/page.tsx",
+        "src/app/auth/signup/page.tsx",
+        "src/middleware.ts"
+      ]
+    },
+    {
+      "name": "QR Code CRUD API",
+      "description": "Create, list, update, delete QR codes; bulk operations; export; scan tracking.",
+      "files": [
+        "src/app/api/qr-codes/route.ts",
+        "src/app/api/qr-codes/[id]/route.ts",
+        "src/app/api/qr-codes/[id]/scan/route.ts",
+        "src/app/api/qr-codes/[id]/enhanced-scan/route.ts",
+        "src/app/api/qr-codes/bulk/route.ts",
+        "src/app/api/qr-codes/export/route.ts"
+      ]
+    },
+    {
+      "name": "Custom Domains API",
+      "description": "Endpoint to manage or validate custom domains for dynamic QR codes.",
+      "files": [
+        "src/app/api/custom-domains/route.ts"
+      ]
+    },
+    {
+      "name": "Dynamic QR Management UI",
+      "description": "UI to create and manage dynamic QR codes with destination URLs, labels, and status.",
+      "files": [
+        "src/components/dynamic-qr-manager.tsx",
+        "src/app/test-dynamic/page.tsx",
+        "src/app/qr/[id]/page.tsx"
+      ]
+    },
+    {
+      "name": "Advanced QR Generator UI",
+      "description": "Feature-rich QR customization including foreground/background, gradient, eyes, corners, logo, watermark, and export in PNG/SVG.",
+      "files": [
+        "src/components/advanced-qr-generator.tsx",
+        "src/components/qr-customization-panel.tsx",
+        "src/components/watermark.tsx",
+        "src/components/qr-generator.tsx",
+        "src/components/qr-scanner.tsx",
+        "src/lib/qr-code-advanced.ts",
+        "src/lib/qr-watermark.ts",
+        "src/lib/utils.ts"
+      ]
+    },
+    {
+      "name": "Short URL Redirects",
+      "description": "Short-code based redirect pages for dynamic QR codes, with scan logging.",
+      "files": [
+        "src/app/s/[code]/page.tsx",
+        "src/lib/url-shortener.ts"
+      ]
+    },
+    {
+      "name": "Dashboard and Navigation",
+      "description": "Authenticated dashboard, navigation that adapts to auth state, loading states, and error boundaries.",
+      "files": [
+        "src/app/dashboard/page.tsx",
+        "src/components/navigation.tsx",
+        "src/components/error-boundary.tsx",
+        "src/components/loading-spinner.tsx",
+        "src/app/loading.tsx"
+      ]
+    },
+    {
+      "name": "Supabase Integration",
+      "description": "Client setup and SQL migration scripts for QR and scan tables.",
+      "files": [
+        "src/lib/supabase.ts",
+        "setup-supabase.js",
+        "setup-supabase-tables.sql",
+        "setup-database.js",
+        "create-qrcode-table.sql",
+        "create-scan-table.sql",
+        "create-scan-table-fixed.sql",
+        "setup-qrcode-table.sql",
+        "add-columns.sql",
+        "add-advanced-qr-columns.sql",
+        "add-dynamic-qr-columns.sql",
+        "add-original-url-column.sql",
+        "enhanced-dynamic-qr-schema.sql"
+      ]
+    },
+    {
+      "name": "App Shell and Theming",
+      "description": "Global styles, layout, icons, and theme toggle for light/dark mode.",
+      "files": [
+        "src/app/layout.tsx",
+        "src/app/globals.css",
+        "src/app/icon.tsx",
+        "src/components/theme-toggle.tsx"
+      ]
+    },
+    {
+      "name": "Static Pages and Home",
+      "description": "Marketing/home page, not-found, and route-level loading.",
+      "files": [
+        "src/app/page.tsx",
+        "src/app/not-found.tsx",
+        "public/next.svg",
+        "public/vercel.svg"
+      ]
+    },
+    {
+      "name": "TestSprite Assets",
+      "description": "Predefined test plan, report outputs, and runnable test harness.",
+      "files": [
+        "testsprite_tests/testsprite_frontend_test_plan.json",
+        "testsprite_tests/TC001_Anonymous_User_Basic_QR_Code_Generation.py",
+        "testsprite_tests/TC003_User_Sign_In_with_Incorrect_Credentials.py",
+        "testsprite_tests/TC004_Dashboard_Access_Protection_for_Anonymous_Users.py",
+        "testsprite_tests/TC006_Downloading_Saved_QR_Codes_in_PNG_and_SVG_Formats.py",
+        "testsprite_tests/TC008_Logo_File_Upload_Validation.py",
+        "testsprite_tests/TC012_Deletion_of_QR_Codes_from_User_Account.py",
+        "testsprite_tests/TC013_Watermark_Toggle_Functionality_on_Generated_QR_Codes.py",
+        "testsprite_tests/TC014_Navigation_Menu_Dynamic_Updates_Based_on_Authentication_State.py",
+        "testsprite_tests/TC015_Error_Handling_for_Invalid_URL_Input_in_QR_Code_Generator.py"
+      ]
+    }
+  ]
+}

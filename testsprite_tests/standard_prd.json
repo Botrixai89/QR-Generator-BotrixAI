@@ -1,0 +1,206 @@
+{
+  "meta": {
+    "project": "QR Code Generator",
+    "date": "2025-09-13",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "A modern, full-featured QR code generator application built with Next.js and TypeScript that enables users to create, customize, and manage QR codes with advanced styling options, logo and watermark embedding, and detailed analytics tracking. The product offers both anonymous and authenticated user experiences, with a secured dashboard for managing QR codes, usage statistics, and export features.",
+  "core_goals": [
+    "Enable users to generate QR codes with rich customization options including colors, dot styles, corner styles, logos, and watermarks.",
+    "Provide secure user authentication and session management for personalized experiences and data security.",
+    "Allow users to save, manage, and track QR codes and their analytics in a comprehensive dashboard.",
+    "Support dynamic QR codes with advanced management features such as expiration, scan limits, and content updates.",
+    "Offer multi-format download options and sharing capabilities for generated QR codes.",
+    "Deliver a responsive and accessible user interface with dark mode and mobile-friendly design.",
+    "Ensure secure API endpoints and route protection to safeguard user data and application integrity."
+  ],
+  "key_features": [
+    "Customizable QR Code Generator with options for colors, dot types, corners, logo uploads, and watermark toggling.",
+    "Advanced QR code generation supporting templates and enhanced styling.",
+    "Dynamic QR code management system supporting expiration and scan limit controls.",
+    "Full user authentication using NextAuth.js with sign-up, sign-in, and session handling.",
+    "User dashboard providing QR code management, analytics, download export, and saved codes access.",
+    "QR Code RESTful API for creating, updating, deleting, and bulk operations.",
+    "QR code scanning with analytics tracking and redirect functionality.",
+    "Database integration with Supabase and SQLite for persistent storage of users, QR codes, and analytics.",
+    "URL shortening service with support for custom domains linked to QR codes.",
+    "Reusable UI components built with Radix UI and Tailwind CSS for a consistent look and feel.",
+    "Error boundary handling and route protection to enhance reliability and security.",
+    "Dark/light theme toggle allowing users to switch UI themes easily."
+  ],
+  "user_flow_summary": [
+    "Anonymous user accesses homepage to create simple QR codes with basic customization and downloads them as PNG or SVG.",
+    "New users sign up or existing users sign in via secure authentication to access the full dashboard features.",
+    "Authenticated users create QR codes with advanced customization including logos, watermarks, templates, and colors.",
+    "Users save generated QR codes to their accounts, manage them, and view detailed scan and download analytics from the dashboard.",
+    "Users can update or delete QR codes via the dashboard or API endpoints; dynamic QR codes can have expiration and scan limits set.",
+    "Users share QR codes, which can be scanned and routed accordingly with scan analytics recorded.",
+    "Users access settings to toggle dark/light mode and configure personal preferences, including watermark visibility."
+  ],
+  "validation_criteria": [
+    "Users can successfully generate QR codes with all customization options applied and visible in the output.",
+    "User registration, login, and session persistence work seamlessly without errors or security issues.",
+    "Dashboard data accurately reflects QR code usage statistics, including scans and downloads.",
+    "API endpoints respond correctly to CRUD operations on QR codes, including bulk and export functionalities.",
+    "Dynamic QR code features such as expiration and scan limits are respected and enforced during scans.",
+    "QR codes render correctly across different devices and can be downloaded in PNG and SVG formats.",
+    "Navigation and UI components respond correctly to user authentication state and adapt responsively on various screen sizes.",
+    "Dark mode toggle changes the theme correctly without UI glitches or content loss.",
+    "Errors and edge cases are handled gracefully with appropriate user feedback and error boundaries.",
+    "Watermark feature can be toggled on or off and consistently applies branding without affecting QR code scannability."
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "Next.js 15.5.2",
+      "React 19.1.0",
+      "Supabase",
+      "NextAuth.js",
+      "Tailwind CSS",
+      "Radix UI",
+      "QR Code Styling",
+      "bcryptjs"
+    ],
+    "features": [
+      {
+        "name": "QR Code Generator",
+        "description": "Main QR code generation component with customization options including colors, dot types, corner styles, and logo upload",
+        "files": [
+          "src/components/qr-generator.tsx",
+          "src/components/qr-customization-panel.tsx"
+        ]
+      },
+      {
+        "name": "Advanced QR Generator",
+        "description": "Advanced QR code generation with templates, custom styling, and enhanced customization options",
+        "files": [
+          "src/components/advanced-qr-generator.tsx",
+          "src/types/qr-code-advanced.ts",
+          "src/lib/qr-code-advanced.ts"
+        ]
+      },
+      {
+        "name": "Dynamic QR Manager",
+        "description": "Management system for dynamic QR codes with expiration, scan limits, and content updates",
+        "files": [
+          "src/components/dynamic-qr-manager.tsx"
+        ]
+      },
+      {
+        "name": "User Authentication",
+        "description": "Complete authentication system with signup, signin, and session management using NextAuth.js",
+        "files": [
+          "src/lib/auth.ts",
+          "src/app/api/auth/[...nextauth]/route.ts",
+          "src/app/api/auth/register/route.ts",
+          "src/app/auth/signin/page.tsx",
+          "src/app/auth/signup/page.tsx",
+          "src/components/providers/session-provider.tsx"
+        ]
+      },
+      {
+        "name": "Dashboard",
+        "description": "User dashboard for managing QR codes, viewing analytics, and accessing saved codes",
+        "files": [
+          "src/app/dashboard/page.tsx"
+        ]
+      },
+      {
+        "name": "QR Code API",
+        "description": "RESTful API for creating, updating, deleting, and managing QR codes with database operations",
+        "files": [
+          "src/app/api/qr-codes/route.ts",
+          "src/app/api/qr-codes/[id]/route.ts",
+          "src/app/api/qr-codes/bulk/route.ts",
+          "src/app/api/qr-codes/export/route.ts"
+        ]
+      },
+      {
+        "name": "QR Code Scanning",
+        "description": "QR code scanning functionality with analytics tracking and redirect handling",
+        "files": [
+          "src/app/api/qr-codes/[id]/scan/route.ts",
+          "src/app/api/qr-codes/[id]/enhanced-scan/route.ts",
+          "src/app/s/[code]/page.tsx",
+          "src/components/qr-scanner.tsx"
+        ]
+      },
+      {
+        "name": "Database Integration",
+        "description": "Supabase database integration with user management, QR code storage, and analytics",
+        "files": [
+          "src/lib/supabase.ts",
+          "setup-supabase.js",
+          "setup-supabase-tables.sql",
+          "create-qrcode-table.sql",
+          "create-scan-table.sql"
+        ]
+      },
+      {
+        "name": "URL Shortener",
+        "description": "URL shortening service for QR codes with custom domain support",
+        "files": [
+          "src/lib/url-shortener.ts",
+          "src/app/api/custom-domains/route.ts"
+        ]
+      },
+      {
+        "name": "QR Watermark",
+        "description": "Watermark functionality for adding logos and branding to QR codes",
+        "files": [
+          "src/lib/qr-watermark.ts",
+          "src/components/watermark.tsx"
+        ]
+      },
+      {
+        "name": "Navigation",
+        "description": "Responsive navigation component with authentication state management",
+        "files": [
+          "src/components/navigation.tsx"
+        ]
+      },
+      {
+        "name": "UI Components",
+        "description": "Reusable UI components built with Radix UI and Tailwind CSS",
+        "files": [
+          "src/components/ui/button.tsx",
+          "src/components/ui/card.tsx",
+          "src/components/ui/input.tsx",
+          "src/components/ui/dialog.tsx",
+          "src/components/ui/form.tsx",
+          "src/components/ui/select.tsx",
+          "src/components/ui/switch.tsx",
+          "src/components/ui/tabs.tsx",
+          "src/components/ui/textarea.tsx",
+          "src/components/ui/badge.tsx",
+          "src/components/ui/progress.tsx",
+          "src/components/ui/separator.tsx",
+          "src/components/ui/confirmation-dialog.tsx"
+        ]
+      },
+      {
+        "name": "Error Handling",
+        "description": "Error boundary and error handling components for graceful error management",
+        "files": [
+          "src/components/error-boundary.tsx",
+          "src/app/not-found.tsx",
+          "src/app/loading.tsx"
+        ]
+      },
+      {
+        "name": "Theme Support",
+        "description": "Dark/light theme toggle functionality with next-themes integration",
+        "files": [
+          "src/components/theme-toggle.tsx"
+        ]
+      },
+      {
+        "name": "QR Code Display",
+        "description": "Individual QR code display pages with analytics and sharing options",
+        "files": [
+          "src/app/qr/[id]/page.tsx"
+        ]
+      }
+    ]
+  }
+}
