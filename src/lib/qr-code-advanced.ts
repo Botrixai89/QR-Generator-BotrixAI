@@ -18,32 +18,85 @@ export class AdvancedQRCodeGenerator {
     this.options = options
   }
 
+  // Map custom dot types to QRCodeStyling types
+  private mapDotType(dotType: string): 'square' | 'rounded' | 'extra-rounded' | 'classy' | 'classy-rounded' | 'dots' {
+    const mapping: Record<string, 'square' | 'rounded' | 'extra-rounded' | 'classy' | 'classy-rounded' | 'dots'> = {
+      'square': 'square',
+      'rounded': 'rounded',
+      'extra-rounded': 'extra-rounded',
+      'classy': 'classy',
+      'classy-rounded': 'classy-rounded',
+      'dots': 'dots',
+      'circles': 'dots', // map circles to dots
+      'diamonds': 'dots', // map diamonds to dots
+      'stars': 'dots', // map stars to dots
+      'custom': 'square' // fallback to square for custom
+    }
+    return mapping[dotType] || 'square'
+  }
+
+  // Map custom corner types to QRCodeStyling types
+  private mapCornerType(cornerType: string): 'square' | 'rounded' | 'extra-rounded' {
+    const mapping: Record<string, 'square' | 'rounded' | 'extra-rounded'> = {
+      'square': 'square',
+      'rounded': 'rounded',
+      'extra-rounded': 'extra-rounded',
+      'diamond': 'square', // fallback to square
+      'star': 'square', // fallback to square
+      'heart': 'square', // fallback to square
+      'classy': 'rounded', // map to rounded
+      'classy-rounded': 'extra-rounded', // map to extra-rounded
+      'circle': 'rounded', // map to rounded
+      'custom': 'square' // fallback to square
+    }
+    return mapping[cornerType] || 'square'
+  }
+
   // Generate QR code with advanced features
   async generate(container: HTMLElement): Promise<void> {
     this.container = container
     container.innerHTML = ''
 
-    // Create base QR code
+    // Apply template settings first if specified
+    let finalOptions = { ...this.options }
+    if (this.options.template) {
+      const template = QR_TEMPLATES[this.options.template as keyof typeof QR_TEMPLATES]
+      if (template) {
+        finalOptions = {
+          ...finalOptions,
+          foregroundColor: template.colors.foreground,
+          backgroundColor: template.colors.background,
+          gradient: template.colors.gradient,
+          dotType: template.styles.dotType,
+          cornerType: template.styles.cornerType,
+          eyePattern: template.styles.eyePattern,
+          shape: template.shape || finalOptions.shape,
+          sticker: template.sticker || finalOptions.sticker,
+        }
+      }
+    }
+
+    // Create base QR code with final options
     this.qrCode = new QRCodeStyling({
-      width: this.options.width,
-      height: this.options.height,
-      type: this.options.type || 'svg',
-      data: this.options.data,
-      image: this.options.logo?.image,
+      width: finalOptions.width,
+      height: finalOptions.height,
+      type: (finalOptions.type === 'png' ? 'svg' : finalOptions.type) as 'svg' | 'canvas',
+      data: finalOptions.data,
+      image: finalOptions.logo?.image,
       dotsOptions: {
-        color: this.options.foregroundColor || '#000000',
-        type: this.options.dotType || 'square',
+        color: finalOptions.foregroundColor || '#000000',
+        type: this.mapDotType(finalOptions.dotType || 'square'),
       },
       backgroundOptions: {
-        color: this.options.backgroundColor || '#ffffff',
+        color: finalOptions.backgroundColor || '#ffffff',
       },
       cornersSquareOptions: {
-        color: this.options.foregroundColor || '#000000',
-        type: this.options.cornerType || 'square',
+        color: finalOptions.foregroundColor || '#000000',
+        type: this.mapCornerType(finalOptions.cornerType || 'square'),
       },
       cornersDotOptions: {
-        color: this.options.foregroundColor || '#000000',
-        type: this.options.dotType || 'square',
+        color: finalOptions.foregroundColor || '#000000',
+        type: this.mapDotType(finalOptions.dotType || 'square'),
       },
     })
 
@@ -94,44 +147,10 @@ export class AdvancedQRCodeGenerator {
 
   // Apply template configuration
   private async applyTemplate(templateId: string): Promise<void> {
-    const template = QR_TEMPLATES[templateId as keyof typeof QR_TEMPLATES]
-    if (!template) return
-
-    // Update QR code with template settings
-    if (this.qrCode) {
-      this.qrCode.update({
-        dotsOptions: {
-          color: template.colors.foreground,
-          type: template.styles.dotType,
-        },
-        backgroundOptions: {
-          color: template.colors.background,
-        },
-        cornersSquareOptions: {
-          color: template.colors.foreground,
-          type: template.styles.cornerType,
-        },
-        cornersDotOptions: {
-          color: template.colors.foreground,
-          type: template.styles.dotType,
-        },
-      })
-    }
-
-    // Apply template gradient if exists
-    if (template.colors.gradient) {
-      await this.applyGradient(template.colors.gradient)
-    }
-
-    // Apply template shape if exists
-    if (template.shape) {
-      await this.applyCustomShape(template.shape)
-    }
-
-    // Apply template sticker if exists
-    if (template.sticker) {
-      await this.applySticker(template.sticker)
-    }
+    // Template is already applied during QR code generation
+    // This method is kept for backward compatibility but does nothing
+    // since template settings are applied in the generate method
+    return
   }
 
   // Apply custom shape mask
@@ -141,11 +160,15 @@ export class AdvancedQRCodeGenerator {
     const svg = this.container.querySelector('svg')
     if (!svg) return
 
+    // Skip if shape is square (default)
+    if (shape === 'square') return
+
     const shapeMask = this.createShapeMask(shape, this.options.width, this.options.height)
     if (shapeMask) {
       // Create mask definition
-      const defs = svg.querySelector('defs') || document.createElementNS('http://www.w3.org/2000/svg', 'defs')
-      if (!svg.querySelector('defs')) {
+      let defs = svg.querySelector('defs')
+      if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
         svg.insertBefore(defs, svg.firstChild)
       }
 
@@ -154,7 +177,7 @@ export class AdvancedQRCodeGenerator {
       mask.appendChild(shapeMask)
       defs.appendChild(mask)
 
-      // Apply mask to QR code
+      // Apply mask to the entire QR code group
       const qrGroup = svg.querySelector('g') || svg
       qrGroup.setAttribute('mask', `url(#shape-mask-${shape})`)
     }
@@ -199,8 +222,9 @@ export class AdvancedQRCodeGenerator {
     const svg = this.container.querySelector('svg')
     if (!svg) return
 
-    const defs = svg.querySelector('defs') || document.createElementNS('http://www.w3.org/2000/svg', 'defs')
-    if (!svg.querySelector('defs')) {
+    let defs = svg.querySelector('defs')
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
       svg.insertBefore(defs, svg.firstChild)
     }
 
@@ -240,10 +264,11 @@ export class AdvancedQRCodeGenerator {
 
     defs.appendChild(gradientElement)
 
-    // Apply gradient to QR code elements
-    const qrElements = svg.querySelectorAll('rect, path')
+    // Apply gradient to QR code elements (dots and corners)
+    const qrElements = svg.querySelectorAll('rect[fill]:not([fill="transparent"]):not([fill="none"])')
     qrElements.forEach(element => {
-      if (element.getAttribute('fill') !== this.options.backgroundColor) {
+      const fillColor = element.getAttribute('fill')
+      if (fillColor && fillColor !== this.options.backgroundColor && fillColor !== 'transparent') {
         element.setAttribute('fill', 'url(#qr-gradient)')
       }
     })
@@ -327,7 +352,7 @@ export class AdvancedQRCodeGenerator {
   private createStickerShape(stickerType: string, size: number): SVGElement | null {
     const element = document.createElementNS('http://www.w3.org/2000/svg', 'g')
     
-    // Simple sticker implementations
+    // Enhanced sticker implementations
     switch (stickerType) {
       case 'heart-frame':
         const heart = document.createElementNS('http://www.w3.org/2000/svg', 'path')
@@ -354,6 +379,278 @@ export class AdvancedQRCodeGenerator {
         circle.setAttribute('stroke', '#4ecdc4')
         circle.setAttribute('stroke-width', '4')
         element.appendChild(circle)
+        break
+      case 'gold-frame':
+        const goldFrame = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+        goldFrame.setAttribute('x', '5')
+        goldFrame.setAttribute('y', '5')
+        goldFrame.setAttribute('width', (size - 10).toString())
+        goldFrame.setAttribute('height', (size - 10).toString())
+        goldFrame.setAttribute('fill', 'none')
+        goldFrame.setAttribute('stroke', '#ffd700')
+        goldFrame.setAttribute('stroke-width', '4')
+        element.appendChild(goldFrame)
+        break
+      case 'silver-frame':
+        const silverFrame = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+        silverFrame.setAttribute('x', '5')
+        silverFrame.setAttribute('y', '5')
+        silverFrame.setAttribute('width', (size - 10).toString())
+        silverFrame.setAttribute('height', (size - 10).toString())
+        silverFrame.setAttribute('fill', 'none')
+        silverFrame.setAttribute('stroke', '#c0c0c0')
+        silverFrame.setAttribute('stroke-width', '4')
+        element.appendChild(silverFrame)
+        break
+      case 'rainbow-frame':
+        const rainbowFrame = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+        rainbowFrame.setAttribute('x', '5')
+        rainbowFrame.setAttribute('y', '5')
+        rainbowFrame.setAttribute('width', (size - 10).toString())
+        rainbowFrame.setAttribute('height', (size - 10).toString())
+        rainbowFrame.setAttribute('fill', 'none')
+        rainbowFrame.setAttribute('stroke', 'url(#rainbow-gradient)')
+        rainbowFrame.setAttribute('stroke-width', '4')
+        element.appendChild(rainbowFrame)
+        
+        // Add rainbow gradient definition
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+        const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient')
+        gradient.setAttribute('id', 'rainbow-gradient')
+        gradient.setAttribute('x1', '0%')
+        gradient.setAttribute('y1', '0%')
+        gradient.setAttribute('x2', '100%')
+        gradient.setAttribute('y2', '0%')
+        
+        const colors = ['#ff0000', '#ff8000', '#ffff00', '#80ff00', '#00ffff', '#8000ff', '#ff0080']
+        colors.forEach((color, index) => {
+          const stop = document.createElementNS('http://www.w3.org/2000/svg', 'stop')
+          stop.setAttribute('offset', `${(index / (colors.length - 1)) * 100}%`)
+          stop.setAttribute('stop-color', color)
+          gradient.appendChild(stop)
+        })
+        
+        defs.appendChild(gradient)
+        element.appendChild(defs)
+        break
+      case 'christmas-tree':
+        const tree = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        
+        // Tree layers
+        const layer1 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        layer1.setAttribute('d', `M${size/2},${size*0.1} L${size*0.2},${size*0.4} L${size*0.8},${size*0.4} Z`)
+        layer1.setAttribute('fill', '#228B22')
+        tree.appendChild(layer1)
+        
+        const layer2 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        layer2.setAttribute('d', `M${size/2},${size*0.3} L${size*0.15},${size*0.6} L${size*0.85},${size*0.6} Z`)
+        layer2.setAttribute('fill', '#228B22')
+        tree.appendChild(layer2)
+        
+        const layer3 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        layer3.setAttribute('d', `M${size/2},${size*0.5} L${size*0.1},${size*0.8} L${size*0.9},${size*0.8} Z`)
+        layer3.setAttribute('fill', '#228B22')
+        tree.appendChild(layer3)
+        
+        // Trunk
+        const trunk = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+        trunk.setAttribute('x', (size*0.4).toString())
+        trunk.setAttribute('y', (size*0.8).toString())
+        trunk.setAttribute('width', (size*0.2).toString())
+        trunk.setAttribute('height', (size*0.2).toString())
+        trunk.setAttribute('fill', '#8B4513')
+        tree.appendChild(trunk)
+        
+        element.appendChild(tree)
+        break
+      case 'santa':
+        const santa = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        
+        // Santa hat
+        const hat = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        hat.setAttribute('d', `M${size*0.2},${size*0.3} L${size*0.5},${size*0.1} L${size*0.8},${size*0.3} L${size*0.7},${size*0.4} L${size*0.3},${size*0.4} Z`)
+        hat.setAttribute('fill', '#ff0000')
+        santa.appendChild(hat)
+        
+        // Hat pom-pom
+        const pomPom = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        pomPom.setAttribute('cx', (size*0.5).toString())
+        pomPom.setAttribute('cy', (size*0.1).toString())
+        pomPom.setAttribute('r', (size*0.05).toString())
+        pomPom.setAttribute('fill', '#ffffff')
+        santa.appendChild(pomPom)
+        
+        // Face
+        const face = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        face.setAttribute('cx', (size/2).toString())
+        face.setAttribute('cy', (size*0.6).toString())
+        face.setAttribute('r', (size*0.2).toString())
+        face.setAttribute('fill', '#ffdbac')
+        santa.appendChild(face)
+        
+        element.appendChild(santa)
+        break
+      case 'snowman':
+        const snowman = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        
+        // Bottom circle
+        const bottomCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        bottomCircle.setAttribute('cx', (size/2).toString())
+        bottomCircle.setAttribute('cy', (size*0.7).toString())
+        bottomCircle.setAttribute('r', (size*0.25).toString())
+        bottomCircle.setAttribute('fill', '#ffffff')
+        bottomCircle.setAttribute('stroke', '#cccccc')
+        bottomCircle.setAttribute('stroke-width', '2')
+        snowman.appendChild(bottomCircle)
+        
+        // Top circle
+        const topCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        topCircle.setAttribute('cx', (size/2).toString())
+        topCircle.setAttribute('cy', (size*0.4).toString())
+        topCircle.setAttribute('r', (size*0.2).toString())
+        topCircle.setAttribute('fill', '#ffffff')
+        topCircle.setAttribute('stroke', '#cccccc')
+        topCircle.setAttribute('stroke-width', '2')
+        snowman.appendChild(topCircle)
+        
+        // Eyes
+        const snowmanLeftEye = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        snowmanLeftEye.setAttribute('cx', (size*0.45).toString())
+        snowmanLeftEye.setAttribute('cy', (size*0.35).toString())
+        snowmanLeftEye.setAttribute('r', (size*0.02).toString())
+        snowmanLeftEye.setAttribute('fill', '#000000')
+        snowman.appendChild(snowmanLeftEye)
+        
+        const snowmanRightEye = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        snowmanRightEye.setAttribute('cx', (size*0.55).toString())
+        snowmanRightEye.setAttribute('cy', (size*0.35).toString())
+        snowmanRightEye.setAttribute('r', (size*0.02).toString())
+        snowmanRightEye.setAttribute('fill', '#000000')
+        snowman.appendChild(snowmanRightEye)
+        
+        element.appendChild(snowman)
+        break
+      case 'gift-box':
+        const giftBox = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        
+        // Box
+        const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+        box.setAttribute('x', (size*0.2).toString())
+        box.setAttribute('y', (size*0.3).toString())
+        box.setAttribute('width', (size*0.6).toString())
+        box.setAttribute('height', (size*0.5).toString())
+        box.setAttribute('fill', '#ff6b6b')
+        giftBox.appendChild(box)
+        
+        // Ribbon
+        const ribbon = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+        ribbon.setAttribute('x', (size*0.2).toString())
+        ribbon.setAttribute('y', (size*0.45).toString())
+        ribbon.setAttribute('width', (size*0.6).toString())
+        ribbon.setAttribute('height', (size*0.1).toString())
+        ribbon.setAttribute('fill', '#ffffff')
+        giftBox.appendChild(ribbon)
+        
+        element.appendChild(giftBox)
+        break
+      case 'pumpkin':
+        const pumpkin = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        
+        // Pumpkin body
+        const pumpkinBody = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        pumpkinBody.setAttribute('d', `M${size/2},${size*0.1} C${size*0.3},${size*0.1} ${size*0.1},${size*0.3} ${size*0.1},${size*0.6} C${size*0.1},${size*0.8} ${size*0.3},${size*0.9} ${size/2},${size*0.9} C${size*0.7},${size*0.9} ${size*0.9},${size*0.8} ${size*0.9},${size*0.6} C${size*0.9},${size*0.3} ${size*0.7},${size*0.1} ${size/2},${size*0.1} Z`)
+        pumpkinBody.setAttribute('fill', '#ff8c00')
+        pumpkin.appendChild(pumpkinBody)
+        
+        // Eyes
+        const pumpkinLeftEye = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        pumpkinLeftEye.setAttribute('d', `M${size*0.35},${size*0.4} L${size*0.4},${size*0.35} L${size*0.35},${size*0.3} L${size*0.3},${size*0.35} Z`)
+        pumpkinLeftEye.setAttribute('fill', '#000000')
+        pumpkin.appendChild(pumpkinLeftEye)
+        
+        const pumpkinRightEye = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        pumpkinRightEye.setAttribute('d', `M${size*0.65},${size*0.4} L${size*0.7},${size*0.35} L${size*0.65},${size*0.3} L${size*0.6},${size*0.35} Z`)
+        pumpkinRightEye.setAttribute('fill', '#000000')
+        pumpkin.appendChild(pumpkinRightEye)
+        
+        // Mouth
+        const pumpkinMouth = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        pumpkinMouth.setAttribute('d', `M${size*0.3},${size*0.6} Q${size/2},${size*0.7} ${size*0.7},${size*0.6}`)
+        pumpkinMouth.setAttribute('fill', 'none')
+        pumpkinMouth.setAttribute('stroke', '#000000')
+        pumpkinMouth.setAttribute('stroke-width', '2')
+        pumpkin.appendChild(pumpkinMouth)
+        
+        element.appendChild(pumpkin)
+        break
+      case 'bat':
+        const bat = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        
+        // Bat body
+        const batBody = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse')
+        batBody.setAttribute('cx', (size/2).toString())
+        batBody.setAttribute('cy', (size*0.6).toString())
+        batBody.setAttribute('rx', (size*0.15).toString())
+        batBody.setAttribute('ry', (size*0.2).toString())
+        batBody.setAttribute('fill', '#2c2c2c')
+        bat.appendChild(batBody)
+        
+        // Wings
+        const leftWing = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        leftWing.setAttribute('d', `M${size*0.35},${size*0.6} Q${size*0.1},${size*0.4} ${size*0.1},${size*0.6} Q${size*0.1},${size*0.8} ${size*0.35},${size*0.6} Z`)
+        leftWing.setAttribute('fill', '#2c2c2c')
+        bat.appendChild(leftWing)
+        
+        const rightWing = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        rightWing.setAttribute('d', `M${size*0.65},${size*0.6} Q${size*0.9},${size*0.4} ${size*0.9},${size*0.6} Q${size*0.9},${size*0.8} ${size*0.65},${size*0.6} Z`)
+        rightWing.setAttribute('fill', '#2c2c2c')
+        bat.appendChild(rightWing)
+        
+        element.appendChild(bat)
+        break
+      case 'skull':
+        const skull = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        
+        // Skull
+        const skullHead = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        skullHead.setAttribute('cx', (size/2).toString())
+        skullHead.setAttribute('cy', (size*0.5).toString())
+        skullHead.setAttribute('r', (size*0.3).toString())
+        skullHead.setAttribute('fill', '#ffffff')
+        skullHead.setAttribute('stroke', '#cccccc')
+        skullHead.setAttribute('stroke-width', '2')
+        skull.appendChild(skullHead)
+        
+        // Eyes
+        const skullLeftEye = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        skullLeftEye.setAttribute('cx', (size*0.4).toString())
+        skullLeftEye.setAttribute('cy', (size*0.45).toString())
+        skullLeftEye.setAttribute('r', (size*0.05).toString())
+        skullLeftEye.setAttribute('fill', '#000000')
+        skull.appendChild(skullLeftEye)
+        
+        const skullRightEye = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        skullRightEye.setAttribute('cx', (size*0.6).toString())
+        skullRightEye.setAttribute('cy', (size*0.45).toString())
+        skullRightEye.setAttribute('r', (size*0.05).toString())
+        skullRightEye.setAttribute('fill', '#000000')
+        skull.appendChild(skullRightEye)
+        
+        // Nose
+        const skullNose = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        skullNose.setAttribute('d', `M${size/2},${size*0.5} L${size*0.45},${size*0.55} L${size*0.55},${size*0.55} Z`)
+        skullNose.setAttribute('fill', '#000000')
+        skull.appendChild(skullNose)
+        
+        // Mouth
+        const skullMouth = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        skullMouth.setAttribute('d', `M${size*0.35},${size*0.6} Q${size/2},${size*0.7} ${size*0.65},${size*0.6}`)
+        skullMouth.setAttribute('fill', 'none')
+        skullMouth.setAttribute('stroke', '#000000')
+        skullMouth.setAttribute('stroke-width', '2')
+        skull.appendChild(skullMouth)
+        
+        element.appendChild(skull)
         break
       default:
         return null

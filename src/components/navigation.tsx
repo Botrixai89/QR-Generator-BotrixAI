@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { QrCode, BarChart3, LogOut, User, Sparkles } from "lucide-react"
+import { QrCode, BarChart3, LogOut, User } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ThemeToggle } from "./theme-toggle"
@@ -125,13 +125,6 @@ export default function Navigation() {
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Generator
-                </Link>
-                <Link 
-                  href="/advanced" 
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                >
-                  <Sparkles className="h-3 w-3" />
-                  Advanced
                 </Link>
                 <Link 
                   href="/dashboard" 

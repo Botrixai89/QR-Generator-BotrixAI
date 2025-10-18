@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,7 @@ import {
   CreditCard,
   IndianRupee
 } from "lucide-react"
+import { socialMediaIcons, SocialMediaPlatform } from "@/components/social-media-icons"
 import QRCodeStyling from "qr-code-styling"
 import { addBotrixLogoToQR } from "@/lib/qr-watermark"
 import { 
@@ -95,20 +97,83 @@ function TemplatePreview({ template, isSelected, onClick }: {
   isSelected: boolean, 
   onClick: () => void 
 }) {
+  const [previewRef, setPreviewRef] = useState<HTMLDivElement | null>(null)
+  
+  // Generate a preview QR code for this template
+  useEffect(() => {
+    if (previewRef && template) {
+      // Add timeout to prevent rapid re-renders
+      const timeoutId = setTimeout(() => {
+        try {
+          // Create a simple preview using basic QR styling
+          const previewOptions = {
+            data: "Preview",
+            width: 80,
+            height: 80,
+            type: "svg" as const,
+            foregroundColor: template.colors?.foreground || '#000000',
+            backgroundColor: template.colors?.background || '#ffffff',
+            dotType: template.styles?.dotType || 'square',
+            cornerType: template.styles?.cornerType || 'square',
+            eyePattern: template.styles?.eyePattern || 'square',
+            watermark: false,
+            effects: {},
+            gradient: template.colors?.gradient,
+            shape: template.shape || 'square'
+          }
+          
+          const qrGenerator = createAdvancedQR(previewOptions)
+          qrGenerator.generate(previewRef)
+        } catch (error) {
+          console.error('Error generating template preview:', error)
+          // Fallback: show a simple colored square
+          if (previewRef) {
+            previewRef.innerHTML = `
+              <div style="width: 80px; height: 80px; background: ${template.colors?.background || '#ffffff'}; border: 2px solid ${template.colors?.foreground || '#000000'}; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: ${template.colors?.foreground || '#000000'};">QR</div>
+            `
+          }
+        }
+      }, 50) // Small delay to prevent rapid re-renders
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [previewRef, template])
+
   return (
     <div 
-      className={`relative cursor-pointer rounded-lg border-2 p-2 transition-all hover:shadow-md ${
-        isSelected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+      className={`group relative cursor-pointer rounded-xl border-2 p-3 transition-all duration-200 hover:shadow-lg hover:scale-105 ${
+        isSelected 
+          ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20' 
+          : 'border-border hover:border-primary/60 bg-card'
       }`}
       onClick={onClick}
     >
-      <div className="aspect-square w-full rounded bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-        <div className="text-xs text-gray-500">{template.name}</div>
+      {/* Template Preview */}
+      <div className="aspect-square w-full rounded-lg bg-white p-2 shadow-sm border">
+        <div 
+          ref={setPreviewRef}
+          className="w-full h-full flex items-center justify-center"
+        />
       </div>
-      <div className="mt-2 text-center">
-        <div className="text-sm font-medium">{template.name}</div>
-        <div className="text-xs text-muted-foreground">{template.description}</div>
+      
+      {/* Template Info */}
+      <div className="mt-3 text-center space-y-1">
+        <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+          {template.name}
+        </div>
+        <div className="text-xs text-muted-foreground leading-tight">
+          {template.description}
+        </div>
       </div>
+      
+      {/* Selection Indicator */}
+      {isSelected && (
+        <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+          <svg className="w-4 h-4 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        </div>
+      )}
     </div>
   )
 }
@@ -144,6 +209,117 @@ function StickerPreview({ sticker, isSelected, onClick }: {
   isSelected: boolean, 
   onClick: () => void 
 }) {
+  const renderStickerPreview = () => {
+    const size = 24
+    switch (sticker.type) {
+      case 'heart-frame':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-red-500">
+            <path d="M12,21.35l-1.45-1.32C5.4,15.36,2,12.28,2,8.5 C2,5.42,4.42,3,7.5,3c1.74,0,3.41,0.81,4.5,2.09C13.09,3.81,14.76,3,16.5,3 C19.58,3,22,5.42,22,8.5c0,3.78-3.4,6.86-8.55,11.54L12,21.35z" 
+                  fill="none" stroke="currentColor" strokeWidth="1.5"/>
+          </svg>
+        )
+      case 'star-frame':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-yellow-500">
+            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" 
+                     fill="none" stroke="currentColor" strokeWidth="1.5"/>
+          </svg>
+        )
+      case 'circle-frame':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-blue-500">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+        )
+      case 'gold-frame':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-yellow-600">
+            <rect x="2" y="2" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+        )
+      case 'silver-frame':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-500">
+            <rect x="2" y="2" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+        )
+      case 'rainbow-frame':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24">
+            <rect x="2" y="2" width="20" height="20" fill="none" stroke="url(#rainbow)" strokeWidth="2"/>
+            <defs>
+              <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#ff0000"/>
+                <stop offset="16.66%" stopColor="#ff8000"/>
+                <stop offset="33.33%" stopColor="#ffff00"/>
+                <stop offset="50%" stopColor="#80ff00"/>
+                <stop offset="66.66%" stopColor="#00ffff"/>
+                <stop offset="83.33%" stopColor="#8000ff"/>
+                <stop offset="100%" stopColor="#ff0080"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        )
+      case 'christmas-tree':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-green-600">
+            <path d="M12,2 L8,8 L12,6 L16,8 L12,2 Z M12,6 L6,14 L12,10 L18,14 L12,6 Z M12,10 L4,22 L12,18 L20,22 L12,10 Z M12,18 L12,22" 
+                  fill="currentColor"/>
+          </svg>
+        )
+      case 'santa':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-red-600">
+            <circle cx="12" cy="8" r="4" fill="currentColor"/>
+            <path d="M8,16 Q12,12 16,16" fill="currentColor"/>
+          </svg>
+        )
+      case 'snowman':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-400">
+            <circle cx="12" cy="6" r="3" fill="currentColor"/>
+            <circle cx="12" cy="14" r="4" fill="currentColor"/>
+            <circle cx="10" cy="5" r="1" fill="white"/>
+            <circle cx="14" cy="5" r="1" fill="white"/>
+          </svg>
+        )
+      case 'gift-box':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-red-500">
+            <rect x="4" y="6" width="16" height="12" fill="currentColor"/>
+            <rect x="4" y="6" width="16" height="3" fill="#ff6b6b"/>
+            <rect x="11" y="2" width="2" height="16" fill="#ff6b6b"/>
+          </svg>
+        )
+      case 'pumpkin':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-orange-500">
+            <path d="M12,2 C8,2 5,5 5,9 C5,13 8,16 12,16 C16,16 19,13 19,9 C19,5 16,2 12,2 Z M9,7 C9.5,7 10,7.5 10,8 C10,8.5 9.5,9 9,9 C8.5,9 8,8.5 8,8 C8,7.5 8.5,7 9,7 Z M15,7 C15.5,7 16,7.5 16,8 C16,8.5 15.5,9 15,9 C14.5,9 14,8.5 14,8 C14,7.5 14.5,7 15,7 Z" 
+                  fill="currentColor"/>
+          </svg>
+        )
+      case 'bat':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-800">
+            <path d="M12,2 C8,4 6,8 6,12 C6,16 8,20 12,22 C16,20 18,16 18,12 C18,8 16,4 12,2 Z M10,8 C10.5,8 11,8.5 11,9 C11,9.5 10.5,10 10,10 C9.5,10 9,9.5 9,9 C9,8.5 9.5,8 10,8 Z M14,8 C14.5,8 15,8.5 15,9 C15,9.5 14.5,10 14,10 C13.5,10 13,9.5 13,9 C13,8.5 13.5,8 14,8 Z" 
+                  fill="currentColor"/>
+          </svg>
+        )
+      case 'skull':
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-600">
+            <circle cx="12" cy="8" r="6" fill="currentColor"/>
+            <circle cx="9" cy="7" r="1" fill="white"/>
+            <circle cx="15" cy="7" r="1" fill="white"/>
+            <path d="M8,12 Q12,16 16,12" stroke="white" strokeWidth="2" fill="none"/>
+          </svg>
+        )
+      default:
+        return <Sticker className="h-6 w-6 text-gray-600" />
+    }
+  }
+
   return (
     <div 
       className={`relative cursor-pointer rounded-lg border-2 p-2 transition-all hover:shadow-md ${
@@ -152,7 +328,7 @@ function StickerPreview({ sticker, isSelected, onClick }: {
       onClick={onClick}
     >
       <div className="aspect-square w-full rounded bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-        <Sticker className="h-6 w-6 text-gray-600" />
+        {renderStickerPreview()}
       </div>
       <div className="mt-2 text-center">
         <div className="text-xs font-medium capitalize">{sticker.type.replace('-', ' ')}</div>
@@ -183,7 +359,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   const [upiAmount, setUpiAmount] = useState("")
   const [upiMerchantName, setUpiMerchantName] = useState("")
   const [upiTransactionNote, setUpiTransactionNote] = useState("")
-  const [upiFormat, setUpiFormat] = useState<'bharat-qr' | 'upi-url'>('bharat-qr')
+  const [upiFormat, setUpiFormat] = useState<'bharat-qr' | 'upi-url'>('upi-url')
   
   // Advanced QR options
   const [qrOptions, setQrOptions] = useState<AdvancedQROptions>({
@@ -243,8 +419,11 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       // Convert to Bharat QR string format
       return JSON.stringify(bharatQrData)
     } else {
-      // Generate UPI URL format
+      // Generate UPI URL format - CRITICAL: This must be exactly right for UPI apps to recognize it
       let upiUrl = `upi://pay?pa=${encodeURIComponent(cleanUpiId)}`
+      
+      // Add currency FIRST (required by UPI spec)
+      upiUrl += `&cu=INR`
       
       // Add merchant name (required for better recognition)
       if (merchantName?.trim()) {
@@ -255,13 +434,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         upiUrl += `&pn=${encodeURIComponent(username)}`
       }
       
-      // Add amount if specified
+      // Add amount if specified (must be numeric)
       if (amount?.trim() && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
         upiUrl += `&am=${parseFloat(amount)}`
       }
-      
-      // Add currency (INR is default for India)
-      upiUrl += `&cu=INR`
       
       // Add transaction note if specified
       if (transactionNote?.trim()) {
@@ -271,6 +447,9 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       // Add transaction reference for better tracking
       const transactionRef = `TXN${Date.now()}`
       upiUrl += `&tr=${transactionRef}`
+      
+      // Add merchant category code (optional but recommended)
+      upiUrl += `&mc=0000`
       
       return upiUrl
     }
@@ -302,8 +481,17 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         data: qrData
       }
       
-      qrGeneratorRef.current = createAdvancedQR(options)
-      qrGeneratorRef.current.generate(qrRef.current)
+      // Add timeout to prevent infinite loops
+      const timeoutId = setTimeout(() => {
+        try {
+          qrGeneratorRef.current = createAdvancedQR(options)
+          qrGeneratorRef.current.generate(qrRef.current)
+        } catch (error) {
+          console.error('Error generating QR code:', error)
+        }
+      }, 100) // Small delay to prevent rapid re-renders
+      
+      return () => clearTimeout(timeoutId)
     }
   }, [isClient, url, qrOptions, isUpiPayment, upiId, upiAmount, upiMerchantName, upiTransactionNote])
 
@@ -456,16 +644,112 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     setUpiAmount("")
     setUpiMerchantName("")
     setUpiTransactionNote("")
-    setUpiFormat('bharat-qr')
+    setUpiFormat('upi-url')
   }
 
   const handleOptionsChange = (newOptions: AdvancedQROptions) => {
     setQrOptions(newOptions)
   }
 
+  // Function to generate social media logo as base64 data URL
+  const generateSocialMediaLogoDataUrl = (platform: SocialMediaPlatform): string => {
+    const IconComponent = socialMediaIcons[platform]
+    if (!IconComponent) return ""
+    
+    // Create a temporary SVG element
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    svg.setAttribute('width', '64')
+    svg.setAttribute('height', '64')
+    svg.setAttribute('viewBox', '0 0 24 24')
+    svg.setAttribute('fill', 'none')
+    
+    // Create the SVG content directly
+    let svgContent = ''
+    
+    switch (platform) {
+      case 'instagram':
+        return '/instagram-logo.png'
+      case 'snapchat':
+        return '/snapchat-logo.webp'
+      case 'facebook':
+        svgContent = `
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2" />
+        `
+        break
+      case 'twitter':
+        svgContent = `
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#000000" />
+        `
+        break
+      case 'linkedin':
+        svgContent = `
+          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="#0077B5" />
+        `
+        break
+      case 'youtube':
+        svgContent = `
+          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="#FF0000" />
+        `
+        break
+      case 'tiktok':
+        svgContent = `
+          <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" fill="#000000" />
+        `
+        break
+      case 'whatsapp':
+        svgContent = `
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488" fill="#25D366" />
+        `
+        break
+      case 'telegram':
+        svgContent = `
+          <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" fill="#0088CC" />
+        `
+        break
+      case 'discord':
+        svgContent = `
+          <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" fill="#5865F2" />
+        `
+        break
+      default:
+        return ""
+    }
+    
+    svg.innerHTML = svgContent
+    
+    // Convert SVG to data URL
+    const svgString = new XMLSerializer().serializeToString(svg)
+    const dataUrl = `data:image/svg+xml;base64,${btoa(svgString)}`
+    
+    return dataUrl
+  }
+
   const handleTemplateSelect = (templateId: QRTemplate) => {
     const template = QR_TEMPLATES[templateId]
     if (template) {
+      // Check if this is a social media template
+      const socialMediaPlatforms: SocialMediaPlatform[] = ['instagram', 'facebook', 'snapchat', 'twitter', 'linkedin', 'youtube', 'tiktok', 'whatsapp', 'telegram', 'discord']
+      
+      let logoConfig = qrOptions.logo
+      
+      // If it's a social media template, add the platform logo to the center
+      if (socialMediaPlatforms.includes(templateId as SocialMediaPlatform)) {
+        const logoDataUrl = generateSocialMediaLogoDataUrl(templateId as SocialMediaPlatform)
+        if (logoDataUrl) {
+          logoConfig = {
+            image: logoDataUrl,
+            size: 0.25, // 25% of QR code size
+            margin: 5,
+            opacity: 1
+          }
+        }
+      } else {
+        // Clear logo for non-social media templates unless user has uploaded a custom logo
+        if (!qrOptions.logo?.image || !qrOptions.logo.image.startsWith('data:image/')) {
+          logoConfig = undefined
+        }
+      }
+      
       setQrOptions({
         ...qrOptions,
         template: templateId,
@@ -477,6 +761,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         eyePattern: template.styles.eyePattern,
         shape: template.shape,
         sticker: template.sticker,
+        logo: logoConfig,
       })
     }
   }
@@ -518,8 +803,9 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="basic">Basic</TabsTrigger>
+                  <TabsTrigger value="social">Social Media</TabsTrigger>
                   <TabsTrigger value="upi">UPI Payment</TabsTrigger>
                   <TabsTrigger value="dynamic">Dynamic</TabsTrigger>
                 </TabsList>
@@ -530,7 +816,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     <Label htmlFor="url">URL or Text</Label>
                     <Input
                       id="url"
-                      placeholder="https://example.com or UPI ID or any text"
+                      placeholder="https://example.com"
                       value={url}
                       onChange={(e) => setUrl(e.target.value)}
                     />
@@ -587,10 +873,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     </div>
 
                     {/* Templates */}
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <Label className="text-sm font-medium">Templates</Label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {Object.entries(QR_TEMPLATES).slice(0, 6).map(([id, template]) => (
+                      <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                        {Object.entries(QR_TEMPLATES).map(([id, template]) => (
                           <TemplatePreview
                             key={id}
                             template={template}
@@ -599,11 +885,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                           />
                         ))}
                       </div>
-                      {Object.entries(QR_TEMPLATES).length > 6 && (
-                        <Button variant="outline" size="sm" className="w-full">
-                          View All Templates
-                        </Button>
-                      )}
                     </div>
 
                     {/* Shapes */}
@@ -777,10 +1058,175 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                           <StickerPreview
                             key={id}
                             sticker={sticker}
-                            isSelected={qrOptions.sticker?.type === id}
+                            isSelected={qrOptions.sticker?.type === sticker.type}
                             onClick={() => handleStickerSelect(id as QRSticker)}
                           />
                         ))}
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="social" className="space-y-4 mt-4">
+                  {/* Social Media Platform Selection */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Choose Social Media Platform</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        variant={qrOptions.template === 'instagram' ? 'default' : 'outline'}
+                        onClick={() => handleTemplateSelect('instagram')}
+                        className="h-auto p-4 flex flex-col items-center gap-2"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.instagram size={20} />
+                        </div>
+                        <span className="text-sm">Instagram</span>
+                      </Button>
+                      
+                      <Button
+                        variant={qrOptions.template === 'facebook' ? 'default' : 'outline'}
+                        onClick={() => handleTemplateSelect('facebook')}
+                        className="h-auto p-4 flex flex-col items-center gap-2"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.facebook size={20} />
+                        </div>
+                        <span className="text-sm">Facebook</span>
+                      </Button>
+                      
+                      <Button
+                        variant={qrOptions.template === 'snapchat' ? 'default' : 'outline'}
+                        onClick={() => handleTemplateSelect('snapchat')}
+                        className="h-auto p-4 flex flex-col items-center gap-2"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.snapchat size={20} />
+                        </div>
+                        <span className="text-sm">Snapchat</span>
+                      </Button>
+                      
+                      <Button
+                        variant={qrOptions.template === 'twitter' ? 'default' : 'outline'}
+                        onClick={() => handleTemplateSelect('twitter')}
+                        className="h-auto p-4 flex flex-col items-center gap-2"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.twitter size={20} />
+                        </div>
+                        <span className="text-sm">X (Twitter)</span>
+                      </Button>
+                      
+                      <Button
+                        variant={qrOptions.template === 'linkedin' ? 'default' : 'outline'}
+                        onClick={() => handleTemplateSelect('linkedin')}
+                        className="h-auto p-4 flex flex-col items-center gap-2"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.linkedin size={20} />
+                        </div>
+                        <span className="text-sm">LinkedIn</span>
+                      </Button>
+                      
+                      <Button
+                        variant={qrOptions.template === 'youtube' ? 'default' : 'outline'}
+                        onClick={() => handleTemplateSelect('youtube')}
+                        className="h-auto p-4 flex flex-col items-center gap-2"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.youtube size={20} />
+                        </div>
+                        <span className="text-sm">YouTube</span>
+                      </Button>
+                      
+                      <Button
+                        variant={qrOptions.template === 'tiktok' ? 'default' : 'outline'}
+                        onClick={() => handleTemplateSelect('tiktok')}
+                        className="h-auto p-4 flex flex-col items-center gap-2"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.tiktok size={20} />
+                        </div>
+                        <span className="text-sm">TikTok</span>
+                      </Button>
+                      
+                      <Button
+                        variant={qrOptions.template === 'whatsapp' ? 'default' : 'outline'}
+                        onClick={() => handleTemplateSelect('whatsapp')}
+                        className="h-auto p-4 flex flex-col items-center gap-2"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.whatsapp size={20} />
+                        </div>
+                        <span className="text-sm">WhatsApp</span>
+                      </Button>
+                      
+                      <Button
+                        variant={qrOptions.template === 'telegram' ? 'default' : 'outline'}
+                        onClick={() => handleTemplateSelect('telegram')}
+                        className="h-auto p-4 flex flex-col items-center gap-2"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.telegram size={20} />
+                        </div>
+                        <span className="text-sm">Telegram</span>
+                      </Button>
+                      
+                      <Button
+                        variant={qrOptions.template === 'discord' ? 'default' : 'outline'}
+                        onClick={() => handleTemplateSelect('discord')}
+                        className="h-auto p-4 flex flex-col items-center gap-2"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.discord size={20} />
+                        </div>
+                        <span className="text-sm">Discord</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Social Media URL Input */}
+                  <div className="space-y-2">
+                    <Label htmlFor="socialUrl">Social Media URL</Label>
+                    <Input
+                      id="socialUrl"
+                      placeholder="https://instagram.com/yourusername or @yourusername"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter your social media profile URL or username (e.g., @username, https://instagram.com/username)
+                    </p>
+                  </div>
+
+                  {/* Title */}
+                  <div className="space-y-2">
+                    <Label htmlFor="socialTitle">Title (Optional)</Label>
+                    <Input
+                      id="socialTitle"
+                      placeholder="Follow me on Instagram"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Social Media Tips */}
+                  <div className="space-y-2 p-3 bg-blue-50 rounded-md">
+                    <div className="flex items-start gap-2">
+                      <div className="text-blue-600 text-sm">💡</div>
+                      <div className="text-xs text-blue-800">
+                        <p className="font-medium mb-1">Social Media QR Tips:</p>
+                        <ul className="space-y-1 text-xs">
+                          <li>• <strong>Instagram:</strong> Use your profile URL or @username</li>
+                          <li>• <strong>Facebook:</strong> Use your page URL or profile link</li>
+                          <li>• <strong>Snapchat:</strong> Use your Snapchat username</li>
+                          <li>• <strong>Twitter:</strong> Use your profile URL or @handle</li>
+                          <li>• <strong>LinkedIn:</strong> Use your profile or company page URL</li>
+                          <li>• <strong>YouTube:</strong> Use your channel URL</li>
+                          <li>• <strong>TikTok:</strong> Use your profile URL or @username</li>
+                          <li>• <strong>WhatsApp:</strong> Use your WhatsApp business link</li>
+                        </ul>
                       </div>
                     </div>
                   </div>
@@ -818,7 +1264,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             onClick={() => setUpiFormat('bharat-qr')}
                             className="flex-1"
                           >
-                            Bharat QR (Recommended)
+                            Bharat QR
                           </Button>
                           <Button
                             variant={upiFormat === 'upi-url' ? 'default' : 'outline'}
@@ -826,13 +1272,13 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             onClick={() => setUpiFormat('upi-url')}
                             className="flex-1"
                           >
-                            UPI URL
+                            UPI URL (Recommended)
                           </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {upiFormat === 'bharat-qr' 
-                            ? 'Uses official Bharat QR JSON format - better compatibility' 
-                            : 'Uses traditional UPI URL format - try if Bharat QR doesn\'t work'
+                            ? 'Uses official Bharat QR JSON format - try if UPI URL doesn\'t work' 
+                            : 'Uses standard UPI URL format - best compatibility with all UPI apps'
                           }
                         </p>
                       </div>
@@ -913,6 +1359,39 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                           <p className="text-xs text-muted-foreground">
                             This URL will be encoded in the QR code
                           </p>
+                          
+                          {/* Test UPI URL Button */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const upiUrl = generateUpiUrl(upiId, upiAmount, upiMerchantName, upiTransactionNote)
+                              if (upiFormat === 'upi-url') {
+                                // Try to open the UPI URL directly
+                                window.open(upiUrl, '_blank')
+                              } else {
+                                // For Bharat QR, copy to clipboard
+                                navigator.clipboard.writeText(upiUrl)
+                                alert('Bharat QR data copied to clipboard. Paste it into a QR generator to test.')
+                              }
+                            }}
+                            className="w-full"
+                          >
+                            {upiFormat === 'upi-url' ? 'Test UPI URL' : 'Copy Bharat QR Data'}
+                          </Button>
+                          
+                          {/* Debug Information */}
+                          <div className="space-y-1 p-2 bg-yellow-50 rounded border border-yellow-200">
+                            <div className="text-xs font-medium text-yellow-800">Debug Info:</div>
+                            <div className="text-xs text-yellow-700">
+                              <div>• Format: {upiFormat}</div>
+                              <div>• UPI ID: {upiId}</div>
+                              <div>• Currency: INR</div>
+                              <div>• Amount: {upiAmount || 'Not specified'}</div>
+                              <div>• Merchant: {upiMerchantName || upiId.split('@')[0]}</div>
+                              <div>• Note: {upiTransactionNote || 'Not specified'}</div>
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -924,10 +1403,28 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             <p className="font-medium mb-1">Important Notes:</p>
                             <ul className="space-y-1 text-xs">
                               <li>• UPI QR codes are designed for <strong>receiving payments</strong></li>
-                              <li>• <strong>Bharat QR format</strong> is the official standard and recommended</li>
-                              <li>• If you get alerts, try switching to <strong>UPI URL format</strong></li>
+                              <li>• <strong>UPI URL format</strong> is recommended for best compatibility</li>
+                              <li>• If you get alerts instead of payment intent, try switching formats</li>
                               <li>• Some UPI apps may show security alerts - this is normal</li>
                               <li>• Always verify the UPI ID before sharing</li>
+                              <li>• Test with Google Pay, PhonePe, or Paytm QR scanner</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Troubleshooting Section */}
+                      <div className="space-y-2 p-3 bg-red-50 rounded-md">
+                        <div className="flex items-start gap-2">
+                          <div className="text-red-600 text-sm">🔧</div>
+                          <div className="text-xs text-red-800">
+                            <p className="font-medium mb-1">Troubleshooting:</p>
+                            <ul className="space-y-1 text-xs">
+                              <li>• <strong>Getting alerts?</strong> Try UPI URL format instead of Bharat QR</li>
+                              <li>• <strong>Not opening UPI app?</strong> Use a UPI app's built-in QR scanner</li>
+                              <li>• <strong>Invalid UPI ID?</strong> Check format: username@bankname</li>
+                              <li>• <strong>Amount issues?</strong> Leave amount empty to allow any amount</li>
+                              <li>• <strong>Still not working?</strong> Try minimal UPI URL with just pa and cu</li>
                             </ul>
                           </div>
                         </div>
