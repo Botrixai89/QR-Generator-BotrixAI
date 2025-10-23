@@ -23,7 +23,7 @@ export async function POST(
     } = body
 
     // Get client IP from headers if not provided
-    const headersList = headers()
+    const headersList = await headers()
     const clientIP = ipAddress || 
       headersList.get('x-forwarded-for') || 
       headersList.get('x-real-ip') || 
@@ -329,7 +329,7 @@ async function triggerWebhook(webhookUrl: string, secret: string, payload: any) 
         webhookUrl,
         payload,
         responseStatus: 0,
-        responseBody: error.message,
+        responseBody: error instanceof Error ? error.message : 'Unknown error',
         isSuccessful: false
       })
   }

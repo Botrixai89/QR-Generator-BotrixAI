@@ -495,11 +495,29 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     }
   }, [isClient, url, qrOptions, isUpiPayment, upiId, upiAmount, upiMerchantName, upiTransactionNote])
 
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+      if (!allowedTypes.includes(file.type)) {
+        const { toast } = await import("sonner")
+        toast.error(`Invalid file type. Please upload an image file (JPEG, PNG, GIF, WebP, or SVG).`)
+        event.target.value = '' // Clear the input
+        return
+      }
+      
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+      if (file.size > maxSize) {
+        const { toast } = await import("sonner")
+        toast.error(`File too large. Please upload an image smaller than 5MB.`)
+        event.target.value = '' // Clear the input
+        return
+      }
+      
       const reader = new FileReader()
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const logoUrl = e.target?.result as string
         setQrOptions(prev => ({
           ...prev,
@@ -510,6 +528,13 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
             opacity: 1
           }
         }))
+        const { toast } = await import("sonner")
+        toast.success('Logo uploaded successfully!')
+      }
+      reader.onerror = async () => {
+        const { toast } = await import("sonner")
+        toast.error('Failed to read the file. Please try again.')
+        event.target.value = '' // Clear the input
       }
       reader.readAsDataURL(file)
     }
@@ -601,7 +626,13 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         } else {
           const errorData = await response.json()
           const { toast } = await import("sonner")
-          toast.error(errorData.error || "Failed to save QR code")
+          
+          if (response.status === 402 && errorData.error === 'no_credits') {
+            toast.error("You have no credits left. Please purchase more credits to continue.")
+            router.push("/pricing")
+          } else {
+            toast.error(errorData.error || "Failed to save QR code")
+          }
         }
       }
     } catch (error) {
@@ -1498,9 +1529,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                           type="datetime-local"
                           value={expiresAt}
                           onChange={(e) => setExpiresAt(e.target.value)}
+                          min="1900-01-01T00:00" // Allow past dates for testing purposes
                         />
                         <p className="text-xs text-muted-foreground">
-                          QR code will become inactive after this date
+                          QR code will become inactive after this date (past dates allowed for testing)
                         </p>
                       </div>
 

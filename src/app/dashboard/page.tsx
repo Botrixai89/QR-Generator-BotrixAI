@@ -154,6 +154,7 @@ export default function DashboardPage() {
     thisMonth: 0,
     lastMonth: 0
   })
+  const [userCredits, setUserCredits] = useState<number | null>(null)
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean
     qrCode: QRCodeData | null
@@ -177,6 +178,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (session?.user?.id) {
       fetchQrCodes()
+      fetchUserCredits()
     }
   }, [session])
 
@@ -224,6 +226,26 @@ export default function DashboardPage() {
       toast.error("Failed to load QR codes")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchUserCredits = async () => {
+    try {
+      const response = await fetch("/api/user/credits", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setUserCredits(data.credits)
+      } else {
+        console.error("Failed to fetch user credits")
+      }
+    } catch (error) {
+      console.error("Error fetching user credits:", error)
     }
   }
 
@@ -290,12 +312,29 @@ export default function DashboardPage() {
               Welcome back, {session.user?.name || session.user?.email}
             </p>
           </div>
-          <Button asChild>
-            <Link href="/">
-              <Plus className="h-4 w-4 mr-2" />
-              Create QR Code
-            </Link>
-          </Button>
+          <div className="flex items-center gap-4">
+            {userCredits !== null && (
+              <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
+                <Zap className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-900">
+                  Credits: {userCredits}
+                </span>
+                {userCredits <= 5 && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/pricing">
+                      Buy More
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            )}
+            <Button asChild>
+              <Link href="/">
+                <Plus className="h-4 w-4 mr-2" />
+                Create QR Code
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -439,6 +478,16 @@ export default function DashboardPage() {
                             <Link href={`/qr/${qrCode.id}?preview=true`}>
                               <Eye className="h-4 w-4" />
                             </Link>
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              // Show analytics modal or navigate to analytics page
+                              toast.info(`Analytics for "${qrCode.title}": ${qrCode.downloadCount} downloads, ${qrCode.scanCount || 0} scans`)
+                            }}
+                          >
+                            <BarChart3 className="h-4 w-4" />
                           </Button>
                           <Button 
                             variant="outline" 

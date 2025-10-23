@@ -1,0 +1,250 @@
+"use client"
+
+import { useState } from "react"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Check, Zap, Star } from "lucide-react"
+import { toast } from "sonner"
+
+declare global {
+  interface Window {
+    Razorpay: any
+  }
+}
+
+export default function PricingPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handlePurchase = async () => {
+    if (!session) {
+      router.push("/auth/signin")
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // Create Razorpay order
+      const response = await fetch("/api/razorpay/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ plan: "FLEX" }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to create order")
+      }
+
+      const { order_id } = await response.json()
+
+      // Load Razorpay script if not already loaded
+      if (!window.Razorpay) {
+        const script = document.createElement("script")
+        script.src = "https://checkout.razorpay.com/v1/checkout.js"
+        script.async = true
+        document.head.appendChild(script)
+        
+        await new Promise((resolve) => {
+          script.onload = resolve
+        })
+      }
+
+      // Open Razorpay checkout
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: 30000, // ₹300 in paise
+        currency: "INR",
+        name: "QR Generator",
+        description: "Flex Plan - 100 Credits",
+        order_id: order_id,
+        handler: async function (response: any) {
+          try {
+            // Verify payment
+            const verifyResponse = await fetch("/api/razorpay/verify", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            })
+
+            if (!verifyResponse.ok) {
+              throw new Error("Payment verification failed")
+            }
+
+            const result = await verifyResponse.json()
+            
+            toast.success(`Payment successful! ${result.credits} credits added to your account`)
+            router.push("/dashboard")
+          } catch (error) {
+            console.error("Payment verification error:", error)
+            toast.error("Payment verification failed. Please contact support.")
+          }
+        },
+        prefill: {
+          name: session.user?.name || "",
+          email: session.user?.email || "",
+        },
+        theme: {
+          color: "#2563eb",
+        },
+        modal: {
+          ondismiss: function() {
+            setIsLoading(false)
+          }
+        }
+      }
+
+      const razorpay = new window.Razorpay(options)
+      razorpay.open()
+    } catch (error) {
+      console.error("Payment error:", error)
+      toast.error("Failed to initiate payment. Please try again.")
+      setIsLoading(false)
+    }
+  }
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Choose Your Plan
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Get started with free credits or upgrade to our Flex plan for unlimited QR code generation
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {/* Free Plan */}
+          <Card className="relative">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-blue-600" />
+                Free Plan
+              </CardTitle>
+              <CardDescription>
+                Perfect for getting started
+              </CardDescription>
+              <div className="text-3xl font-bold text-gray-900">
+                ₹0
+                <span className="text-lg font-normal text-gray-500">/month</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>10 free credits</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>Basic QR customization</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>PNG & SVG downloads</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>QR analytics</span>
+                </li>
+              </ul>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                disabled
+              >
+                Current Plan
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Flex Plan */}
+          <Card className="relative border-blue-500 shadow-lg">
+            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+              <Badge className="bg-blue-600 text-white px-4 py-1">
+                <Star className="h-3 w-3 mr-1" />
+                Save ₹100 vs competitor
+              </Badge>
+            </div>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Star className="h-5 w-5 text-blue-600" />
+                Flex Plan
+              </CardTitle>
+              <CardDescription>
+                Most popular choice
+              </CardDescription>
+              <div className="text-3xl font-bold text-gray-900">
+                ₹300
+                <span className="text-lg font-normal text-gray-500">/one-time</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>100 credits included</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>All Free plan features</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>Advanced QR customization</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>Dynamic QR codes</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>Priority support</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>Bulk QR generation</span>
+                </li>
+              </ul>
+              <Button 
+                onClick={handlePurchase}
+                disabled={isLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {isLoading ? "Processing..." : "Buy now — ₹300"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="text-center mt-12">
+          <p className="text-gray-600">
+            Need more credits? Purchase additional credits anytime from your dashboard.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}

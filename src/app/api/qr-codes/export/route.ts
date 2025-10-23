@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     if (dateRange && dateRange.start && dateRange.end) {
       filteredQrCodes = qrCodes.map(qrCode => ({
         ...qrCode,
-        QrCodeScan: qrCode.QrCodeScan.filter(scan => {
+        QrCodeScan: qrCode.QrCodeScan.filter((scan: any) => {
           const scanDate = new Date(scan.scannedAt)
           const startDate = new Date(dateRange.start)
           const endDate = new Date(dateRange.end)
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Return file as response
-    return new NextResponse(fileContent, {
+    return new NextResponse(fileContent as string, {
       status: 200,
       headers: {
         'Content-Type': contentType,
@@ -139,33 +139,33 @@ function generateExportData(qrCodes: any[], includeAnalytics: boolean, includeSc
     if (includeAnalytics) {
       const analytics = {
         totalScans: scans.length,
-        uniqueDevices: new Set(scans.map(s => s.device)).size,
-        uniqueCountries: new Set(scans.map(s => s.country).filter(Boolean)).size,
-        uniqueCities: new Set(scans.map(s => s.city).filter(Boolean)).size,
-        scansByDevice: scans.reduce((acc, scan) => {
+        uniqueDevices: new Set(scans.map((s: any) => s.device)).size,
+        uniqueCountries: new Set(scans.map((s: any) => s.country).filter(Boolean)).size,
+        uniqueCities: new Set(scans.map((s: any) => s.city).filter(Boolean)).size,
+        scansByDevice: scans.reduce((acc: any, scan: any) => {
           acc[scan.device || 'Unknown'] = (acc[scan.device || 'Unknown'] || 0) + 1
           return acc
         }, {}),
-        scansByCountry: scans.reduce((acc, scan) => {
+        scansByCountry: scans.reduce((acc: any, scan: any) => {
           if (scan.country) {
             acc[scan.country] = (acc[scan.country] || 0) + 1
           }
           return acc
         }, {}),
-        scansByBrowser: scans.reduce((acc, scan) => {
+        scansByBrowser: scans.reduce((acc: any, scan: any) => {
           acc[scan.browser || 'Unknown'] = (acc[scan.browser || 'Unknown'] || 0) + 1
           return acc
         }, {}),
-        scansByOS: scans.reduce((acc, scan) => {
+        scansByOS: scans.reduce((acc: any, scan: any) => {
           acc[scan.os || 'Unknown'] = (acc[scan.os || 'Unknown'] || 0) + 1
           return acc
         }, {}),
-        scansByDate: scans.reduce((acc, scan) => {
+        scansByDate: scans.reduce((acc: any, scan: any) => {
           const date = new Date(scan.scannedAt).toISOString().split('T')[0]
           acc[date] = (acc[date] || 0) + 1
           return acc
         }, {}),
-        abTestResults: scans.reduce((acc, scan) => {
+        abTestResults: scans.reduce((acc: any, scan: any) => {
           if (scan.abTestVariant) {
             acc[scan.abTestVariant] = (acc[scan.abTestVariant] || 0) + 1
           }
@@ -176,7 +176,7 @@ function generateExportData(qrCodes: any[], includeAnalytics: boolean, includeSc
       return {
         ...baseData,
         analytics,
-        ...(includeScans && { scans: scans.map(scan => ({
+        ...(includeScans && { scans: scans.map((scan: any) => ({
           scannedAt: scan.scannedAt,
           device: scan.device,
           browser: scan.browser,

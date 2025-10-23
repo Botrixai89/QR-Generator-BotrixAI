@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { QrCode, BarChart3, LogOut, User } from "lucide-react"
+import { QrCode, BarChart3, LogOut, User, CreditCard } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ThemeToggle } from "./theme-toggle"
@@ -73,6 +73,12 @@ export default function Navigation() {
                 <span>Dashboard</span>
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/pricing" className="flex items-center">
+                <CreditCard className="mr-2 h-4 w-4" />
+                <span>Pricing</span>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="flex items-center">
               <LogOut className="mr-2 h-4 w-4" />
@@ -131,6 +137,12 @@ export default function Navigation() {
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Dashboard
+                </Link>
+                <Link 
+                  href="/pricing" 
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Pricing
                 </Link>
                 <Link 
                   href="/test-dynamic" 

@@ -139,9 +139,9 @@ async function processBulkOperation(
   options: any
 ) {
   const results = {
-    successful: [],
-    failed: [],
-    errors: []
+    successful: [] as any[],
+    failed: [] as any[],
+    errors: [] as any[]
   }
 
   let processedCount = 0
@@ -178,7 +178,7 @@ async function processBulkOperation(
         results.failed.push(qrCodeData)
         results.errors.push({
           qrCode: qrCodeData,
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         })
         failedCount++
       }
@@ -329,14 +329,14 @@ async function exportBulkQRCode(qrCodeData: any, userId: string) {
   const scans = qrCode.QrCodeScan || []
   const analytics = {
     totalScans: scans.length,
-    uniqueDevices: new Set(scans.map(s => s.device)).size,
-    uniqueCountries: new Set(scans.map(s => s.country).filter(Boolean)).size,
-    uniqueCities: new Set(scans.map(s => s.city).filter(Boolean)).size,
-    scansByDevice: scans.reduce((acc, scan) => {
+    uniqueDevices: new Set(scans.map((s: any) => s.device)).size,
+    uniqueCountries: new Set(scans.map((s: any) => s.country).filter(Boolean)).size,
+    uniqueCities: new Set(scans.map((s: any) => s.city).filter(Boolean)).size,
+    scansByDevice: scans.reduce((acc: any, scan: any) => {
       acc[scan.device || 'Unknown'] = (acc[scan.device || 'Unknown'] || 0) + 1
       return acc
     }, {}),
-    scansByCountry: scans.reduce((acc, scan) => {
+    scansByCountry: scans.reduce((acc: any, scan: any) => {
       if (scan.country) {
         acc[scan.country] = (acc[scan.country] || 0) + 1
       }

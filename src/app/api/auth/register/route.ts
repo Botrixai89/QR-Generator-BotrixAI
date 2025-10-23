@@ -21,6 +21,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: "Database not configured" },
+        { status: 500 }
+      )
+    }
+
     const { data: existingUser, error: checkError } = await supabaseAdmin
       .from('User')
       .select('id')
@@ -48,13 +55,15 @@ export async function POST(request: NextRequest) {
     // Create user
     const userId = randomUUID()
     const now = new Date().toISOString()
-    const { data: user, error: createError } = await supabaseAdmin
+    const { data: user, error: createError } = await supabaseAdmin!
       .from('User')
       .insert({
         id: userId,
         name,
         email,
         password: hashedPassword,
+        credits: 10, // Give new users 10 free credits
+        plan: 'FREE', // Set default plan to FREE
         createdAt: now,
         updatedAt: now,
       })

@@ -16,6 +16,10 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        if (!supabaseAdmin) {
+          return null
+        }
+
         const { data: user, error } = await supabaseAdmin
           .from('User')
           .select('id, email, name, password, image')

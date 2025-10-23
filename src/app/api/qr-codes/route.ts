@@ -34,6 +34,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check user credits before creating QR code
+    const { data: user, error: userError } = await supabaseAdmin!
+      .from('User')
+      .select('credits')
+      .eq('id', session.user.id)
+      .single()
+
+    if (userError || !user) {
+      console.error("Error fetching user credits:", userError)
+      return NextResponse.json(
+        { error: "Failed to fetch user data" },
+        { status: 500 }
+      )
+    }
+
+    if ((user.credits || 0) <= 0) {
+      console.log("User has no credits:", user.credits)
+      return NextResponse.json(
+        { error: "no_credits" },
+        { status: 402 }
+      )
+    }
+
     const formData = await request.formData()
     const url = formData.get("url") as string
     const title = formData.get("title") as string
@@ -70,6 +93,24 @@ export async function POST(request: NextRequest) {
     let logoUrl = null
     if (logoFile && logoFile.size > 0) {
       try {
+        // Validate file type on server side
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+        if (!allowedTypes.includes(logoFile.type)) {
+          return NextResponse.json(
+            { error: "Invalid file type. Please upload an image file (JPEG, PNG, GIF, WebP, or SVG)." },
+            { status: 400 }
+          )
+        }
+        
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+        if (logoFile.size > maxSize) {
+          return NextResponse.json(
+            { error: "File too large. Please upload an image smaller than 5MB." },
+            { status: 400 }
+          )
+        }
+        
         // Create a unique filename
         const timestamp = Date.now()
         const sanitizedFileName = logoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
@@ -91,8 +132,10 @@ export async function POST(request: NextRequest) {
         console.log("Logo uploaded successfully:", logoUrl)
       } catch (error) {
         console.error("Error uploading logo:", error)
-        // Continue without logo if upload fails
-        logoUrl = null
+        return NextResponse.json(
+          { error: "Failed to upload logo. Please try again." },
+          { status: 500 }
+        )
       }
     }
 
@@ -194,6 +237,22 @@ export async function POST(request: NextRequest) {
     }
     
     console.log("QR code created successfully:", qrCode)
+
+    // Deduct 1 credit from user
+    const { error: creditError } = await supabaseAdmin!
+      .from('User')
+      .update({
+        credits: (user.credits || 0) - 1
+      })
+      .eq('id', session.user.id)
+
+    if (creditError) {
+      console.error("Error deducting credit:", creditError)
+      // Note: QR code was already created, so we don't fail the request
+      // This could be handled by a background job or manual reconciliation
+    } else {
+      console.log("Credit deducted successfully")
+    }
 
     return NextResponse.json(qrCode, { status: 201 })
   } catch (error) {

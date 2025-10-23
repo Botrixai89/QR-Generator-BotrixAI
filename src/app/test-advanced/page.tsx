@@ -1,3 +1,5 @@
+"use client"
+
 // Test page to verify advanced QR features
 import { createAdvancedQR } from '@/lib/qr-code-advanced'
 import { QR_TEMPLATES } from '@/types/qr-code-advanced'
@@ -19,7 +21,7 @@ export default function TestAdvancedQR() {
       })
       console.log('✅ Basic QR generation: PASSED')
     } catch (error) {
-      console.log('❌ Basic QR generation: FAILED -', error.message)
+      console.log('❌ Basic QR generation: FAILED -', (error as Error).message)
     }
 
     // Test 2: Template application
@@ -34,7 +36,7 @@ export default function TestAdvancedQR() {
       })
       console.log('✅ Template application: PASSED')
     } catch (error) {
-      console.log('❌ Template application: FAILED -', error.message)
+      console.log('❌ Template application: FAILED -', (error as Error).message)
     }
 
     // Test 3: Shape application
@@ -49,7 +51,7 @@ export default function TestAdvancedQR() {
       })
       console.log('✅ Shape application: PASSED')
     } catch (error) {
-      console.log('❌ Shape application: FAILED -', error.message)
+      console.log('❌ Shape application: FAILED -', (error as Error).message)
     }
 
     // Test 4: Gradient application
@@ -68,7 +70,7 @@ export default function TestAdvancedQR() {
       })
       console.log('✅ Gradient application: PASSED')
     } catch (error) {
-      console.log('❌ Gradient application: FAILED -', error.message)
+      console.log('❌ Gradient application: FAILED -', (error as Error).message)
     }
 
     // Test 5: Effects application
@@ -87,7 +89,7 @@ export default function TestAdvancedQR() {
       })
       console.log('✅ Effects application: PASSED')
     } catch (error) {
-      console.log('❌ Effects application: FAILED -', error.message)
+      console.log('❌ Effects application: FAILED -', (error as Error).message)
     }
 
     // Test 6: All templates
@@ -104,7 +106,7 @@ export default function TestAdvancedQR() {
         })
         templateCount++
       } catch (error) {
-        console.log(`❌ Template ${id}: FAILED -`, error.message)
+        console.log(`❌ Template ${id}: FAILED -`, (error as Error).message)
       }
     }
     console.log(`✅ Templates: ${templateCount}/${Object.keys(QR_TEMPLATES).length} PASSED`)
