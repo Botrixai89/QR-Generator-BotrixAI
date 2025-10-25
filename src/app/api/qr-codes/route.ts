@@ -120,16 +120,31 @@ export async function POST(request: NextRequest) {
         const bytes = await logoFile.arrayBuffer()
         const buffer = Buffer.from(bytes)
         
-        // Write file to public/uploads directory
-        const fs = require('fs').promises
-        const path = require('path')
-        const uploadPath = path.join(process.cwd(), 'public', 'uploads', fileName)
-        
-        await fs.writeFile(uploadPath, buffer)
-        
-        // Set logoUrl to the public path
-        logoUrl = `/uploads/${fileName}`
-        console.log("Logo uploaded successfully:", logoUrl)
+        // Upload to Supabase Storage instead of local filesystem
+        const { data: uploadData, error: uploadError } = await supabaseAdmin!
+          .storage
+          .from('qr-logos')
+          .upload(fileName, buffer, {
+            contentType: logoFile.type,
+            upsert: false
+          })
+
+        if (uploadError) {
+          console.error("Error uploading to Supabase Storage:", uploadError)
+          return NextResponse.json(
+            { error: "Failed to upload logo. Please try again." },
+            { status: 500 }
+          )
+        }
+
+        // Get public URL
+        const { data: urlData } = supabaseAdmin!
+          .storage
+          .from('qr-logos')
+          .getPublicUrl(fileName)
+
+        logoUrl = urlData.publicUrl
+        console.log("Logo uploaded successfully to Supabase:", logoUrl)
       } catch (error) {
         console.error("Error uploading logo:", error)
         return NextResponse.json(

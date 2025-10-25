@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
-import Razorpay from "razorpay"
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-})
+// Dynamic import for Razorpay to avoid SSR issues
+const getRazorpay = async () => {
+  const Razorpay = (await import("razorpay")).default
+  return new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID!,
+    key_secret: process.env.RAZORPAY_KEY_SECRET!,
+  })
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,6 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Razorpay order for ₹300 (30000 paise)
+    const razorpay = await getRazorpay()
     const order = await razorpay.orders.create({
       amount: 30000, // ₹300 in paise
       currency: 'INR',
