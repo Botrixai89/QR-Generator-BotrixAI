@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Loader2, ExternalLink, BarChart3, Clock, Users, QrCode, Download } from "lucide-react"
 import QRCodeStyling from "qr-code-styling"
 import { addBotrixLogoToQR } from "@/lib/qr-watermark"
+import { createAdvancedQR } from "@/lib/qr-code-advanced"
+import type { AdvancedQROptions } from "@/types/qr-code-advanced"
 
 interface QRCodeData {
   id: string
@@ -25,6 +27,13 @@ interface QRCodeData {
   cornerType?: string
   hasWatermark?: boolean
   logoUrl?: string
+  // Advanced customization persisted in DB (optional)
+  template?: string
+  shape?: string
+  eyePattern?: string
+  gradient?: any
+  sticker?: any
+  effects?: any
 }
 
 interface Analytics {
@@ -46,6 +55,7 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
 }) {
   const qrRef = useRef<HTMLDivElement>(null)
   const qrCodeRef = useRef<QRCodeStyling | null>(null)
+  const advancedRef = useRef<any>(null)
   const [isClient, setIsClient] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
@@ -67,64 +77,58 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
       if (qrCodeRef.current) {
         qrCodeRef.current = null
       }
+      advancedRef.current = null
       
       qrRef.current.innerHTML = ""
       
       try {
-        // For dynamic QR codes, use the redirect URL if available, otherwise use the QR code URL
+        // For dynamic QR codes, use the redirect URL if available, otherwise link to hosted QR route
         const qrData = qrCode.isDynamic 
           ? (qrCode.redirectUrl || `${window.location.origin}/qr/${qrCode.id}`)
           : qrCode.url
 
-        qrCodeRef.current = new QRCodeStyling({
+        // Use the same advanced generator as the live preview to keep rendering consistent
+        const advancedOptions: AdvancedQROptions = {
+          data: qrData,
           width: 300,
           height: 300,
-          type: "svg",
-          data: qrData,
-          image: qrCode.logoUrl || undefined,
-          dotsOptions: {
-            color: qrCode.foregroundColor || '#000000',
-            type: (qrCode.dotType as any) || 'square',
-          },
-          backgroundOptions: {
-            color: formattedBackgroundColor,
-          },
-          cornersSquareOptions: {
-            color: qrCode.foregroundColor || '#000000',
-            type: (qrCode.cornerType as any) || 'square',
-          },
-          cornersDotOptions: {
-            color: qrCode.foregroundColor || '#000000',
-            type: (qrCode.dotType as any) || 'square',
-          },
-          // Enhanced quality settings for better rendering
-          qrOptions: {
-            typeNumber: 0, // Auto-detect optimal type number
-            mode: 'Byte',
-            errorCorrectionLevel: 'M', // Medium error correction for better quality
-          },
-        })
-        
-        if (qrCodeRef.current && qrRef.current) {
-          qrCodeRef.current.append(qrRef.current)
-          
-          // Add watermark after QR code is rendered with better error handling
-          setTimeout(() => {
-            try {
-              if (qrRef.current && qrCode.hasWatermark) {
-                const svg = qrRef.current.querySelector('svg')
-                if (svg) {
-                  addBotrixLogoToQR(svg)
-                }
-              }
-              setIsGenerating(false)
-            } catch (watermarkError) {
-              console.warn('Watermark application failed:', watermarkError)
-              setIsGenerating(false)
-              // Continue without watermark rather than failing completely
-            }
-          }, 200)
+          type: 'svg',
+          foregroundColor: qrCode.foregroundColor || '#000000',
+          backgroundColor: formattedBackgroundColor,
+          dotType: (qrCode.dotType as any) || 'square',
+          cornerType: (qrCode.cornerType as any) || 'square',
+          eyePattern: (qrCode.eyePattern as any) || 'square',
+          template: qrCode.template as any,
+          shape: qrCode.shape as any,
+          gradient: qrCode.gradient as any,
+          sticker: qrCode.sticker as any,
+          effects: qrCode.effects as any,
+          // Map stored logo URL (if any) to advanced logo config
+          logo: qrCode.logoUrl ? { image: qrCode.logoUrl, size: 0.25, margin: 5, opacity: 1 } : undefined,
+          // Persist watermark choice
+          watermark: !!qrCode.hasWatermark,
         }
+
+        const generator = createAdvancedQR(advancedOptions)
+        advancedRef.current = generator
+        void generator.generate(qrRef.current)
+          .then(() => {
+            try {
+              // Ensure watermark is present even if advanced pipeline skips it
+              if (qrRef.current && qrCode.hasWatermark) {
+                // Use a small delay to ensure SVG is fully rendered
+                setTimeout(() => {
+                  const svg = qrRef.current?.querySelector('svg')
+                  if (svg) {
+                    addBotrixLogoToQR(svg)
+                  }
+                }, 100)
+              }
+            } finally {
+              setIsGenerating(false)
+            }
+          })
+          .catch(() => setIsGenerating(false))
       } catch (error) {
         console.error("Error creating QR code preview:", error)
         setGenerationError(error instanceof Error ? error.message : 'Failed to generate QR code')
@@ -135,6 +139,30 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
       }
     }
   }, [isClient, qrCode])
+
+  // Ensure watermark persists after any render or update
+  useEffect(() => {
+    if (!isClient || !qrRef.current || !qrCode?.hasWatermark) return
+    
+    const applyWatermark = () => {
+      try {
+        const svg = qrRef.current?.querySelector('svg')
+        if (svg) {
+          addBotrixLogoToQR(svg)
+        }
+      } catch (error) {
+        console.warn('Failed to apply watermark:', error)
+      }
+    }
+    
+    // Apply watermark after a short delay to ensure SVG is fully rendered
+    const timeoutId = setTimeout(applyWatermark, 150)
+    
+    // Also try to apply immediately in case SVG is already ready
+    applyWatermark()
+    
+    return () => clearTimeout(timeoutId)
+  }, [isClient, qrCode?.hasWatermark, qrCode?.logoUrl])
 
   const handleDownload = async (format: 'png' | 'svg') => {
     if (!qrRef.current) return

@@ -379,6 +379,8 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       threeD: false,
     }
   })
+  // Persist the raw logo file for upload to backend
+  const [logoFile, setLogoFile] = useState<File | null>(null)
   
   const qrRef = useRef<HTMLDivElement>(null)
   const qrGeneratorRef = useRef<any>(null)
@@ -485,7 +487,21 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       const timeoutId = setTimeout(() => {
         try {
           qrGeneratorRef.current = createAdvancedQR(options)
-          qrGeneratorRef.current.generate(qrRef.current)
+          const result = qrGeneratorRef.current.generate(qrRef.current)
+          // Ensure watermark is visible in preview when enabled
+          Promise.resolve(result).then(() => {
+            try {
+              if (qrRef.current && (options.watermark || false)) {
+                const svg = qrRef.current.querySelector('svg') as unknown as SVGElement | null
+                if (svg) {
+                  // Lazy import to avoid duplicate bundle cost on server
+                  import('@/lib/qr-watermark').then(({ addBotrixLogoToQR }) => {
+                    addBotrixLogoToQR(svg as unknown as SVGElement)
+                  }).catch(() => { /* no-op */ })
+                }
+              }
+            } catch { /* no-op */ }
+          })
         } catch (error) {
           console.error('Error generating QR code:', error)
         }
@@ -494,6 +510,24 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       return () => clearTimeout(timeoutId)
     }
   }, [isClient, url, qrOptions, isUpiPayment, upiId, upiAmount, upiMerchantName, upiTransactionNote])
+
+  // Ensure watermark persists after logo uploads or option changes
+  useEffect(() => {
+    if (!isClient || !qrRef.current) return
+    if (!(qrOptions.watermark || false)) return
+    // Re-apply watermark shortly after any logo change which may trigger re-render
+    const tid = setTimeout(() => {
+      try {
+        const svg = qrRef.current!.querySelector('svg') as unknown as SVGElement | null
+        if (svg) {
+          import('@/lib/qr-watermark').then(({ addBotrixLogoToQR }) => {
+            addBotrixLogoToQR(svg as unknown as SVGElement)
+          }).catch(() => { /* no-op */ })
+        }
+      } catch { /* no-op */ }
+    }, 120)
+    return () => clearTimeout(tid)
+  }, [isClient, qrOptions.logo, qrOptions.watermark])
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -519,6 +553,9 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         return
       }
       
+      // Keep the file so we can send it to the API for storage
+      setLogoFile(file)
+
       const reader = new FileReader()
       reader.onload = async (e) => {
         const logoUrl = e.target?.result as string
@@ -607,6 +644,11 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         }
         if (qrOptions.effects) {
           formData.append("effects", JSON.stringify(qrOptions.effects))
+        }
+
+        // Attach logo file if available so backend persists it and returns logoUrl
+        if (logoFile) {
+          formData.append("logo", logoFile)
         }
 
         const response = await fetch("/api/qr-codes", {

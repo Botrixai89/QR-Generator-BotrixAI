@@ -1,13 +1,17 @@
 // Enhanced utility function to add BotrixAI logo watermark to QR code SVG
 export const addBotrixLogoToQR = (svg: SVGElement) => {
-  // Remove existing Botrix logo if any
-  const existingLogo = svg.querySelector('#botrix-logo')
+  // Use unique IDs to avoid conflicts with user-uploaded center logos
+  const WATERMARK_ID = 'botrix-watermark'
+  const WATERMARK_BG_ID = 'botrix-watermark-bg'
+
+  // Remove existing Botrix watermark if any
+  const existingLogo = svg.querySelector(`#${WATERMARK_ID}`)
   if (existingLogo) {
     existingLogo.remove()
   }
   
   // Remove existing background if any
-  const existingBg = svg.querySelector('#botrix-logo-bg')
+  const existingBg = svg.querySelector(`#${WATERMARK_BG_ID}`)
   if (existingBg) {
     existingBg.remove()
   }
@@ -27,7 +31,7 @@ export const addBotrixLogoToQR = (svg: SVGElement) => {
   
   // Create enhanced background with subtle shadow
   const bgCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-  bgCircle.setAttribute('id', 'botrix-logo-bg')
+  bgCircle.setAttribute('id', WATERMARK_BG_ID)
   bgCircle.setAttribute('cx', (logoX + logoSize / 2).toString())
   bgCircle.setAttribute('cy', (logoY + logoSize / 2).toString())
   bgCircle.setAttribute('r', (logoSize / 2 + 3).toString())
@@ -61,7 +65,7 @@ export const addBotrixLogoToQR = (svg: SVGElement) => {
   
   // Create enhanced Botrix logo image with better positioning
   const logoImage = document.createElementNS('http://www.w3.org/2000/svg', 'image')
-  logoImage.setAttribute('id', 'botrix-logo')
+  logoImage.setAttribute('id', WATERMARK_ID)
   logoImage.setAttribute('href', '/botrix-logo01.png')
   logoImage.setAttribute('x', (logoX + 2).toString())
   logoImage.setAttribute('y', (logoY + 2).toString())
@@ -70,7 +74,20 @@ export const addBotrixLogoToQR = (svg: SVGElement) => {
   logoImage.setAttribute('preserveAspectRatio', 'xMidYMid meet')
   logoImage.setAttribute('clip-path', 'circle(50%)')
   
-  // Add elements to SVG
+  // Ensure watermark appears on top by appending to the end of SVG
+  // SVG renders elements in order, so last elements appear on top
   svg.appendChild(bgCircle)
   svg.appendChild(logoImage)
+  
+  // Force repaint to ensure watermark is visible
+  // Use a small delay to ensure all other rendering is complete
+  requestAnimationFrame(() => {
+    // Verify watermark is still present
+    const checkWatermark = svg.querySelector(`#${WATERMARK_ID}`)
+    if (!checkWatermark) {
+      // Re-apply if somehow removed
+      svg.appendChild(bgCircle.cloneNode(true) as SVGElement)
+      svg.appendChild(logoImage.cloneNode(true) as SVGElement)
+    }
+  })
 }

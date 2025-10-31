@@ -120,14 +120,44 @@ export async function POST(request: NextRequest) {
         const bytes = await logoFile.arrayBuffer()
         const buffer = Buffer.from(bytes)
         
-        // Upload to Supabase Storage instead of local filesystem
-        const { data: uploadData, error: uploadError } = await supabaseAdmin!
+        // Ensure bucket exists (auto-create if missing)
+        try {
+          const storageAny = (supabaseAdmin as any).storage
+          const { data: buckets } = await storageAny.listBuckets?.()
+          const bucketExists = Array.isArray(buckets) && buckets.some((b: any) => b.name === 'qr-logos' || b.id === 'qr-logos')
+          if (!bucketExists && storageAny.createBucket) {
+            await storageAny.createBucket('qr-logos', { public: true })
+          }
+        } catch (bucketCheckErr) {
+          console.warn('Bucket check/create failed (proceeding to upload):', bucketCheckErr)
+        }
+
+        // Upload to Supabase Storage
+        let { data: uploadData, error: uploadError } = await supabaseAdmin!
           .storage
           .from('qr-logos')
           .upload(fileName, buffer, {
             contentType: logoFile.type,
             upsert: false
           })
+
+        // If bucket was missing and upload failed, try to create and retry once
+        if (uploadError && (uploadError as any).status === 400) {
+          try {
+            const storageAny = (supabaseAdmin as any).storage
+            if (storageAny.createBucket) {
+              await storageAny.createBucket('qr-logos', { public: true })
+              const retry = await supabaseAdmin!.storage.from('qr-logos').upload(fileName, buffer, {
+                contentType: logoFile.type,
+                upsert: false,
+              })
+              uploadData = retry.data
+              uploadError = retry.error as any
+            }
+          } catch (retryErr) {
+            console.warn('Retry after bucket create failed:', retryErr)
+          }
+        }
 
         if (uploadError) {
           console.error("Error uploading to Supabase Storage:", uploadError)
