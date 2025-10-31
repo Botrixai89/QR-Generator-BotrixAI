@@ -89,7 +89,7 @@ export default function Home() {
             <CardHeader>
               <CardTitle>Try It Out</CardTitle>
               <CardDescription>
-                Generate a QR code with advanced features right now - no account required for basic usage
+                Configure your QR code below. To generate and save, please sign up first.
               </CardDescription>
             </CardHeader>
             <CardContent>

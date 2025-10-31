@@ -24,6 +24,7 @@ import QRCodeStyling from "qr-code-styling"
 import DynamicQRManager from "@/components/dynamic-qr-manager"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { addBotrixLogoToQR } from "@/lib/qr-watermark"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 interface QRCodeData {
   id: string
@@ -164,6 +165,12 @@ export default function DashboardPage() {
     qrCode: null,
     isDeleting: false
   })
+  const [analyticsDialog, setAnalyticsDialog] = useState<{
+    open: boolean
+    qrCode: QRCodeData | null
+    isLoading: boolean
+    data: any | null
+  }>({ open: false, qrCode: null, isLoading: false, data: null })
 
   useEffect(() => {
     setIsClient(true)
@@ -283,6 +290,23 @@ export default function DashboardPage() {
       console.error("Error deleting QR code:", error)
       toast.error("Failed to delete QR code")
       setDeleteDialog(prev => ({ ...prev, isDeleting: false }))
+    }
+  }
+
+  const openAnalytics = async (qrCode: QRCodeData) => {
+    setAnalyticsDialog({ open: true, qrCode, isLoading: true, data: null })
+    try {
+      const res = await fetch(`/api/qr-codes/${qrCode.id}/scan`)
+      if (res.ok) {
+        const data = await res.json()
+        setAnalyticsDialog(prev => ({ ...prev, isLoading: false, data }))
+      } else {
+        setAnalyticsDialog(prev => ({ ...prev, isLoading: false }))
+        toast.error("Failed to load analytics")
+      }
+    } catch (e) {
+      setAnalyticsDialog(prev => ({ ...prev, isLoading: false }))
+      toast.error("Failed to load analytics")
     }
   }
 
@@ -482,12 +506,17 @@ export default function DashboardPage() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => {
-                              // Show analytics modal or navigate to analytics page
-                              toast.info(`Analytics for "${qrCode.title}": ${qrCode.downloadCount} downloads, ${qrCode.scanCount || 0} scans`)
-                            }}
+                            onClick={() => openAnalytics(qrCode)}
                           >
-                            <BarChart3 className="h-4 w-4" />
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            Analytics
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openAnalytics(qrCode)}
+                          >
+                            Download Stats
                           </Button>
                           <Button 
                             variant="outline" 
@@ -519,6 +548,62 @@ export default function DashboardPage() {
         isLoading={deleteDialog.isDeleting}
         variant="destructive"
       />
+
+      {/* Analytics Dialog */}
+      <Dialog open={analyticsDialog.open} onOpenChange={(open) => setAnalyticsDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Analytics</DialogTitle>
+            <DialogDescription>
+              {analyticsDialog.qrCode ? analyticsDialog.qrCode.title : "Loading..."}
+            </DialogDescription>
+          </DialogHeader>
+          {analyticsDialog.isLoading ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">Loading analytics…</div>
+          ) : analyticsDialog.data ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-4 text-sm">
+                <span>Downloads: <strong>{analyticsDialog.qrCode?.downloadCount ?? 0}</strong></span>
+                <span>Scans: <strong>{analyticsDialog.data.qrCode?.scanCount ?? analyticsDialog.data.analytics?.totalScans ?? 0}</strong></span>
+                <span>Last Scanned: <strong>{analyticsDialog.qrCode?.lastScannedAt ? new Date(analyticsDialog.qrCode.lastScannedAt).toLocaleString() : "Never"}</strong></span>
+              </div>
+              {analyticsDialog.data.analytics?.scans?.length ? (
+                <div className="max-h-64 overflow-auto border rounded">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left">
+                        <th className="p-2">Time</th>
+                        <th className="p-2">Device</th>
+                        <th className="p-2">Browser</th>
+                        <th className="p-2">Country</th>
+                        <th className="p-2">City</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analyticsDialog.data.analytics.scans.map((s: any, i: number) => (
+                        <tr key={i} className="border-t">
+                          <td className="p-2">{s.createdAt ? new Date(s.createdAt).toLocaleString() : "-"}</td>
+                          <td className="p-2">{s.device || "-"}</td>
+                          <td className="p-2">{s.browser || "-"}</td>
+                          <td className="p-2">{s.country || "-"}</td>
+                          <td className="p-2">{s.city || "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">No scans yet.</div>
+              )}
+            </div>
+          ) : (
+            <div className="py-8 text-center text-sm text-muted-foreground">No analytics available.</div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAnalyticsDialog(prev => ({ ...prev, open: false }))}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -4,5 +4,15 @@
   "scope": "codebase",
   "localEndpoint": "http://localhost:3000",
   "loginUser": "ankush.kumar210701@gmail.com",
-  "loginPassword": "123456"
+  "loginPassword": "123456",
+  "executionArgs": {
+    "projectName": "qr_generator",
+    "projectPath": "D:\\qr_generator",
+    "testIds": [],
+    "additionalInstruction": "Focus re-run on navigation to /auth/signup, dashboard analytics buttons vs delete, scan analytics increment after visiting /qr/[id], and logo upload rejecting non-image extensions. Prefer localhost:3000.",
+    "envs": {
+      "API_KEY": "sk-user-yt5QICFLMnIn9N6Nj65exbs5ggcsX7FmUTX8QG-6bCRb1ireX1jhcd5ca9__rTDcp0eQSi_kA-Keb_VA7y0P2Fa2KAtRdD0L4VZwGoyxq59VO7Xj5LD-2R1yY7tPqaBBQCc"
+    }
+  },
+  "proxy": "http://1b0044db-4450-4b76-9e2b-51e742f76bbd:PimFZZ2LWQvApmrfWpSIyuQ2pz1HddFN@tun.testsprite.com:8080"
 }

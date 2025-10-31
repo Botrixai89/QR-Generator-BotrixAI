@@ -500,7 +500,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     if (file) {
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
-      if (!allowedTypes.includes(file.type)) {
+      const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']
+      const lowerName = file.name.toLowerCase()
+      const hasAllowedExt = allowedExts.some(ext => lowerName.endsWith(ext))
+      if (!allowedTypes.includes(file.type) || !hasAllowedExt) {
         const { toast } = await import("sonner")
         toast.error(`Invalid file type. Please upload an image file (JPEG, PNG, GIF, WebP, or SVG).`)
         event.target.value = '' // Clear the input
@@ -541,6 +544,13 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   }
 
   const handleGenerate = async () => {
+    // Require authentication before generating any QR code
+    if (!userId) {
+      const { toast } = await import("sonner")
+      toast.info("Please sign up to generate QR codes.")
+      router.push("/auth/signup")
+      return
+    }
     // Validate input based on mode
     if (isUpiPayment) {
       if (!upiId.trim()) return

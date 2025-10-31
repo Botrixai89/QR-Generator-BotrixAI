@@ -1,143 +1,135 @@
 {
   "tech_stack": [
     "TypeScript",
-    "Next.js 14 (App Router)",
     "React",
+    "Next.js App Router",
+    "Node.js",
+    "Supabase (Auth, Database, Storage)",
     "NextAuth.js",
-    "Supabase",
-    "PostCSS",
-    "ESLint",
-    "Node.js"
+    "PostgreSQL",
+    "Tailwind CSS",
+    "Razorpay",
+    "Vercel",
+    "ESLint"
   ],
   "features": [
     {
-      "name": "Authentication (NextAuth)",
-      "description": "Email/password registration and credential-based sign-in using NextAuth, with session handling and protected routes.",
+      "name": "Authentication & Authorization",
+      "description": "Email/social auth via NextAuth with Supabase session; route protection via middleware and server components.",
       "files": [
-        "src/app/api/auth/[...nextauth]/route.ts",
-        "src/app/api/auth/register/route.ts",
         "src/lib/auth.ts",
         "src/types/next-auth.d.ts",
-        "src/components/providers/session-provider.tsx",
+        "src/middleware.ts",
         "src/app/auth/signin/page.tsx",
-        "src/app/auth/signup/page.tsx",
-        "src/middleware.ts"
+        "src/app/auth/signup/page.tsx"
       ]
     },
     {
-      "name": "QR Code CRUD API",
-      "description": "Create, list, update, delete QR codes; bulk operations; export; scan tracking.",
+      "name": "QR Code Generation (Basic)",
+      "description": "Generate static QR codes with customization (color, size, logo, format).",
       "files": [
-        "src/app/api/qr-codes/route.ts",
-        "src/app/api/qr-codes/[id]/route.ts",
-        "src/app/api/qr-codes/[id]/scan/route.ts",
-        "src/app/api/qr-codes/[id]/enhanced-scan/route.ts",
-        "src/app/api/qr-codes/bulk/route.ts",
-        "src/app/api/qr-codes/export/route.ts"
+        "src/components/QRGenerator.tsx",
+        "src/components/QRPreview.tsx",
+        "src/lib/utils.ts",
+        "src/app/qr/page.tsx",
+        "src/app/api/qrcode/create.ts"
       ]
     },
     {
-      "name": "Custom Domains API",
-      "description": "Endpoint to manage or validate custom domains for dynamic QR codes.",
+      "name": "QR Code Generation (Advanced)",
+      "description": "Advanced options including gradients, shapes, frames, and watermark overlay.",
       "files": [
-        "src/app/api/custom-domains/route.ts"
-      ]
-    },
-    {
-      "name": "Dynamic QR Management UI",
-      "description": "UI to create and manage dynamic QR codes with destination URLs, labels, and status.",
-      "files": [
-        "src/components/dynamic-qr-manager.tsx",
-        "src/app/test-dynamic/page.tsx",
-        "src/app/qr/[id]/page.tsx"
-      ]
-    },
-    {
-      "name": "Advanced QR Generator UI",
-      "description": "Feature-rich QR customization including foreground/background, gradient, eyes, corners, logo, watermark, and export in PNG/SVG.",
-      "files": [
-        "src/components/advanced-qr-generator.tsx",
-        "src/components/qr-customization-panel.tsx",
-        "src/components/watermark.tsx",
-        "src/components/qr-generator.tsx",
-        "src/components/qr-scanner.tsx",
         "src/lib/qr-code-advanced.ts",
         "src/lib/qr-watermark.ts",
-        "src/lib/utils.ts"
+        "src/types/qr-code-advanced.ts",
+        "src/app/advanced/page.tsx",
+        "src/app/test-advanced/page.tsx"
       ]
     },
     {
-      "name": "Short URL Redirects",
-      "description": "Short-code based redirect pages for dynamic QR codes, with scan logging.",
+      "name": "Dynamic QR Codes",
+      "description": "Short links mapped to target URLs with ability to update destination and enforce expiration/scan limits.",
       "files": [
-        "src/app/s/[code]/page.tsx",
-        "src/lib/url-shortener.ts"
+        "src/lib/url-shortener.ts",
+        "src/app/s/[slug]/page.tsx",
+        "src/app/test-dynamic/page.tsx",
+        "src/app/api/links/create.ts",
+        "src/app/api/links/[id]/update.ts",
+        "src/app/api/links/[id]/delete.ts"
       ]
     },
     {
-      "name": "Dashboard and Navigation",
-      "description": "Authenticated dashboard, navigation that adapts to auth state, loading states, and error boundaries.",
+      "name": "Scan Tracking & Analytics",
+      "description": "Tracks scans with user agent, IP, and timestamps for analytics.",
       "files": [
-        "src/app/dashboard/page.tsx",
-        "src/components/navigation.tsx",
-        "src/components/error-boundary.tsx",
-        "src/components/loading-spinner.tsx",
-        "src/app/loading.tsx"
-      ]
-    },
-    {
-      "name": "Supabase Integration",
-      "description": "Client setup and SQL migration scripts for QR and scan tables.",
-      "files": [
-        "src/lib/supabase.ts",
-        "setup-supabase.js",
-        "setup-supabase-tables.sql",
-        "setup-database.js",
-        "create-qrcode-table.sql",
+        "src/app/api/scan/create.ts",
         "create-scan-table.sql",
         "create-scan-table-fixed.sql",
-        "setup-qrcode-table.sql",
-        "add-columns.sql",
-        "add-advanced-qr-columns.sql",
-        "add-dynamic-qr-columns.sql",
-        "add-original-url-column.sql",
         "enhanced-dynamic-qr-schema.sql"
       ]
     },
     {
-      "name": "App Shell and Theming",
-      "description": "Global styles, layout, icons, and theme toggle for light/dark mode.",
+      "name": "Dashboard & Management",
+      "description": "Authenticated dashboard to manage QR codes, view analytics, and perform CRUD operations.",
       "files": [
+        "src/app/dashboard/page.tsx",
+        "src/components/QRList.tsx",
+        "src/components/QRCard.tsx",
+        "src/app/api/qrcode/list.ts",
+        "src/app/api/qrcode/delete.ts"
+      ]
+    },
+    {
+      "name": "File Uploads (Logos/Images)",
+      "description": "Validates and uploads logo files to Supabase Storage for embedding into QR codes.",
+      "files": [
+        "src/app/api/upload/logo.ts",
+        "supabase-storage-setup.sql",
+        "public/uploads"
+      ]
+    },
+    {
+      "name": "Payments & Credits (Razorpay)",
+      "description": "Handles purchasing credits/subscriptions with Razorpay and tracks payments.",
+      "files": [
+        "RAZORPAY_SETUP.md",
+        "migrations/20250101_add_credits_and_payments.sql",
+        "src/app/api/payments/create-order.ts",
+        "src/app/api/payments/webhook.ts"
+      ]
+    },
+    {
+      "name": "Pricing & Plans",
+      "description": "Public pricing page and related UI components.",
+      "files": [
+        "src/app/pricing/page.tsx",
+        "src/components/PricingTable.tsx"
+      ]
+    },
+    {
+      "name": "Middleware & Routing",
+      "description": "Protects routes and sets headers; manages dynamic short link routing.",
+      "files": [
+        "src/middleware.ts",
         "src/app/layout.tsx",
-        "src/app/globals.css",
-        "src/app/icon.tsx",
-        "src/components/theme-toggle.tsx"
+        "src/app/s/[slug]/page.tsx"
       ]
     },
     {
-      "name": "Static Pages and Home",
-      "description": "Marketing/home page, not-found, and route-level loading.",
+      "name": "Supabase Client & Server Utilities",
+      "description": "Centralized Supabase client and shared utilities for server/client usage.",
       "files": [
-        "src/app/page.tsx",
-        "src/app/not-found.tsx",
-        "public/next.svg",
-        "public/vercel.svg"
+        "src/lib/supabase.ts",
+        "src/lib/utils.ts",
+        "setup-supabase.js",
+        "setup-supabase-tables.sql"
       ]
     },
     {
-      "name": "TestSprite Assets",
-      "description": "Predefined test plan, report outputs, and runnable test harness.",
+      "name": "API Routes (RESTful endpoints)",
+      "description": "Next.js API routes for CRUD on QR codes, links, uploads, payments, and analytics.",
       "files": [
-        "testsprite_tests/testsprite_frontend_test_plan.json",
-        "testsprite_tests/TC001_Anonymous_User_Basic_QR_Code_Generation.py",
-        "testsprite_tests/TC003_User_Sign_In_with_Incorrect_Credentials.py",
-        "testsprite_tests/TC004_Dashboard_Access_Protection_for_Anonymous_Users.py",
-        "testsprite_tests/TC006_Downloading_Saved_QR_Codes_in_PNG_and_SVG_Formats.py",
-        "testsprite_tests/TC008_Logo_File_Upload_Validation.py",
-        "testsprite_tests/TC012_Deletion_of_QR_Codes_from_User_Account.py",
-        "testsprite_tests/TC013_Watermark_Toggle_Functionality_on_Generated_QR_Codes.py",
-        "testsprite_tests/TC014_Navigation_Menu_Dynamic_Updates_Based_on_Authentication_State.py",
-        "testsprite_tests/TC015_Error_Handling_for_Invalid_URL_Input_in_QR_Code_Generator.py"
+        "src/app/api/*"
       ]
     }
   ]
