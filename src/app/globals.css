@@ -168,4 +168,34 @@
   .qr-config-scroll::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
   }
+
+  /* Accessibility: Screen reader only */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Accessibility: Focus visible styles */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Brand theme overrides */
+  [data-org] {
+    --primary: var(--brand-primary, var(--primary));
+    --secondary: var(--brand-secondary, var(--secondary));
+    --accent: var(--brand-accent, var(--accent));
+    --foreground: var(--brand-foreground, var(--foreground));
+    --background: var(--brand-background, var(--background));
+    --muted: var(--brand-muted, var(--muted));
+    --border: var(--brand-border, var(--border));
+  }
 }

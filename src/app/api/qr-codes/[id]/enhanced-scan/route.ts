@@ -293,35 +293,20 @@ async function checkRateLimit(qrCodeId: string, ipAddress: string, rateLimitConf
   return { allowed: true }
 }
 
-// Webhook trigger (async)
+// Webhook trigger using outbox pattern (async)
 async function triggerWebhook(webhookUrl: string, secret: string, payload: any) {
   try {
-    const signature = secret ? await generateWebhookSignature(payload, secret) : null
-    
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(signature && { 'X-Webhook-Signature': signature })
-      },
-      body: JSON.stringify(payload)
-    })
-
-    // Log webhook attempt
-    await supabaseAdmin!
-      .from('QrCodeWebhookLog')
-      .insert({
-        qrCodeId: payload.qrCodeId,
-        webhookUrl,
-        payload,
-        responseStatus: response.status,
-        responseBody: await response.text(),
-        isSuccessful: response.ok
-      })
+    // Use outbox pattern for guaranteed delivery
+    const { addWebhookToOutbox } = await import('@/lib/webhook-outbox')
+    await addWebhookToOutbox(
+      payload.qrCodeId,
+      webhookUrl,
+      payload,
+      secret
+    )
   } catch (error) {
-    console.error('Webhook error:', error)
-    
-    // Log failed webhook attempt
+    console.error('Error adding webhook to outbox:', error)
+    // Fallback: log to webhook log if outbox fails
     await supabaseAdmin!
       .from('QrCodeWebhookLog')
       .insert({
@@ -329,7 +314,7 @@ async function triggerWebhook(webhookUrl: string, secret: string, payload: any) 
         webhookUrl,
         payload,
         responseStatus: 0,
-        responseBody: error instanceof Error ? error.message : 'Unknown error',
+        responseBody: error instanceof Error ? error.message : 'Failed to add to outbox',
         isSuccessful: false
       })
   }

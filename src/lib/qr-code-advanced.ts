@@ -83,6 +83,12 @@ export class AdvancedQRCodeGenerator {
       type: (finalOptions.type === 'png' ? 'svg' : finalOptions.type) as 'svg' | 'canvas',
       data: finalOptions.data,
       image: finalOptions.logo?.image,
+      imageOptions: {
+        imageSize: finalOptions.logo ? Math.max(0.05, Math.min(0.9, finalOptions.logo.size || 0.25)) : 0.25,
+        margin: typeof finalOptions.logo?.margin === 'number' ? finalOptions.logo.margin : (finalOptions.logo ? 6 : 0),
+        crossOrigin: 'anonymous',
+        hideBackgroundDots: !!finalOptions.logo,
+      },
       dotsOptions: {
         color: finalOptions.foregroundColor || '#000000',
         type: this.mapDotType(finalOptions.dotType || 'square'),

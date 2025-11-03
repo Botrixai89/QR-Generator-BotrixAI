@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 import crypto from 'crypto'
+import { verifyDomainOwnership } from "@/lib/domain-verification"
+import { manageSSLCertificate } from "@/lib/ssl-management"
 
 // Custom domains management
 export async function POST(request: NextRequest) {
@@ -17,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { domain, action } = body
+    const { domain, action, routingConfig, custom404Page, customExpiryPage } = body
 
     if (!domain || !action) {
       return NextResponse.json(
@@ -37,11 +39,15 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'add':
-        return await addCustomDomain(domain, session.user.id)
+        return await addCustomDomain(domain, session.user.id, { routingConfig, custom404Page, customExpiryPage })
       case 'verify':
         return await verifyCustomDomain(domain, session.user.id)
       case 'remove':
         return await removeCustomDomain(domain, session.user.id)
+      case 'update':
+        return await updateCustomDomain(domain, session.user.id, { routingConfig, custom404Page, customExpiryPage })
+      case 'check-status':
+        return await checkDomainStatus(domain, session.user.id)
       default:
         return NextResponse.json(
           { error: "Invalid action" },
@@ -94,7 +100,11 @@ export async function GET(request: NextRequest) {
 }
 
 // Add custom domain
-async function addCustomDomain(domain: string, userId: string) {
+async function addCustomDomain(
+  domain: string,
+  userId: string,
+  config?: { routingConfig?: any; custom404Page?: string; customExpiryPage?: string }
+) {
   // Check if domain already exists
   const { data: existingDomain, error: checkError } = await supabaseAdmin!
     .from('QrCodeCustomDomain')
@@ -127,7 +137,11 @@ async function addCustomDomain(domain: string, userId: string) {
       userId,
       domain,
       verificationToken,
-      isVerified: false
+      isVerified: false,
+      status: 'pending',
+      routingConfig: config?.routingConfig || null,
+      custom404Page: config?.custom404Page || null,
+      customExpiryPage: config?.customExpiryPage || null
     })
     .select()
     .single()
@@ -178,17 +192,19 @@ async function verifyCustomDomain(domain: string, userId: string) {
     })
   }
 
-  // Verify domain ownership by checking DNS record
-  const isVerified = await verifyDomainOwnership(domain, customDomain.verificationToken)
+  // Verify domain ownership by checking DNS record with retry logic
+  const verificationResult = await verifyDomainOwnership(domain, customDomain.verificationToken)
 
-  if (isVerified) {
+  if (verificationResult.verified) {
     // Update domain as verified
     const { data: updatedDomain, error: updateError } = await supabaseAdmin!
       .from('QrCodeCustomDomain')
       .update({
         isVerified: true,
         verifiedAt: new Date().toISOString(),
-        sslEnabled: true // Auto-enable SSL for verified domains
+        status: 'verified',
+        lastDnsCheck: verificationResult.lastChecked?.toISOString(),
+        errorMessage: null
       })
       .eq('id', customDomain.id)
       .select()
@@ -202,14 +218,52 @@ async function verifyCustomDomain(domain: string, userId: string) {
       )
     }
 
+    // Auto-manage SSL certificate
+    try {
+      const sslStatus = await manageSSLCertificate(updatedDomain.id, domain)
+      
+      // Update domain status to active if SSL is ready
+      if (sslStatus.status === 'active') {
+        await supabaseAdmin!
+          .from('QrCodeCustomDomain')
+          .update({ status: 'active' })
+          .eq('id', updatedDomain.id)
+      }
+    } catch (error) {
+      console.error('Error managing SSL certificate:', error)
+      // Don't fail verification if SSL setup fails
+    }
+
+    // Send verification notification (async, don't block response)
+    try {
+      const { sendDomainVerificationNotification } = await import('@/lib/threshold-monitoring')
+      sendDomainVerificationNotification(userId, domain, true).catch(console.error)
+    } catch (error) {
+      // Don't fail verification if notification fails
+      console.error('Error sending domain verification notification:', error)
+    }
+
     return NextResponse.json({
       success: true,
       message: "Domain verified successfully",
       customDomain: updatedDomain
     })
   } else {
+    // Update domain with error status
+    await supabaseAdmin!
+      .from('QrCodeCustomDomain')
+      .update({
+        status: 'error',
+        errorMessage: verificationResult.error || 'Verification failed',
+        lastDnsCheck: verificationResult.lastChecked?.toISOString()
+      })
+      .eq('id', customDomain.id)
+
     return NextResponse.json(
-      { error: "Domain verification failed. Please ensure the TXT record is properly configured." },
+      { 
+        error: verificationResult.error || "Domain verification failed. Please ensure the TXT record is properly configured.",
+        lastChecked: verificationResult.lastChecked
+      },
       { status: 400 }
     )
   }
@@ -255,25 +309,114 @@ async function removeCustomDomain(domain: string, userId: string) {
   })
 }
 
-// Verify domain ownership by checking DNS record
-async function verifyDomainOwnership(domain: string, verificationToken: string): Promise<boolean> {
-  try {
-    const dns = require('dns').promises
-    const expectedValue = `${verificationToken}.${domain}`
-    
-    // Check TXT records for the domain
-    const txtRecords = await dns.resolveTxt(domain)
-    
-    // Look for our verification record
-    for (const record of txtRecords) {
-      if (record.includes(expectedValue)) {
-        return true
-      }
-    }
-    
-    return false
-  } catch (error) {
-    console.error('DNS verification error:', error)
-    return false
+// Update custom domain
+async function updateCustomDomain(
+  domain: string,
+  userId: string,
+  config: { routingConfig?: any; custom404Page?: string; customExpiryPage?: string }
+) {
+  // Get domain record
+  const { data: customDomain, error: fetchError } = await supabaseAdmin!
+    .from('QrCodeCustomDomain')
+    .select('*')
+    .eq('domain', domain)
+    .eq('userId', userId)
+    .single()
+
+  if (fetchError || !customDomain) {
+    return NextResponse.json(
+      { error: "Domain not found" },
+      { status: 404 }
+    )
   }
+
+  // Update domain configuration
+  const updateData: any = {
+    updatedAt: new Date().toISOString()
+  }
+
+  if (config.routingConfig !== undefined) {
+    updateData.routingConfig = config.routingConfig
+  }
+  if (config.custom404Page !== undefined) {
+    updateData.custom404Page = config.custom404Page
+  }
+  if (config.customExpiryPage !== undefined) {
+    updateData.customExpiryPage = config.customExpiryPage
+  }
+
+  const { data: updatedDomain, error: updateError } = await supabaseAdmin!
+    .from('QrCodeCustomDomain')
+    .update(updateData)
+    .eq('id', customDomain.id)
+    .select()
+    .single()
+
+  if (updateError) {
+    console.error("Error updating custom domain:", updateError)
+    return NextResponse.json(
+      { error: "Failed to update custom domain" },
+      { status: 500 }
+    )
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: "Domain updated successfully",
+    customDomain: updatedDomain
+  })
+}
+
+// Check domain status
+async function checkDomainStatus(domain: string, userId: string) {
+  const { data: customDomain, error } = await supabaseAdmin!
+    .from('QrCodeCustomDomain')
+    .select('*')
+    .eq('domain', domain)
+    .eq('userId', userId)
+    .single()
+
+  if (error || !customDomain) {
+    return NextResponse.json(
+      { error: "Domain not found" },
+      { status: 404 }
+    )
+  }
+
+  // Re-verify DNS if not verified
+  if (!customDomain.isVerified && customDomain.verificationToken) {
+    const verificationResult = await verifyDomainOwnership(domain, customDomain.verificationToken)
+    
+    if (verificationResult.verified) {
+      await supabaseAdmin!
+        .from('QrCodeCustomDomain')
+        .update({
+          isVerified: true,
+          verifiedAt: new Date().toISOString(),
+          status: 'verified',
+          lastDnsCheck: verificationResult.lastChecked?.toISOString()
+        })
+        .eq('id', customDomain.id)
+    } else {
+      await supabaseAdmin!
+        .from('QrCodeCustomDomain')
+        .update({
+          lastDnsCheck: verificationResult.lastChecked?.toISOString(),
+          errorMessage: verificationResult.error
+        })
+        .eq('id', customDomain.id)
+    }
+  }
+
+  // Get updated domain
+  const { data: updatedDomain } = await supabaseAdmin!
+    .from('QrCodeCustomDomain')
+    .select('*')
+    .eq('id', customDomain.id)
+    .single()
+
+  return NextResponse.json({
+    success: true,
+    customDomain: updatedDomain
+  })
 }

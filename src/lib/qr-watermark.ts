@@ -1,20 +1,20 @@
 // Enhanced utility function to add BotrixAI logo watermark to QR code SVG
 export const addBotrixLogoToQR = (svg: SVGElement) => {
-  // Use unique IDs to avoid conflicts with user-uploaded center logos
+  // Use unique IDs to avoid conflicts and enable reliable updates
+  const WATERMARK_LAYER_ID = 'botrix-watermark-layer'
   const WATERMARK_ID = 'botrix-watermark'
   const WATERMARK_BG_ID = 'botrix-watermark-bg'
 
-  // Remove existing Botrix watermark if any
+  // Remove any previous layer to avoid duplicates
+  const existingLayer = svg.querySelector(`#${WATERMARK_LAYER_ID}`)
+  if (existingLayer) {
+    existingLayer.remove()
+  }
+  // (Backward compatibility) clean up any old loose nodes
   const existingLogo = svg.querySelector(`#${WATERMARK_ID}`)
-  if (existingLogo) {
-    existingLogo.remove()
-  }
-  
-  // Remove existing background if any
+  if (existingLogo) existingLogo.remove()
   const existingBg = svg.querySelector(`#${WATERMARK_BG_ID}`)
-  if (existingBg) {
-    existingBg.remove()
-  }
+  if (existingBg) existingBg.remove()
   
   // Get SVG dimensions and calculate responsive sizing
   const svgRect = svg.getBoundingClientRect()
@@ -29,6 +29,11 @@ export const addBotrixLogoToQR = (svg: SVGElement) => {
   const logoX = svgWidth - logoSize - padding
   const logoY = svgHeight - logoSize - padding
   
+  // Create a dedicated top-most layer so we can re-append it easily
+  const layer = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+  layer.setAttribute('id', WATERMARK_LAYER_ID)
+  layer.setAttribute('data-role', 'botrix-watermark')
+
   // Create enhanced background with subtle shadow
   const bgCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
   bgCircle.setAttribute('id', WATERMARK_BG_ID)
@@ -73,21 +78,32 @@ export const addBotrixLogoToQR = (svg: SVGElement) => {
   logoImage.setAttribute('height', (logoSize - 4).toString())
   logoImage.setAttribute('preserveAspectRatio', 'xMidYMid meet')
   logoImage.setAttribute('clip-path', 'circle(50%)')
-  
-  // Ensure watermark appears on top by appending to the end of SVG
-  // SVG renders elements in order, so last elements appear on top
-  svg.appendChild(bgCircle)
-  svg.appendChild(logoImage)
+
+  // Append to the watermark layer, then move layer to top
+  layer.appendChild(bgCircle)
+  layer.appendChild(logoImage)
+  svg.appendChild(layer)
   
   // Force repaint to ensure watermark is visible
   // Use a small delay to ensure all other rendering is complete
   requestAnimationFrame(() => {
-    // Verify watermark is still present
-    const checkWatermark = svg.querySelector(`#${WATERMARK_ID}`)
-    if (!checkWatermark) {
-      // Re-apply if somehow removed
-      svg.appendChild(bgCircle.cloneNode(true) as SVGElement)
-      svg.appendChild(logoImage.cloneNode(true) as SVGElement)
+    // Keep watermark layer at the very end if the SVG mutates (e.g., when a logo is uploaded)
+    const ensureTopMost = () => {
+      const currentLayer = svg.querySelector(`#${WATERMARK_LAYER_ID}`)
+      if (currentLayer && currentLayer !== svg.lastElementChild) {
+        svg.appendChild(currentLayer)
+      }
+    }
+    ensureTopMost()
+
+    // Attach a singleton MutationObserver to track late re-renders by the QR library
+    const observerAttachedFlag = 'botrixWatermarkObserver'
+    // @ts-ignore - using dataset on generic SVGElement
+    if (!(svg as any)[observerAttachedFlag]) {
+      const observer = new MutationObserver(() => ensureTopMost())
+      observer.observe(svg, { childList: true })
+      // @ts-ignore
+      ;(svg as any)[observerAttachedFlag] = observer
     }
   })
 }

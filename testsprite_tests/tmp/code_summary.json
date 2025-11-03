@@ -1,46 +1,59 @@
 {
   "tech_stack": [
     "TypeScript",
-    "React",
-    "Next.js App Router",
+    "React 19.1.0",
+    "Next.js 15.5.2 (App Router)",
     "Node.js",
-    "Supabase (Auth, Database, Storage)",
+    "Supabase (Auth, Database PostgreSQL, Storage)",
     "NextAuth.js",
     "PostgreSQL",
     "Tailwind CSS",
+    "Radix UI",
+    "shadcn/ui",
     "Razorpay",
     "Vercel",
+    "Sentry",
+    "Vitest",
+    "Playwright",
     "ESLint"
   ],
   "features": [
     {
       "name": "Authentication & Authorization",
-      "description": "Email/social auth via NextAuth with Supabase session; route protection via middleware and server components.",
+      "description": "Email/password auth via NextAuth with Supabase session management; route protection via middleware and server components; email verification and password reset.",
       "files": [
         "src/lib/auth.ts",
         "src/types/next-auth.d.ts",
         "src/middleware.ts",
         "src/app/auth/signin/page.tsx",
-        "src/app/auth/signup/page.tsx"
+        "src/app/auth/signup/page.tsx",
+        "src/app/api/auth/[...nextauth]/route.ts",
+        "src/app/api/auth/register/route.ts",
+        "src/app/api/auth/reset-password/route.ts",
+        "src/app/api/auth/verify-email/route.ts",
+        "src/app/api/auth/send-verification/route.ts"
       ]
     },
     {
       "name": "QR Code Generation (Basic)",
-      "description": "Generate static QR codes with customization (color, size, logo, format).",
+      "description": "Generate static QR codes with customization options including colors, size, logo, format, dot types, corner styles.",
       "files": [
-        "src/components/QRGenerator.tsx",
-        "src/components/QRPreview.tsx",
+        "src/components/qr-generator.tsx",
+        "src/components/qr-customization-panel.tsx",
         "src/lib/utils.ts",
-        "src/app/qr/page.tsx",
-        "src/app/api/qrcode/create.ts"
+        "src/app/page.tsx",
+        "src/app/qr/[id]/page.tsx",
+        "src/app/api/qr-codes/route.ts"
       ]
     },
     {
       "name": "QR Code Generation (Advanced)",
-      "description": "Advanced options including gradients, shapes, frames, and watermark overlay.",
+      "description": "Advanced QR code generation with templates, gradients, shapes, frames, stickers, effects, and watermark overlay.",
       "files": [
         "src/lib/qr-code-advanced.ts",
         "src/lib/qr-watermark.ts",
+        "src/lib/qr-loader.ts",
+        "src/components/templates-gallery.tsx",
         "src/types/qr-code-advanced.ts",
         "src/app/advanced/page.tsx",
         "src/app/test-advanced/page.tsx"
@@ -48,88 +61,261 @@
     },
     {
       "name": "Dynamic QR Codes",
-      "description": "Short links mapped to target URLs with ability to update destination and enforce expiration/scan limits.",
+      "description": "Short links mapped to target URLs with ability to update destination, enforce expiration/scan limits, and track analytics.",
       "files": [
         "src/lib/url-shortener.ts",
-        "src/app/s/[slug]/page.tsx",
+        "src/app/s/[code]/page.tsx",
         "src/app/test-dynamic/page.tsx",
-        "src/app/api/links/create.ts",
-        "src/app/api/links/[id]/update.ts",
-        "src/app/api/links/[id]/delete.ts"
+        "src/components/dynamic-qr-manager.tsx",
+        "src/app/api/qr-codes/[id]/route.ts"
       ]
     },
     {
       "name": "Scan Tracking & Analytics",
-      "description": "Tracks scans with user agent, IP, and timestamps for analytics.",
+      "description": "Comprehensive scan tracking with user agent, IP address, location (country/city), device, browser, OS, and timestamps. Analytics dashboard with visualizations.",
       "files": [
-        "src/app/api/scan/create.ts",
-        "create-scan-table.sql",
-        "create-scan-table-fixed.sql",
-        "enhanced-dynamic-qr-schema.sql"
+        "src/app/api/qr-codes/[id]/scan/route.ts",
+        "src/app/api/qr-codes/[id]/enhanced-scan/route.ts",
+        "src/lib/threshold-monitoring.ts",
+        "src/app/dashboard/page.tsx"
       ]
     },
     {
       "name": "Dashboard & Management",
-      "description": "Authenticated dashboard to manage QR codes, view analytics, and perform CRUD operations.",
+      "description": "Authenticated user dashboard to manage QR codes, view analytics, perform CRUD operations, and access settings.",
       "files": [
         "src/app/dashboard/page.tsx",
-        "src/components/QRList.tsx",
-        "src/components/QRCard.tsx",
-        "src/app/api/qrcode/list.ts",
-        "src/app/api/qrcode/delete.ts"
+        "src/app/dashboard/settings/billing/page.tsx",
+        "src/app/dashboard/settings/domains/page.tsx",
+        "src/app/dashboard/notifications/page.tsx",
+        "src/app/dashboard/organizations/page.tsx",
+        "src/components/empty-state.tsx",
+        "src/components/skeleton-loader.tsx"
       ]
     },
     {
-      "name": "File Uploads (Logos/Images)",
-      "description": "Validates and uploads logo files to Supabase Storage for embedding into QR codes.",
+      "name": "File Uploads & Image Management",
+      "description": "Validates and uploads logo/image files to Supabase Storage for embedding into QR codes with optimization.",
       "files": [
-        "src/app/api/upload/logo.ts",
-        "supabase-storage-setup.sql",
-        "public/uploads"
+        "src/app/api/images/upload/route.ts",
+        "src/lib/image-optimization.ts",
+        "supabase-storage-setup.sql"
       ]
     },
     {
-      "name": "Payments & Credits (Razorpay)",
-      "description": "Handles purchasing credits/subscriptions with Razorpay and tracks payments.",
+      "name": "Payments & Billing (Razorpay)",
+      "description": "Complete payment system with Razorpay integration for purchasing credits/subscriptions, invoice management, webhook handling, and billing enforcement.",
       "files": [
-        "RAZORPAY_SETUP.md",
-        "migrations/20250101_add_credits_and_payments.sql",
-        "src/app/api/payments/create-order.ts",
-        "src/app/api/payments/webhook.ts"
+        "src/app/api/razorpay/create/route.ts",
+        "src/app/api/razorpay/verify/route.ts",
+        "src/app/api/razorpay/webhook/route.ts",
+        "src/app/api/billing/subscriptions/route.ts",
+        "src/app/api/billing/invoices/route.ts",
+        "src/app/api/billing/profile/route.ts",
+        "src/lib/billing.ts",
+        "src/lib/billing-enforcement.ts",
+        "migrations/20250101_add_credits_and_payments.sql"
+      ]
+    },
+    {
+      "name": "API Keys & Developer Tools",
+      "description": "API key generation, rotation, usage tracking, and developer documentation for programmatic access.",
+      "files": [
+        "src/app/api/api-keys/route.ts",
+        "src/app/api/api-keys/[id]/rotate/route.ts",
+        "src/lib/api-keys.ts",
+        "src/lib/api-usage.ts",
+        "src/components/api-keys-manager.tsx",
+        "src/components/api-usage-stats.tsx",
+        "src/app/dashboard/developers/page.tsx",
+        "src/app/dashboard/developers/docs/page.tsx",
+        "migrations/20250102_api_keys_and_usage.sql"
+      ]
+    },
+    {
+      "name": "Organizations & Team Management",
+      "description": "Multi-user organization management with member roles, invitations, and team collaboration features.",
+      "files": [
+        "src/app/api/organizations/route.ts",
+        "src/app/api/organizations/[id]/route.ts",
+        "src/app/api/organizations/[id]/members/route.ts",
+        "src/app/api/organizations/[id]/transfer/route.ts",
+        "src/app/api/invitations/[token]/route.ts",
+        "src/app/dashboard/organizations/page.tsx",
+        "src/app/invite/[token]/page.tsx",
+        "src/lib/rbac.ts",
+        "migrations/20251031_organizations.sql"
+      ]
+    },
+    {
+      "name": "Custom Domains",
+      "description": "Custom domain management with DNS verification, SSL certificate management, and domain routing.",
+      "files": [
+        "src/app/api/custom-domains/route.ts",
+        "src/app/api/domains/[domainId]/analytics/route.ts",
+        "src/lib/domain-verification.ts",
+        "src/lib/domain-routing.ts",
+        "src/lib/ssl-management.ts",
+        "src/app/dashboard/settings/domains/page.tsx",
+        "migrations/20250105_custom_domains_enhanced.sql"
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhook management system for QR code scan events with delivery tracking and logs.",
+      "files": [
+        "src/app/api/v1/webhooks/route.ts",
+        "src/app/api/v1/webhooks/[qrCodeId]/logs/route.ts",
+        "src/components/webhook-manager.tsx",
+        "src/lib/webhook-outbox.ts"
+      ]
+    },
+    {
+      "name": "Notifications System",
+      "description": "In-app and email notifications with preferences management and digest emails.",
+      "files": [
+        "src/app/api/notifications/route.ts",
+        "src/app/api/notifications/[id]/route.ts",
+        "src/app/api/notifications/preferences/route.ts",
+        "src/app/api/cron/email-digest/route.ts",
+        "src/lib/notifications.ts",
+        "src/lib/email-digest.ts",
+        "src/components/notifications-dropdown.tsx",
+        "migrations/20250104_emails_and_notifications.sql"
+      ]
+    },
+    {
+      "name": "Admin Console",
+      "description": "Admin dashboard for system management, user impersonation, billing adjustments, and system health monitoring.",
+      "files": [
+        "src/app/dashboard/admin/page.tsx",
+        "src/app/dashboard/admin/system-health/page.tsx",
+        "src/app/api/admin/users/route.ts",
+        "src/app/api/admin/users/[id]/route.ts",
+        "src/app/api/admin/impersonate/route.ts",
+        "src/app/api/admin/stats/route.ts",
+        "src/app/api/admin/system-health/route.ts",
+        "src/app/api/admin/billing/adjust/route.ts",
+        "src/app/api/admin/billing/refund/route.ts",
+        "src/lib/admin.ts",
+        "migrations/20250109_admin_console.sql"
+      ]
+    },
+    {
+      "name": "Rate Limiting & Security",
+      "description": "API rate limiting, CSRF protection, security headers, audit logging, and circuit breaker patterns.",
+      "files": [
+        "src/lib/rate-limit.ts",
+        "src/lib/csrf.ts",
+        "src/lib/security-headers.ts",
+        "src/lib/audit-log.ts",
+        "src/lib/circuit-breaker.ts",
+        "src/app/api/security/csrf-token/route.ts",
+        "migrations/20250103_audit_logs_and_security.sql",
+        "migrations/20251031_add_api_rate_limits.sql"
+      ]
+    },
+    {
+      "name": "Email System",
+      "description": "Multi-provider email system supporting Resend, SendGrid, AWS SES, SMTP with transactional templates.",
+      "files": [
+        "src/lib/email.ts",
+        "src/lib/transactional-emails.ts",
+        "src/app/api/auth/send-verification/route.ts",
+        "migrations/20250104_email_templates_seed.sql"
       ]
     },
     {
       "name": "Pricing & Plans",
-      "description": "Public pricing page and related UI components.",
+      "description": "Public pricing page with plan comparison and subscription management.",
       "files": [
-        "src/app/pricing/page.tsx",
-        "src/components/PricingTable.tsx"
+        "src/app/pricing/page.tsx"
+      ]
+    },
+    {
+      "name": "QR Code Bulk Operations",
+      "description": "Bulk QR code generation, export, and streaming capabilities.",
+      "files": [
+        "src/app/api/qr-codes/bulk/route.ts",
+        "src/app/api/qr-codes/export/route.ts",
+        "src/app/api/qr-codes/stream/route.ts"
+      ]
+    },
+    {
+      "name": "Brand Kit Management",
+      "description": "Brand kit management for consistent QR code styling with custom logos, colors, and templates.",
+      "files": [
+        "src/components/brand-kit-manager.tsx",
+        "migrations/20250106_brand_kit_and_i18n.sql"
+      ]
+    },
+    {
+      "name": "Internationalization (i18n)",
+      "description": "Multi-language support with translation management.",
+      "files": [
+        "src/lib/i18n.ts",
+        "src/app/api/i18n/translations/route.ts",
+        "migrations/20250106_brand_kit_and_i18n.sql"
+      ]
+    },
+    {
+      "name": "Performance & Reliability",
+      "description": "Performance optimizations including retry logic, timeout handling, optimistic UI updates, and caching.",
+      "files": [
+        "src/lib/supabase-with-retry.ts",
+        "src/lib/retry-with-timeout.ts",
+        "src/lib/optimistic-ui.ts",
+        "migrations/20250107_performance_and_reliability.sql"
+      ]
+    },
+    {
+      "name": "Observability & Monitoring",
+      "description": "Error tracking with Sentry, metrics collection, logging, and web vitals monitoring.",
+      "files": [
+        "src/lib/logging.ts",
+        "src/lib/metrics.ts",
+        "src/lib/web-vitals.ts",
+        "src/components/web-vitals.tsx",
+        "sentry.client.config.ts",
+        "sentry.server.config.ts",
+        "sentry.edge.config.ts",
+        "migrations/20250108_observability.sql"
       ]
     },
     {
       "name": "Middleware & Routing",
-      "description": "Protects routes and sets headers; manages dynamic short link routing.",
+      "description": "Route protection, security headers, dynamic short link routing, and domain routing.",
       "files": [
         "src/middleware.ts",
         "src/app/layout.tsx",
-        "src/app/s/[slug]/page.tsx"
+        "src/app/s/[code]/page.tsx",
+        "src/lib/domain-routing.ts"
       ]
     },
     {
-      "name": "Supabase Client & Server Utilities",
-      "description": "Centralized Supabase client and shared utilities for server/client usage.",
+      "name": "Supabase Client & Utilities",
+      "description": "Centralized Supabase client configurations, shared utilities, validation, and error handling.",
       "files": [
         "src/lib/supabase.ts",
+        "src/lib/supabase-client.ts",
         "src/lib/utils.ts",
-        "setup-supabase.js",
-        "setup-supabase-tables.sql"
+        "src/lib/validation.ts",
+        "src/lib/error-pages.ts",
+        "src/lib/entitlements.ts",
+        "src/lib/secrets.ts"
       ]
     },
     {
       "name": "API Routes (RESTful endpoints)",
-      "description": "Next.js API routes for CRUD on QR codes, links, uploads, payments, and analytics.",
+      "description": "Comprehensive Next.js API routes for QR codes, analytics, billing, organizations, admin, webhooks, and more.",
       "files": [
-        "src/app/api/*"
+        "src/app/api/qr-codes/route.ts",
+        "src/app/api/qr-codes/[id]/route.ts",
+        "src/app/api/qr-codes/[id]/scan/route.ts",
+        "src/app/api/v1/qr-codes/route.ts",
+        "src/app/api/v1/usage/route.ts",
+        "src/app/api/user/credits/route.ts",
+        "src/app/api/vanity-urls/route.ts"
       ]
     }
   ]

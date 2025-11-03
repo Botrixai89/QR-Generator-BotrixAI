@@ -14,6 +14,14 @@ const getRazorpay = async () => {
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate required env vars early for clearer errors
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      console.error('Razorpay env not configured: RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET')
+      return NextResponse.json(
+        { error: 'Payment gateway not configured' },
+        { status: 500 }
+      )
+    }
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
@@ -34,15 +42,27 @@ export async function POST(request: NextRequest) {
 
     // Create Razorpay order for ₹300 (30000 paise)
     const razorpay = await getRazorpay()
-    const order = await razorpay.orders.create({
-      amount: 30000, // ₹300 in paise
-      currency: 'INR',
-      receipt: `order_${Date.now()}`,
-      notes: {
-        plan: 'FLEX',
-        user_id: session.user.id
+    let order
+    try {
+      order = await razorpay.orders.create({
+        amount: 30000, // ₹300 in paise
+        currency: 'INR',
+        receipt: `order_${Date.now()}`,
+        notes: {
+          plan: 'FLEX',
+          user_id: session.user.id
+        }
+      })
+    } catch (e: any) {
+      // Surface a precise error to the client while keeping secrets safe
+      const statusCode = e?.statusCode || 500
+      if (statusCode === 401) {
+        console.error('Razorpay authentication failed when creating order')
+        return NextResponse.json({ error: 'Razorpay authentication failed' }, { status: 502 })
       }
-    })
+      console.error('Razorpay order.create failed:', e)
+      return NextResponse.json({ error: 'Failed to create payment order' }, { status: 502 })
+    }
 
     // Insert payment record
     const { data: payment, error } = await supabaseAdmin!

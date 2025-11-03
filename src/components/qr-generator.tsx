@@ -50,8 +50,7 @@ import {
   IndianRupee
 } from "lucide-react"
 import { socialMediaIcons, SocialMediaPlatform } from "@/components/social-media-icons"
-import QRCodeStyling from "qr-code-styling"
-import { addBotrixLogoToQR } from "@/lib/qr-watermark"
+import { loadQRCodeStyling, loadQRWatermark, loadAdvancedQR } from "@/lib/qr-loader"
 import { 
   AdvancedQROptions, 
   QRShape, 
@@ -61,7 +60,6 @@ import {
   QR_TEMPLATES,
   QR_STICKERS
 } from "@/types/qr-code-advanced"
-import { createAdvancedQR } from "@/lib/qr-code-advanced"
 
 interface QRGeneratorProps {
   userId?: string
@@ -122,8 +120,11 @@ function TemplatePreview({ template, isSelected, onClick }: {
             shape: template.shape || 'square'
           }
           
-          const qrGenerator = createAdvancedQR(previewOptions)
-          qrGenerator.generate(previewRef)
+          ;(async () => {
+            const getCreator = await loadAdvancedQR()
+            const qrGenerator = getCreator(previewOptions)
+            await qrGenerator.generate(previewRef)
+          })()
         } catch (error) {
           console.error('Error generating template preview:', error)
           // Fallback: show a simple colored square
@@ -384,6 +385,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   
   const qrRef = useRef<HTMLDivElement>(null)
   const qrGeneratorRef = useRef<any>(null)
+  const retryOnceRef = useRef<boolean>(false)
 
   // Function to generate UPI payment URL using Bharat QR standard or UPI URL format
   const generateUpiUrl = (upiId: string, amount?: string, merchantName?: string, transactionNote?: string, format: 'bharat-qr' | 'upi-url' = upiFormat) => {
@@ -486,22 +488,24 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       // Add timeout to prevent infinite loops
       const timeoutId = setTimeout(() => {
         try {
-          qrGeneratorRef.current = createAdvancedQR(options)
-          const result = qrGeneratorRef.current.generate(qrRef.current)
-          // Ensure watermark is visible in preview when enabled
-          Promise.resolve(result).then(() => {
-            try {
-              if (qrRef.current && (options.watermark || false)) {
-                const svg = qrRef.current.querySelector('svg') as unknown as SVGElement | null
-                if (svg) {
-                  // Lazy import to avoid duplicate bundle cost on server
-                  import('@/lib/qr-watermark').then(({ addBotrixLogoToQR }) => {
-                    addBotrixLogoToQR(svg as unknown as SVGElement)
-                  }).catch(() => { /* no-op */ })
+          ;(async () => {
+            const getCreator = await loadAdvancedQR()
+            qrGeneratorRef.current = getCreator(options)
+            const result = qrGeneratorRef.current.generate(qrRef.current)
+            Promise.resolve(result).then(() => {
+              try {
+                if (qrRef.current && (options.watermark || false)) {
+                  const svg = qrRef.current.querySelector('svg') as unknown as SVGElement | null
+                  if (svg) {
+                    // Lazy import to avoid duplicate bundle cost on server
+                    import('@/lib/qr-watermark').then(({ addBotrixLogoToQR }) => {
+                      addBotrixLogoToQR(svg as unknown as SVGElement)
+                    }).catch(() => { /* no-op */ })
+                  }
                 }
-              }
-            } catch { /* no-op */ }
-          })
+              } catch { /* no-op */ }
+            })
+          })()
         } catch (error) {
           console.error('Error generating QR code:', error)
         }
@@ -510,6 +514,20 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       return () => clearTimeout(timeoutId)
     }
   }, [isClient, url, qrOptions, isUpiPayment, upiId, upiAmount, upiMerchantName, upiTransactionNote])
+
+  // Retry generation once if SVG didn't render (e.g., racing updates after logo upload)
+  useEffect(() => {
+    if (!isClient || !qrRef.current) return
+    const checkId = setTimeout(() => {
+      const hasSvg = !!qrRef.current!.querySelector('svg')
+      if (!hasSvg && !retryOnceRef.current) {
+        retryOnceRef.current = true
+        // Trigger a soft re-render by nudging width (no visual change)
+        setQrOptions(prev => ({ ...prev }))
+      }
+    }, 180)
+    return () => clearTimeout(checkId)
+  }, [isClient, qrOptions.logo, qrOptions.template, qrOptions.shape, url])
 
   // Ensure watermark persists after logo uploads or option changes
   useEffect(() => {
@@ -1682,7 +1700,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                         style={{ 
                           minHeight: "400px", 
                           minWidth: "400px",
-                          backgroundColor: "transparent"
+                          backgroundColor: "#ffffff"
                         }}
                       />
                     ) : (

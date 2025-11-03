@@ -156,6 +156,7 @@ export default function DashboardPage() {
     lastMonth: 0
   })
   const [userCredits, setUserCredits] = useState<number | null>(null)
+  const [userPlan, setUserPlan] = useState<string | null>(null)
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean
     qrCode: QRCodeData | null
@@ -248,6 +249,7 @@ export default function DashboardPage() {
       if (response.ok) {
         const data = await response.json()
         setUserCredits(data.credits)
+        setUserPlan(data.plan || 'FREE')
       } else {
         console.error("Failed to fetch user credits")
       }
@@ -350,6 +352,26 @@ export default function DashboardPage() {
                     </Link>
                   </Button>
                 )}
+              </div>
+            )}
+            {userPlan && (
+              <div className="hidden sm:flex flex-col gap-1 bg-amber-50 px-3 py-2 rounded-lg min-w-[220px]">
+                <div className="flex items-center justify-between text-xs text-amber-900">
+                  <span>Plan: <strong>{userPlan}</strong></span>
+                  <Link className="underline" href="/pricing">Upgrade</Link>
+                </div>
+                {(() => {
+                  const maxByPlan: Record<string, number> = { FREE: 10, FLEX: 100, PRO: 1000, BUSINESS: 10000 }
+                  const max = maxByPlan[userPlan] ?? 10
+                  const used = stats.totalCodes
+                  const pct = Math.min(100, Math.round((used / max) * 100))
+                  return (
+                    <div className="space-y-1">
+                      <Progress value={pct} />
+                      <div className="text-[11px] text-amber-900">{used} / {max} QR codes</div>
+                    </div>
+                  )
+                })()}
               </div>
             )}
             <Button asChild>

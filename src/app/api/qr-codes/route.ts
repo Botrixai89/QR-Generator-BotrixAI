@@ -4,6 +4,9 @@ import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 import { randomUUID } from "crypto"
 import { shouldShortenUrl, createShortUrl, storeUrlMapping } from "@/lib/url-shortener"
+import { assertCanCreateQr, getUserPlan, hasFeature } from "@/lib/entitlements"
+import { rateLimit } from "@/lib/rate-limit"
+import { canAccessOrgResource } from "@/lib/rbac"
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +37,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Global per-user rate limit for create
+    const limit = await rateLimit({
+      key: `user:${session.user.id}`,
+      route: '/api/qr-codes:POST',
+      windowSeconds: 60,
+      maxRequests: 30,
+    })
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: 'rate_limited', retryAfter: limit.retryAfter },
+        { status: 429 }
+      )
+    }
+
     // Check user credits before creating QR code
     const { data: user, error: userError } = await supabaseAdmin!
       .from('User')
@@ -57,6 +74,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Enforce plan entitlements: QR creation limit
+    try {
+      await assertCanCreateQr(session.user.id)
+    } catch (e: any) {
+      const status = e?.status || 403
+      return NextResponse.json({ error: e?.code || 'plan_limit', message: e?.message }, { status })
+    }
+
     const formData = await request.formData()
     const url = formData.get("url") as string
     const title = formData.get("title") as string
@@ -71,6 +96,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = formData.get("expiresAt") as string
     const maxScans = formData.get("maxScans") as string
     const redirectUrl = formData.get("redirectUrl") as string
+    const organizationId = formData.get("organizationId") as string | null
     
     // Advanced QR code features
     const shape = formData.get("shape") as string
@@ -116,9 +142,23 @@ export async function POST(request: NextRequest) {
         const sanitizedFileName = logoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
         const fileName = `${timestamp}-${sanitizedFileName}`
         
-        // Convert File to Buffer
+        // Convert File to Buffer and optimize
         const bytes = await logoFile.arrayBuffer()
-        const buffer = Buffer.from(bytes)
+        let buffer = Buffer.from(bytes)
+        
+        // Optimize image if optimization utility is available
+        try {
+          const { optimizeImage } = await import('@/lib/image-optimization')
+          buffer = await optimizeImage(buffer, {
+            maxWidth: 512,
+            maxHeight: 512,
+            quality: 85,
+            format: 'webp',
+          })
+        } catch (error) {
+          console.warn('Image optimization not available, using original:', error)
+          // Continue with original buffer
+        }
         
         // Ensure bucket exists (auto-create if missing)
         try {
@@ -264,6 +304,29 @@ export async function POST(request: NextRequest) {
     if (parsedSticker) insertData.sticker = parsedSticker
     if (parsedEffects) insertData.effects = parsedEffects
 
+    // Enforce dynamic QR entitlement
+    if (insertData.isDynamic) {
+      const plan = await getUserPlan(session.user.id)
+      if (!hasFeature(plan, 'dynamicQrAllowed')) {
+        return NextResponse.json(
+          { error: 'feature_not_allowed', message: 'Dynamic QR codes are not available on your plan.' },
+          { status: 403 }
+        )
+      }
+    }
+
+    // Validate organization access if organizationId provided
+    if (organizationId) {
+      const hasAccess = await canAccessOrgResource(session.user.id, organizationId)
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: 'Not a member of this organization' },
+          { status: 403 }
+        )
+      }
+      insertData.organizationId = organizationId
+    }
+
     const { data: qrCode, error } = await supabaseAdmin!
       .from('QrCode')
       .insert(insertData)
@@ -330,10 +393,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Get user's organization IDs
+    const { data: orgMembers } = await supabaseAdmin!
+      .from('OrganizationMember')
+      .select('organizationId')
+      .eq('userId', session.user.id)
+    
+    const orgIds = orgMembers?.map(m => m.organizationId) || []
+    
+    // Fetch QR codes: user-owned OR org-owned (where user is member)
     const { data: qrCodes, error } = await supabaseAdmin!
       .from('QrCode')
       .select('*')
-      .eq('userId', session.user.id)
+      .or(`userId.eq.${session.user.id}${orgIds.length > 0 ? `,organizationId.in.(${orgIds.join(',')})` : ''}`)
       .order('createdAt', { ascending: false })
 
     if (error) {
@@ -344,7 +416,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(qrCodes)
+    return NextResponse.json(qrCodes || [])
   } catch (error) {
     console.error("Error fetching QR codes:", error)
     return NextResponse.json(

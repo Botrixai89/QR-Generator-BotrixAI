@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/session-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import Navigation from "@/components/navigation";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { WebVitals } from "@/components/web-vitals";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,13 +69,21 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ErrorBoundary>
-          <AuthProvider>
-            <Navigation />
-            <main className="pt-16">
-              {children}
-            </main>
-            <Toaster />
-          </AuthProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
+              <WebVitals />
+              <Navigation />
+              <main className="pt-16">
+                {children}
+              </main>
+              <Toaster />
+            </AuthProvider>
+          </ThemeProvider>
         </ErrorBoundary>
       </body>
     </html>

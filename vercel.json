@@ -1,12 +1,61 @@
 {
   "functions": {
-    "src/app/api/**/*.ts": {
+    "src/app/api/qr-codes/[id]/scan/route.ts": {
       "maxDuration": 30
+    },
+    "src/app/api/qr-codes/[id]/enhanced-scan/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/jobs/process/route.ts": {
+      "maxDuration": 300
     }
   },
-  "regions": ["bom1"],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "headers": [
+    {
+      "source": "/api/qr-codes/:id/scan",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=60, stale-while-revalidate=300"
+        },
+        {
+          "key": "CDN-Cache-Control",
+          "value": "public, s-maxage=60"
+        }
+      ]
+    },
+    {
+      "source": "/api/qr-codes/:id/enhanced-scan",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=60, stale-while-revalidate=300"
+        }
+      ]
+    },
+    {
+      "source": "/api/images/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/uploads/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/qr-codes/:id/scan",
+      "destination": "/api/qr-codes/[id]/scan"
+    }
+  ]
 }
-

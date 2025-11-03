@@ -2,51 +2,84 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Moon, Sun } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Moon, Sun, Monitor, Check } from "lucide-react"
+import { useTheme } from "next-themes"
+import { cn } from "@/lib/utils"
 
 export function ThemeToggle() {
-  const [isDark, setIsDark] = useState(false)
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    // Check for saved theme preference or default to light mode
-    const savedTheme = localStorage.getItem("theme")
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-    
-    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
-      setIsDark(true)
-      document.documentElement.classList.add("dark")
-    } else {
-      setIsDark(false)
-      document.documentElement.classList.remove("dark")
-    }
+    setMounted(true)
   }, [])
 
-  const toggleTheme = () => {
-    const newTheme = !isDark
-    setIsDark(newTheme)
-    
-    if (newTheme) {
-      document.documentElement.classList.add("dark")
-      localStorage.setItem("theme", "dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-      localStorage.setItem("theme", "light")
-    }
+  if (!mounted) {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 w-8 p-0"
+        aria-label="Toggle theme"
+      >
+        <Sun className="h-4 w-4" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    )
   }
 
+  const themes = [
+    { value: "light", label: "Light", icon: Sun },
+    { value: "dark", label: "Dark", icon: Moon },
+    { value: "system", label: "System", icon: Monitor },
+  ] as const
+
+  const currentTheme = themes.find(t => t.value === theme) || themes[0]
+
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={toggleTheme}
-      className="h-8 w-8 p-0"
-    >
-      {isDark ? (
-        <Sun className="h-4 w-4" />
-      ) : (
-        <Moon className="h-4 w-4" />
-      )}
-      <span className="sr-only">Toggle theme</span>
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          aria-label="Toggle theme"
+        >
+          <currentTheme.icon className="h-4 w-4" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-36">
+        {themes.map((themeOption) => {
+          const Icon = themeOption.icon
+          const isSelected = theme === themeOption.value
+
+          return (
+            <DropdownMenuItem
+              key={themeOption.value}
+              onClick={() => setTheme(themeOption.value)}
+              className={cn(
+                "flex items-center justify-between cursor-pointer",
+                isSelected && "bg-accent"
+              )}
+              role="menuitem"
+              aria-label={`Switch to ${themeOption.label} theme`}
+            >
+              <div className="flex items-center gap-2">
+                <Icon className="h-4 w-4" />
+                <span>{themeOption.label}</span>
+              </div>
+              {isSelected && <Check className="h-4 w-4" />}
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

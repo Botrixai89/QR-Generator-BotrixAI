@@ -78,6 +78,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Send email verification email
+    try {
+      const { sendEmailVerification } = await import('@/lib/transactional-emails')
+      await sendEmailVerification(user.id, email, name)
+    } catch (error) {
+      // Don't fail registration if email fails
+      console.error('Failed to send verification email:', error)
+    }
+
     return NextResponse.json(
       { message: "User created successfully", userId: user.id },
       { status: 201 }

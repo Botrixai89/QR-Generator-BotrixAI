@@ -16,6 +16,7 @@ import { QrCode, BarChart3, LogOut, User, CreditCard } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ThemeToggle } from "./theme-toggle"
+import NotificationsDropdown from "./notifications-dropdown"
 import Image from "next/image"
 
 export default function Navigation() {
@@ -114,12 +115,23 @@ export default function Navigation() {
               
               <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground ml-8">
                 <span className="text-sm font-medium mr-[2px]">powered by</span>
-                <Image 
-                  src="/botrix-logo01.png" 
-                  alt="Botrix Logo" 
-                  width={56} 
+                {/* Light theme logo */}
+                <Image
+                  src="/botrix-logo01.png"
+                  alt="Botrix AI"
+                  width={56}
                   height={56}
-                  className="h-6 w-auto"
+                  className="h-6 w-auto block dark:hidden"
+                  priority
+                />
+                {/* Dark & system theme logo */}
+                <Image
+                  src="/BotrixAI_Dark.jpg"
+                  alt="Botrix AI"
+                  width={56}
+                  height={56}
+                  className="h-6 w-auto hidden dark:block"
+                  priority
                 />
               </div>
             </div>
@@ -155,6 +167,7 @@ export default function Navigation() {
           </div>
 
           <div className="flex items-center space-x-4">
+            {session && <NotificationsDropdown />}
             <ThemeToggle />
             {renderAuthSection()}
           </div>

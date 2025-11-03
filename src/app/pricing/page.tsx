@@ -39,7 +39,17 @@ export default function PricingPage() {
       })
 
       if (!response.ok) {
-        throw new Error("Failed to create order")
+        // Surface server-provided error to help debugging (e.g., Razorpay auth failure)
+        let message = 'Failed to create order'
+        try {
+          const data = await response.json()
+          if (data?.error) message = data.error
+        } catch {
+          try {
+            message = await response.text()
+          } catch {}
+        }
+        throw new Error(message || 'Failed to create order')
       }
 
       const { order_id } = await response.json()
@@ -108,9 +118,9 @@ export default function PricingPage() {
 
       const razorpay = new window.Razorpay(options)
       razorpay.open()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment error:", error)
-      toast.error("Failed to initiate payment. Please try again.")
+      toast.error(error?.message || "Failed to initiate payment. Please try again.")
       setIsLoading(false)
     }
   }

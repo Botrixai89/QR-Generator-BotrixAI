@@ -1,26 +1,145 @@
 [
   {
     "id": "TC001",
-    "title": "Generate QR code with all customization options",
-    "description": "Verify that a user can create a QR code applying colors, dot styles, corner styles, logos, and watermarks, and the generated QR code reflects all these customizations.",
+    "title": "User Registration and Email Verification",
+    "description": "Verify user registration flow including email verification link sent and verified successfully.",
     "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Open the QR code generator page."
+        "description": "Navigate to user registration page."
       },
       {
         "type": "action",
-        "description": "Select custom colors for foreground and background."
+        "description": "Fill valid email and password fields and submit the registration form."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify registration API response is successful and verification email is sent."
       },
       {
         "type": "action",
-        "description": "Choose a dot style and corner style."
+        "description": "Use the verification link from the email to verify the account."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that email verification is successful and user status is updated."
       },
       {
         "type": "action",
-        "description": "Upload a logo and enable watermark toggle."
+        "description": "Attempt login with verified email and password."
+      },
+      {
+        "type": "assertion",
+        "description": "User is able to log in and access the authenticated dashboard."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "User Login with Correct and Incorrect Credentials",
+    "description": "Test login success with correct credentials and failure with incorrect credentials.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page."
+      },
+      {
+        "type": "action",
+        "description": "Input valid registered email and correct password."
+      },
+      {
+        "type": "action",
+        "description": "Click login button."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify login is successful and dashboard is accessible."
+      },
+      {
+        "type": "action",
+        "description": "Navigate again to login page."
+      },
+      {
+        "type": "action",
+        "description": "Input valid email and incorrect password."
+      },
+      {
+        "type": "action",
+        "description": "Click login button."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify login fails with appropriate error message."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Password Reset Workflow",
+    "description": "Validate password reset initiation, email receipt, and successful password update.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to password reset page."
+      },
+      {
+        "type": "action",
+        "description": "Submit registered email to request password reset."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that password reset email is sent."
+      },
+      {
+        "type": "action",
+        "description": "Click on the password reset link from email."
+      },
+      {
+        "type": "action",
+        "description": "Set a new valid password and submit."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify password update success message."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to login using new password."
+      },
+      {
+        "type": "assertion",
+        "description": "Login is successful with the new password."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Generate Static QR Code with Customization",
+    "description": "Test creation of a static QR code with options for color, size, logo upload, and different formats.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to QR code generator page as anonymous or logged-in user."
+      },
+      {
+        "type": "action",
+        "description": "Input a valid static URL."
+      },
+      {
+        "type": "action",
+        "description": "Select custom color, size, and dot/corner style options."
+      },
+      {
+        "type": "action",
+        "description": "Upload a valid logo image for embedding."
       },
       {
         "type": "action",
@@ -28,639 +147,567 @@
       },
       {
         "type": "assertion",
-        "description": "Verify the QR code displays with the selected colors, dot and corner styles."
+        "description": "Generated QR code reflects all customization options accurately."
+      },
+      {
+        "type": "action",
+        "description": "Download the QR code in PNG and SVG formats."
       },
       {
         "type": "assertion",
-        "description": "Verify the uploaded logo is correctly embedded."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify watermark is visible and does not obstruct QR code scans."
-      }
-    ]
-  },
-  {
-    "id": "TC002",
-    "title": "User registration with valid data",
-    "description": "Test that a new user can successfully register using valid information and receive confirmation.",
-    "category": "functional",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to the sign-up page."
-      },
-      {
-        "type": "action",
-        "description": "Input valid username, email, and strong password."
-      },
-      {
-        "type": "action",
-        "description": "Submit the registration form."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm registration success message is shown."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm that user is redirected to login or dashboard as appropriate."
-      }
-    ]
-  },
-  {
-    "id": "TC003",
-    "title": "User login with correct credentials",
-    "description": "Ensure users can log in with valid credentials and maintain session persistence.",
-    "category": "functional",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Go to the login page."
-      },
-      {
-        "type": "action",
-        "description": "Enter valid email and password."
-      },
-      {
-        "type": "action",
-        "description": "Click the login button."
-      },
-      {
-        "type": "assertion",
-        "description": "User is successfully logged in and redirected to the dashboard."
-      },
-      {
-        "type": "assertion",
-        "description": "User session persists across browser reloads."
-      }
-    ]
-  },
-  {
-    "id": "TC004",
-    "title": "User login with invalid credentials",
-    "description": "Verify application behavior when a user attempts login with incorrect email or password.",
-    "category": "error handling",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to the login page."
-      },
-      {
-        "type": "action",
-        "description": "Input invalid email or password."
-      },
-      {
-        "type": "action",
-        "description": "Click the login button."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify that login fails and appropriate error message is displayed."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm user is not redirected and remains on login page."
+        "description": "Downloaded QR codes open correctly and contain the intended data."
       }
     ]
   },
   {
     "id": "TC005",
-    "title": "Save generated QR code to authenticated user's dashboard",
-    "description": "Test that after login, a user can save a generated QR code to their dashboard and it appears in the saved codes list.",
+    "title": "Generate Advanced QR Code with Templates, Gradients, and Effects",
+    "description": "Validate advanced QR code generation with styling options such as templates, gradients, frames, stickers, and watermark overlays.",
     "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Log in with valid user credentials."
+        "description": "Login and navigate to advanced QR code generation page."
       },
       {
         "type": "action",
-        "description": "Generate a QR code with custom options."
+        "description": "Select a QR code template and apply a gradient fill."
       },
       {
         "type": "action",
-        "description": "Save the QR code to user's account."
+        "description": "Add frames, stickers, and apply watermark overlays."
       },
       {
         "type": "action",
-        "description": "Navigate to dashboard."
+        "description": "Input a valid URL and generate the code."
       },
       {
         "type": "assertion",
-        "description": "Verify the saved QR code appears in the user's list."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify saved code metadata such as creation date and customization options are visible."
+        "description": "QR code is generated with all selected styles properly rendered."
       }
     ]
   },
   {
     "id": "TC006",
-    "title": "Dynamic QR code expiration enforcement",
-    "description": "Confirm that dynamic QR codes expire and become invalid after the specified expiration time.",
+    "title": "Create and Manage Dynamic QR Code with Editable URL, Expiration, and Scan Limits",
+    "description": "Verify dynamic QR code creation, URL update, expiration enforcement, scan limit management, and analytics capture.",
     "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Create or update a dynamic QR code setting an expiration date/time shortly in the future."
+        "description": "Login and navigate to dynamic QR code creation page."
       },
       {
         "type": "action",
-        "description": "Access the QR code before expiration and verify scanning redirects correctly."
-      },
-      {
-        "type": "action",
-        "description": "Simulate or wait until after the expiration time."
-      },
-      {
-        "type": "action",
-        "description": "Attempt to scan/visit the QR code."
+        "description": "Create a dynamic QR code with a target URL, expiration date, and scan limit."
       },
       {
         "type": "assertion",
-        "description": "Verify that access is denied or redirected to an expiration notice."
+        "description": "Confirm dynamic QR code is created and listed in user dashboard."
+      },
+      {
+        "type": "action",
+        "description": "Update the target URL of the dynamic QR code."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated URL is effective for new scans."
+      },
+      {
+        "type": "action",
+        "description": "Simulate scans up to and beyond the scan limit."
+      },
+      {
+        "type": "assertion",
+        "description": "Scan limit is enforced and scans beyond limit are blocked with proper error message."
+      },
+      {
+        "type": "action",
+        "description": "Simulate scans before and after expiration date."
+      },
+      {
+        "type": "assertion",
+        "description": "Access is allowed before expiration and denied after expiration."
+      },
+      {
+        "type": "action",
+        "description": "View scan analytics dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Analytics accurately reflect device, browser, location, and timestamp data."
       }
     ]
   },
   {
     "id": "TC007",
-    "title": "Dynamic QR code scan limit enforcement",
-    "description": "Check that scanning a dynamic QR code respects the defined scan limits and disables scanning beyond the limit.",
+    "title": "Upload and Manage Logo Images in Supabase Storage",
+    "description": "Validate logo image upload process, including validation, optimization, and retrieval for embedding in QR codes.",
     "category": "functional",
-    "priority": "High",
+    "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Create a dynamic QR code with a specific scan limit."
+        "description": "Login and go to image upload interface."
       },
       {
         "type": "action",
-        "description": "Scan the QR code repeatedly up to the scan limit."
+        "description": "Upload supported image file (e.g., PNG, JPEG) within size limits."
       },
       {
         "type": "assertion",
-        "description": "Verify all scans up to the limit redirect correctly and analytics are updated."
+        "description": "Image upload succeeds and image is accessible in storage."
       },
       {
         "type": "action",
-        "description": "Attempt to scan beyond the scan limit."
+        "description": "Verify image optimization is performed automatically."
       },
       {
         "type": "assertion",
-        "description": "Verify scanning is blocked or redirected appropriately after exceeding the limit."
+        "description": "Optimized image can be embedded correctly in a QR code."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to upload unsupported or overly large image files."
+      },
+      {
+        "type": "assertion",
+        "description": "Upload is rejected with appropriate error messages."
       }
     ]
   },
   {
     "id": "TC008",
-    "title": "Download QR code in PNG and SVG formats",
-    "description": "Verify that generated QR codes can be downloaded in both PNG and SVG formats accurately reflecting the design.",
+    "title": "Payment Processing and Subscription Management with Razorpay",
+    "description": "Test purchasing credits and subscriptions, invoice viewing, and billing enforcement via Razorpay integration.",
     "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Generate a QR code with custom design."
+        "description": "Login and navigate to billing and subscription management dashboard."
       },
       {
         "type": "action",
-        "description": "Download the QR code as PNG."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm that the PNG file downloads correctly and the design matches the preview."
+        "description": "Initiate a purchase flow for credits or subscription plan."
       },
       {
         "type": "action",
-        "description": "Download the QR code as SVG."
+        "description": "Complete payment using Razorpay test environment."
       },
       {
         "type": "assertion",
-        "description": "Confirm that the SVG file downloads correctly and the design matches the preview."
+        "description": "Payment processes successfully and credits/subscription status are updated."
+      },
+      {
+        "type": "action",
+        "description": "View invoices and billing history."
+      },
+      {
+        "type": "assertion",
+        "description": "Invoices display accurate transaction details."
+      },
+      {
+        "type": "action",
+        "description": "Simulate subscription expiration or cancellation."
+      },
+      {
+        "type": "assertion",
+        "description": "Billing enforcement actions restrict features according to subscription status."
       }
     ]
   },
   {
     "id": "TC009",
-    "title": "API: Create QR code with valid data",
-    "description": "Test the QR Code RESTful API successfully creates a QR code resource when receiving valid data.",
-    "category": "functional",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Send a POST request to the QR code creation API endpoint with a valid payload including customization options."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the API returns a success status and the created QR code data including unique identifier."
-      }
-    ]
-  },
-  {
-    "id": "TC010",
-    "title": "API: Update existing QR code",
-    "description": "Verify that updating a QR code via the API applies changes correctly and returns updated data.",
-    "category": "functional",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Send a PUT request to the specific QR code API endpoint with modification data."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm the API responds with success and the QR code record reflects the updated fields."
-      }
-    ]
-  },
-  {
-    "id": "TC011",
-    "title": "API: Delete QR code",
-    "description": "Ensure the API deletes a QR code resource and subsequent fetch requests return not found.",
-    "category": "functional",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Send a DELETE request to the specific QR code API endpoint."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the API responds with success status."
-      },
-      {
-        "type": "action",
-        "description": "Send a GET request to retrieve the deleted QR code."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm the API returns a not found or error status."
-      }
-    ]
-  },
-  {
-    "id": "TC012",
-    "title": "API: Bulk operations on QR codes",
-    "description": "Test bulk creation, update, and deletion of QR codes through the API with proper response handling.",
-    "category": "functional",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Send a bulk POST request with multiple QR code data entries."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm all QR codes are created and API returns list of created records."
-      },
-      {
-        "type": "action",
-        "description": "Send a bulk update request with changes to multiple QR codes."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify all QR codes update correctly and API confirms the changes."
-      },
-      {
-        "type": "action",
-        "description": "Send a bulk delete request for multiple QR code IDs."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the QR codes are deleted successfully and responses confirm deletion."
-      }
-    ]
-  },
-  {
-    "id": "TC013",
-    "title": "Dashboard shows accurate analytics for QR codes",
-    "description": "Validate that the user dashboard displays correct scan and download statistics for each QR code managed by the user.",
-    "category": "functional",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Log in and navigate to the user dashboard."
-      },
-      {
-        "type": "action",
-        "description": "Select multiple saved QR codes."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm the displayed analytics data matches the backend scan/download records accurately."
-      }
-    ]
-  },
-  {
-    "id": "TC014",
-    "title": "QR code scanning updates analytics correctly",
-    "description": "When a QR code is scanned, verify that analytics in the database update correctly and the user is redirected as intended.",
-    "category": "functional",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Scan a valid QR code URL with an enabled analytics tracking."
-      },
-      {
-        "type": "assertion",
-        "description": "Check that the scan is recorded in the analytics database."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the user gets redirected to the correct target URL."
-      }
-    ]
-  },
-  {
-    "id": "TC015",
-    "title": "URL shortening and custom domain support",
-    "description": "Validate the functionality of the URL shortener service including assigning custom domains linked to QR codes.",
-    "category": "functional",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Create a short URL for a QR code target."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm the shortened URL redirects correctly."
-      },
-      {
-        "type": "action",
-        "description": "Assign a custom domain to a QR code."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify that scanning the QR code uses the custom domain and redirects accordingly."
-      }
-    ]
-  },
-  {
-    "id": "TC016",
-    "title": "Watermark toggle functionality",
-    "description": "Ensure that toggling watermark on and off correctly changes the QR code appearance and maintains scan reliability.",
-    "category": "functional",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Generate a QR code with watermark enabled."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify watermark is displayed on the QR code."
-      },
-      {
-        "type": "action",
-        "description": "Toggle watermark off."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm the QR code no longer displays the watermark."
-      },
-      {
-        "type": "action",
-        "description": "Test scanning the QR code with and without watermark."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify QR code remains scannable in both states."
-      }
-    ]
-  },
-  {
-    "id": "TC017",
-    "title": "Dark/light theme toggle",
-    "description": "Confirm the UI theme toggle successfully switches between dark and light modes without UI glitches or content loss.",
-    "category": "ui",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Navigate to any application page."
-      },
-      {
-        "type": "action",
-        "description": "Toggle the theme switch to dark mode."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the UI changes to dark theme visually."
-      },
-      {
-        "type": "action",
-        "description": "Toggle the theme switch back to light mode."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the UI returns to light theme without content missing."
-      }
-    ]
-  },
-  {
-    "id": "TC018",
-    "title": "Route protection and API endpoint security",
-    "description": "Verify that protected routes and API endpoints enforce authentication and deny access to unauthorized users.",
+    "title": "API Key Generation, Rotation, and Usage Tracking",
+    "description": "Validate secure creation, rotation, and monitoring of API keys with usage analytics.",
     "category": "security",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Attempt to access the user dashboard URL without logging in."
-      },
-      {
-        "type": "assertion",
-        "description": "Check that access is denied or redirected to the login page."
+        "description": "Login and navigate to developer tools and API key management page."
       },
       {
         "type": "action",
-        "description": "Send a request to a protected API endpoint without credentials."
+        "description": "Generate a new API key."
       },
       {
         "type": "assertion",
-        "description": "Confirm the request is rejected with an unauthorized error."
+        "description": "New API key is created and displayed securely."
+      },
+      {
+        "type": "action",
+        "description": "Rotate an existing API key."
+      },
+      {
+        "type": "assertion",
+        "description": "Old key is invalidated and a new key is issued."
+      },
+      {
+        "type": "action",
+        "description": "Use API key to create a QR code via the RESTful API."
+      },
+      {
+        "type": "assertion",
+        "description": "API usage is tracked and reported on the dashboard."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Organization Role-Based Access Control and Invitations",
+    "description": "Test multi-user organization setup with role assignments, invitation flow, and permission enforcement.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as organization admin and navigate to organization management."
+      },
+      {
+        "type": "action",
+        "description": "Send invitation to a new member email."
+      },
+      {
+        "type": "assertion",
+        "description": "Invitation email is sent with valid registration link."
+      },
+      {
+        "type": "action",
+        "description": "New user accepts invitation and registers."
+      },
+      {
+        "type": "assertion",
+        "description": "User is added to the organization with the assigned role."
+      },
+      {
+        "type": "action",
+        "description": "Test that role permissions restrict or allow QR code management features."
+      },
+      {
+        "type": "assertion",
+        "description": "Users can only perform actions permitted for their roles."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Custom Domain Setup, DNS Verification, SSL, and Routing",
+    "description": "Validate adding custom domain, DNS record verification, SSL certificate issuance, and proper routing of branded QR codes.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and navigate to custom domain management page."
+      },
+      {
+        "type": "action",
+        "description": "Add a new custom domain and follow DNS verification instructions."
+      },
+      {
+        "type": "assertion",
+        "description": "DNS verification detects valid records and passes."
+      },
+      {
+        "type": "action",
+        "description": "Confirm SSL certificate is provisioned for the domain."
+      },
+      {
+        "type": "assertion",
+        "description": "Custom domain routes QR code URLs correctly to application."
+      },
+      {
+        "type": "action",
+        "description": "Generate a QR code associated with the custom domain."
+      },
+      {
+        "type": "assertion",
+        "description": "QR code scan resolves to URL with the custom domain."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Webhook Setup and Reliable Event Delivery",
+    "description": "Test webhook registration for QR code scan events, event firing, delivery logging, and retry on failure.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and register a webhook URL for scan events."
+      },
+      {
+        "type": "action",
+        "description": "Perform a scan on associated QR code to trigger webhook."
+      },
+      {
+        "type": "assertion",
+        "description": "Webhook is called with correct event payload."
+      },
+      {
+        "type": "action",
+        "description": "Simulate webhook endpoint failure."
+      },
+      {
+        "type": "assertion",
+        "description": "Delivery logs show retry attempts and eventual failure or success."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Notification Preferences and Digest Email Sending",
+    "description": "Validate in-app and email notification preferences management and proper sending of notification digests.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and navigate to notification preferences page."
+      },
+      {
+        "type": "action",
+        "description": "Enable or disable various notification types and set digest email frequency."
+      },
+      {
+        "type": "assertion",
+        "description": "Preferences are saved and reflected correctly."
+      },
+      {
+        "type": "action",
+        "description": "Trigger notifications such as QR code scan alerts."
+      },
+      {
+        "type": "assertion",
+        "description": "Notifications are received in-app and via email according to set preferences."
+      },
+      {
+        "type": "action",
+        "description": "Verify digest email is sent on configured schedule with correct aggregated content."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Rate Limiting Enforcement on API Endpoints",
+    "description": "Test API rate limiting to throttle excessive requests while allowing normal usage.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send a normal volume of requests to protected API endpoints."
+      },
+      {
+        "type": "assertion",
+        "description": "All requests succeed with expected responses."
+      },
+      {
+        "type": "action",
+        "description": "Send a high volume of requests over a short period to trigger rate limiting."
+      },
+      {
+        "type": "assertion",
+        "description": "Excess requests return HTTP 429 Too Many Requests with appropriate message."
+      },
+      {
+        "type": "action",
+        "description": "Make requests after cooldown period."
+      },
+      {
+        "type": "assertion",
+        "description": "Requests succeed again as rate limit resets."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Admin Console User Impersonation and Billing Adjustments",
+    "description": "Validate admin can impersonate other users and perform billing adjustments from admin dashboard.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as admin and open admin console user management."
+      },
+      {
+        "type": "action",
+        "description": "Select a user to impersonate and activate impersonation."
+      },
+      {
+        "type": "assertion",
+        "description": "Admin interface switches context to impersonated user with correct privileges."
+      },
+      {
+        "type": "action",
+        "description": "Perform billing credit adjustment for impersonated user."
+      },
+      {
+        "type": "assertion",
+        "description": "Billing adjustment is persisted and reflected in user account."
+      },
+      {
+        "type": "action",
+        "description": "Exit impersonation mode and return to admin context."
+      },
+      {
+        "type": "assertion",
+        "description": "Admin console interface is restored to admin privileges."
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Internationalization - Language Preference and Translation Accuracy",
+    "description": "Verify multi-language support and correct translations based on user-selected language preference.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Change application language preference to multiple supported languages."
+      },
+      {
+        "type": "assertion",
+        "description": "UI updates dynamically and shows correct translations for all textual elements."
+      },
+      {
+        "type": "action",
+        "description": "Test language fallback for unsupported or missing translation keys."
+      },
+      {
+        "type": "assertion",
+        "description": "Proper fallback language or default English text is displayed without errors."
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Bulk QR Code Generation and Export",
+    "description": "Test batch creation of QR codes and exporting functionalities including streaming large datasets.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and navigate to bulk operations page."
+      },
+      {
+        "type": "action",
+        "description": "Upload or input multiple URLs or data sets for batch QR code generation."
+      },
+      {
+        "type": "action",
+        "description": "Start batch generation process."
+      },
+      {
+        "type": "assertion",
+        "description": "Batch QR codes are generated with correct data and styling."
+      },
+      {
+        "type": "action",
+        "description": "Export generated QR codes in bulk as a compressed archive or CSV."
+      },
+      {
+        "type": "assertion",
+        "description": "Export file downloads successfully and contains all generated QR codes."
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Performance and Reliability Under Load",
+    "description": "Validate application performance, retry logic, timeout handling, caching effectiveness under simulated loads.",
+    "category": "performance",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Simulate multiple concurrent users generating QR codes and accessing dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Application response times remain within defined SLAs and no critical failures occur."
+      },
+      {
+        "type": "action",
+        "description": "Simulate transient network failures and observe retry mechanisms."
+      },
+      {
+        "type": "assertion",
+        "description": "Retry logic triggers correctly and eventual success or graceful failure is handled."
+      },
+      {
+        "type": "action",
+        "description": "Test API calls with cache-enabled responses."
+      },
+      {
+        "type": "assertion",
+        "description": "Cache hits improve response time and data freshness is maintained."
       }
     ]
   },
   {
     "id": "TC019",
-    "title": "Responsive UI and mobile friendliness",
-    "description": "Ensure the application interface including navigation, dashboard, and QR code pages render and function correctly across a range of screen sizes and devices.",
-    "category": "ui",
-    "priority": "Medium",
+    "title": "Security Headers and CSRF Protection",
+    "description": "Ensure all HTTP responses include security headers and CSRF protection is enforced on sensitive endpoints.",
+    "category": "security",
+    "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Open the application on desktop resolution."
+        "description": "Send requests to various application endpoints checking HTTP response headers."
       },
       {
         "type": "assertion",
-        "description": "Verify UI elements are properly aligned and functional."
+        "description": "Verify presence of headers such as Content-Security-Policy, X-Frame-Options, X-Content-Type-Options."
       },
       {
         "type": "action",
-        "description": "Resize window to tablet and mobile screen sizes."
+        "description": "Submit forms and API requests without valid CSRF tokens."
       },
       {
         "type": "assertion",
-        "description": "Check that UI adapts according to the screen size with no overflow or usability issues."
+        "description": "Requests are rejected with appropriate CSRF error."
+      },
+      {
+        "type": "action",
+        "description": "Submit forms and API requests with valid CSRF tokens."
+      },
+      {
+        "type": "assertion",
+        "description": "Requests succeed with proper server processing."
       }
     ]
   },
   {
     "id": "TC020",
-    "title": "Error boundary handling and user feedback",
-    "description": "Test that uncaught errors in components or pages result in graceful error messages and do not break the application flow.",
-    "category": "error handling",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Simulate an error in a major component such as QR code generation or dashboard rendering."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify that a user-friendly error boundary message is displayed."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm user can navigate away or retry without application crash."
-      }
-    ]
-  },
-  {
-    "id": "TC021",
-    "title": "Anonymous user basic QR code generation and download",
-    "description": "Validate that users without authentication can create simple QR codes with basic customization and download them as PNG or SVG.",
-    "category": "functional",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Open the homepage as an anonymous user."
-      },
-      {
-        "type": "action",
-        "description": "Generate a simple QR code with basic color and data inputs."
-      },
-      {
-        "type": "action",
-        "description": "Download the generated QR code as PNG."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the download initializes and file opens with correct QR code."
-      },
-      {
-        "type": "action",
-        "description": "Download the generated QR code as SVG."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify the SVG file downloads and displays as expected."
-      }
-    ]
-  },
-  {
-    "id": "TC022",
-    "title": "Logo upload validation and error handling",
-    "description": "Ensure that invalid file types or large logo uploads are handled gracefully with appropriate error messages.",
-    "category": "error handling",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Attempt to upload an unsupported file type as logo (e.g., .exe or .txt)."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify an error message is shown and upload is rejected."
-      },
-      {
-        "type": "action",
-        "description": "Attempt to upload a logo image exceeding size limits."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm an error message appears indicating file size is too large."
-      }
-    ]
-  },
-  {
-    "id": "TC023",
-    "title": "QR code rendering across multiple devices and browsers",
-    "description": "Verify QR codes render correctly and remain scannable across various devices (desktop, mobile) and browsers (Chrome, Firefox, Safari).",
+    "title": "Observability and Error Reporting Integration",
+    "description": "Check that errors, metrics, web vitals, and logs are correctly captured and reported to monitoring systems such as Sentry.",
     "category": "functional",
     "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Generate a QR code with distinct customizations."
+        "description": "Trigger frontend and backend errors intentionally."
       },
       {
         "type": "assertion",
-        "description": "Open the generated QR code page on multiple browsers and device types."
-      },
-      {
-        "type": "assertion",
-        "description": "Ensure the QR code shows correctly and is scannable on each platform."
-      }
-    ]
-  },
-  {
-    "id": "TC024",
-    "title": "API: Export QR codes in bulk",
-    "description": "Test that users can export multiple QR codes data through the API and receive formatted, complete data sets.",
-    "category": "functional",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Send a request to the bulk export API endpoint with valid authentication."
-      },
-      {
-        "type": "assertion",
-        "description": "Verify response contains a complete export of selected QR codes."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm exported data matches the latest QR code configurations."
-      }
-    ]
-  },
-  {
-    "id": "TC025",
-    "title": "Navigation adapts to user authentication state",
-    "description": "Verify that navigation UI components show correct options and links depending on whether the user is authenticated or anonymous.",
-    "category": "ui",
-    "priority": "Medium",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Access the application without login."
-      },
-      {
-        "type": "assertion",
-        "description": "Confirm navigation shows options relevant to anonymous users (e.g., sign in, sign up)."
+        "description": "Verify errors appear in Sentry dashboard with accurate stack traces and context."
       },
       {
         "type": "action",
-        "description": "Log in with a valid user."
+        "description": "Validate that metrics such as request duration, error rates, and web vitals are collected."
       },
       {
         "type": "assertion",
-        "description": "Verify navigation reflects authenticated options (e.g., dashboard, logout)."
+        "description": "Metrics are available for review and alerts are configured for threshold breaches."
       }
     ]
   }

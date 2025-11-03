@@ -1,0 +1,520 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "QR Generator API",
+    "version": "1.0.0",
+    "description": "REST API for managing QR codes, scans, and webhooks",
+    "contact": {
+      "name": "API Support",
+      "url": "https://your-domain.com/support"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://your-domain.com/api/v1",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "QRCode": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "url": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "foregroundColor": { "type": "string" },
+          "backgroundColor": { "type": "string" },
+          "dotType": { "type": "string", "enum": ["square", "rounded", "dots", "classy", "classy-rounded", "extra-rounded"] },
+          "cornerType": { "type": "string", "enum": ["square", "rounded", "dot", "extra-rounded"] },
+          "logoUrl": { "type": "string" },
+          "hasWatermark": { "type": "boolean" },
+          "isDynamic": { "type": "boolean" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "maxScans": { "type": "integer" },
+          "redirectUrl": { "type": "string" },
+          "webhookUrl": { "type": "string" },
+          "scanCount": { "type": "integer" },
+          "downloadCount": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Scan": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "qrCodeId": { "type": "string" },
+          "scannedAt": { "type": "string", "format": "date-time" },
+          "userAgent": { "type": "string" },
+          "ipAddress": { "type": "string" },
+          "country": { "type": "string" },
+          "city": { "type": "string" },
+          "device": { "type": "string" },
+          "browser": { "type": "string" },
+          "os": { "type": "string" }
+        }
+      },
+      "WebhookLog": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "qrCodeId": { "type": "string" },
+          "webhookUrl": { "type": "string" },
+          "payload": { "type": "object" },
+          "responseStatus": { "type": "integer" },
+          "responseBody": { "type": "string" },
+          "attempts": { "type": "integer" },
+          "lastAttemptAt": { "type": "string", "format": "date-time" },
+          "isSuccessful": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/qr-codes": {
+      "get": {
+        "summary": "List QR codes",
+        "tags": ["QR Codes"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 }, "description": "Number of results to return" },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 }, "description": "Number of results to skip" },
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "Search query" }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of QR codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "qrCodes": { "type": "array", "items": { "$ref": "#/components/schemas/QRCode" } },
+                    "total": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "offset": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "summary": "Create QR code",
+        "tags": ["QR Codes"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": { "type": "string" },
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "foregroundColor": { "type": "string" },
+                  "backgroundColor": { "type": "string" },
+                  "dotType": { "type": "string" },
+                  "cornerType": { "type": "string" },
+                  "logoUrl": { "type": "string" },
+                  "hasWatermark": { "type": "boolean" },
+                  "isDynamic": { "type": "boolean" },
+                  "expiresAt": { "type": "string", "format": "date-time" },
+                  "maxScans": { "type": "integer" },
+                  "redirectUrl": { "type": "string" },
+                  "webhookUrl": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "QR code created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "qrCode": { "$ref": "#/components/schemas/QRCode" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/qr-codes/{id}": {
+      "get": {
+        "summary": "Get QR code by ID",
+        "tags": ["QR Codes"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "QR code details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "qrCode": { "$ref": "#/components/schemas/QRCode" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "put": {
+        "summary": "Update QR code",
+        "tags": ["QR Codes"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string" },
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "foregroundColor": { "type": "string" },
+                  "backgroundColor": { "type": "string" },
+                  "dotType": { "type": "string" },
+                  "cornerType": { "type": "string" },
+                  "logoUrl": { "type": "string" },
+                  "hasWatermark": { "type": "boolean" },
+                  "isDynamic": { "type": "boolean" },
+                  "expiresAt": { "type": "string", "format": "date-time" },
+                  "maxScans": { "type": "integer" },
+                  "redirectUrl": { "type": "string" },
+                  "webhookUrl": { "type": "string" },
+                  "isActive": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "QR code updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "qrCode": { "$ref": "#/components/schemas/QRCode" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete QR code",
+        "tags": ["QR Codes"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "QR code deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/qr-codes/{id}/scans": {
+      "get": {
+        "summary": "List scans for a QR code",
+        "tags": ["Scans"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of scans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "scans": { "type": "array", "items": { "$ref": "#/components/schemas/Scan" } },
+                    "total": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "offset": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "summary": "List webhooks",
+        "tags": ["Webhooks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "qrCodeId", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of webhook configurations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "webhooks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "qrCodeId": { "type": "string" },
+                          "qrCodeTitle": { "type": "string" },
+                          "webhookUrl": { "type": "string" },
+                          "hasSecret": { "type": "boolean" },
+                          "createdAt": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create or update webhook",
+        "tags": ["Webhooks"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["qrCodeId", "webhookUrl"],
+                "properties": {
+                  "qrCodeId": { "type": "string" },
+                  "webhookUrl": { "type": "string" },
+                  "regenerateSecret": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "qrCodeId": { "type": "string" },
+                    "webhookUrl": { "type": "string" },
+                    "secret": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete webhook",
+        "tags": ["Webhooks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "qrCodeId", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/{qrCodeId}/logs": {
+      "get": {
+        "summary": "Get webhook delivery logs",
+        "tags": ["Webhooks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "qrCodeId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["success", "failed"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of webhook delivery logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "logs": { "type": "array", "items": { "$ref": "#/components/schemas/WebhookLog" } },
+                    "total": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "offset": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Retry failed webhook delivery",
+        "tags": ["Webhooks"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "qrCodeId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["logId"],
+                "properties": {
+                  "logId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook retry queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usage": {
+      "get": {
+        "summary": "Get API usage statistics",
+        "tags": ["Usage"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "apiKeyId", "in": "query", "schema": { "type": "string" } },
+          { "name": "startDate", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "endDate", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "usage": {
+                      "type": "object",
+                      "properties": {
+                        "requestCount": { "type": "integer" },
+                        "errorCount": { "type": "integer" },
+                        "avgResponseTime": { "type": "number" },
+                        "totalRequestSize": { "type": "integer" },
+                        "totalResponseSize": { "type": "integer" }
+                      }
+                    },
+                    "period": {
+                      "type": "object",
+                      "properties": {
+                        "startDate": { "type": "string", "format": "date-time" },
+                        "endDate": { "type": "string", "format": "date-time" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
