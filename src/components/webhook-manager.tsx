@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useEffect, useCallback } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,16 +17,13 @@ import {
 } from '@/components/ui/dialog'
 import {
   Webhook,
-  Plus,
   RefreshCw,
   Trash2,
   Eye,
-  Copy,
   CheckCircle2,
   XCircle,
   Clock,
   AlertCircle,
-  ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
@@ -43,7 +40,7 @@ interface WebhookLog {
   id: string
   qrCodeId: string
   webhookUrl: string
-  payload: any
+  payload: Record<string, unknown>
   responseStatus: number | null
   responseBody: string | null
   attempts: number
@@ -58,18 +55,9 @@ export default function WebhookManager() {
   const [logs, setLogs] = useState<WebhookLog[]>([])
   const [loading, setLoading] = useState(true)
   const [apiKey, setApiKey] = useState<string>('')
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadWebhooks()
-  }, [])
-
-  useEffect(() => {
-    if (selectedQrCodeId) {
-      loadWebhookLogs(selectedQrCodeId)
-    }
-  }, [selectedQrCodeId, apiKey])
-
-  const loadWebhooks = async () => {
+  const loadWebhooks = useCallback(async () => {
     try {
       setLoading(true)
       const res = await fetch('/api/v1/webhooks', {
@@ -80,17 +68,17 @@ export default function WebhookManager() {
         throw new Error('Failed to load webhooks')
       }
 
-      const data = await res.json()
+      const data = (await res.json()) as { webhooks?: WebhookConfig[] }
       setWebhooks(data.webhooks || [])
-    } catch (error) {
-      console.error('Error loading webhooks:', error)
+    } catch {
+      console.error('Error loading webhooks')
       toast.error('Failed to load webhooks')
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiKey])
 
-  const loadWebhookLogs = async (qrCodeId: string) => {
+  const loadWebhookLogs = useCallback(async (qrCodeId: string) => {
     try {
       const res = await fetch(`/api/v1/webhooks/${qrCodeId}/logs`, {
         headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
@@ -100,13 +88,23 @@ export default function WebhookManager() {
         throw new Error('Failed to load webhook logs')
       }
 
-      const data = await res.json()
+      const data = (await res.json()) as { logs?: WebhookLog[] }
       setLogs(data.logs || [])
-    } catch (error) {
-      console.error('Error loading webhook logs:', error)
+    } catch {
+      console.error('Error loading webhook logs')
       toast.error('Failed to load webhook logs')
     }
-  }
+  }, [apiKey])
+
+  useEffect(() => {
+    loadWebhooks()
+  }, [loadWebhooks])
+
+  useEffect(() => {
+    if (selectedQrCodeId) {
+      loadWebhookLogs(selectedQrCodeId)
+    }
+  }, [selectedQrCodeId, loadWebhookLogs])
 
   const handleCreateWebhook = async (qrCodeId: string, webhookUrl: string) => {
     try {
@@ -130,8 +128,9 @@ export default function WebhookManager() {
         toast.info(`Secret: ${data.secret}`, { duration: 10000 })
       }
       await loadWebhooks()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create webhook')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create webhook'
+      toast.error(message)
     }
   }
 
@@ -161,8 +160,9 @@ export default function WebhookManager() {
         toast.info(`New secret: ${data.secret}`, { duration: 10000 })
       }
       await loadWebhooks()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update webhook')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update webhook'
+      toast.error(message)
     }
   }
 
@@ -181,7 +181,7 @@ export default function WebhookManager() {
         setSelectedQrCodeId(null)
         setLogs([])
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete webhook')
     }
   }
@@ -206,8 +206,9 @@ export default function WebhookManager() {
 
       toast.success('Webhook retry queued')
       await loadWebhookLogs(selectedQrCodeId)
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to retry webhook')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to retry webhook'
+      toast.error(message)
     }
   }
 
@@ -279,15 +280,13 @@ export default function WebhookManager() {
                           qrCodeId={webhook.qrCodeId}
                           onRegenerate={handleUpdateWebhook}
                         />
-                        <ConfirmationDialog
-                          title="Delete Webhook"
-                          description="Are you sure you want to remove this webhook configuration?"
-                          onConfirm={() => handleDeleteWebhook(webhook.qrCodeId)}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeleteDialogOpen(webhook.qrCodeId)}
                         >
-                          <Button variant="destructive" size="sm">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </ConfirmationDialog>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </>
                     )}
                     <Button
@@ -325,6 +324,18 @@ export default function WebhookManager() {
           </div>
         </div>
       )}
+
+      {webhooks.map((webhook) => (
+        <ConfirmationDialog
+          key={`delete-${webhook.qrCodeId}`}
+          open={deleteDialogOpen === webhook.qrCodeId}
+          onOpenChange={(open) => setDeleteDialogOpen(open ? webhook.qrCodeId : null)}
+          title="Delete Webhook"
+          description="Are you sure you want to remove this webhook configuration?"
+          onConfirm={() => handleDeleteWebhook(webhook.qrCodeId)}
+          variant="destructive"
+        />
+      ))}
     </div>
   )
 }
@@ -437,7 +448,7 @@ function RegenerateSecretDialog({
     fetch(`/api/v1/webhooks?qrCodeId=${qrCodeId}`)
       .then((res) => res.json())
       .then((data) => {
-        const webhook = data.webhooks?.find((w: any) => w.qrCodeId === qrCodeId)
+        const webhook = (data.webhooks as WebhookConfig[] | undefined)?.find((w) => w.qrCodeId === qrCodeId)
         if (webhook) {
           setWebhookUrl(webhook.webhookUrl || '')
         }

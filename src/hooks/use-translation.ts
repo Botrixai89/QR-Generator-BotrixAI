@@ -9,7 +9,8 @@ import type { Locale, Namespace } from "@/lib/i18n"
  */
 export function useTranslation(namespace: Namespace = 'common') {
   const [locale, setLocale] = useState<Locale>(() => getUserLocale())
-  const [translations, setTranslations] = useState<Map<string, string>>(new Map())
+  // Local translation cache reserved for future use
+  // const [translations, setTranslations] = useState<Map<string, string>>(new Map())
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {

@@ -28,7 +28,7 @@ export function createOptimisticUpdate<T>(
         onRollback(previous)
       }
     },
-    commit: (final: T) => {
+    commit: () => {
       // Update successful
     },
   }

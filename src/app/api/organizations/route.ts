@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 import { getUserOrganizations } from "@/lib/rbac"
 
 // GET - List user's organizations
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const orgs = await getUserOrganizations(session.user.id)
     return NextResponse.json({ organizations: orgs })
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Error fetching organizations:', e)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 // POST - Create new organization
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -80,9 +80,10 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ organization: org }, { status: 201 })
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Internal server error'
     console.error('Error creating organization:', e)
-    return NextResponse.json({ error: "Internal server error", details: e.message }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error", details: message }, { status: 500 })
   }
 }
 

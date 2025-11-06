@@ -234,7 +234,7 @@ export async function resolveThresholdAlert(alertId: string, userId: string): Pr
 /**
  * Gets active threshold alerts for a user
  */
-export async function getUserThresholdAlerts(userId: string): Promise<any[]> {
+export async function getUserThresholdAlerts(userId: string): Promise<Array<Record<string, unknown>>> {
   try {
     const { data: alerts, error } = await supabaseAdmin!
       .from('ThresholdAlert')

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateApiRequest } from '@/lib/api-auth'
 import { withUsageMetering } from '@/lib/api-usage'
 import { supabaseAdmin } from '@/lib/supabase'
+import { hasScope } from '@/lib/api-keys'
 
 // GET - Get webhook delivery logs for a QR code
 async function handleGet(
@@ -49,8 +49,6 @@ async function handleGet(
     .from('QrCodeWebhookLog')
     .select('*', { count: 'exact' })
     .eq('qrCodeId', qrCodeId)
-    .limit(Math.min(limit, 100))
-    .offset(offset)
     .order('createdAt', { ascending: false })
 
   if (status === 'success') {
@@ -60,6 +58,7 @@ async function handleGet(
   }
 
   const { data: logs, error, count } = await query
+    .range(offset, offset + Math.min(limit, 100) - 1)
 
   if (error) {
     console.error('Error fetching webhook logs:', error)
@@ -151,21 +150,27 @@ async function handlePost(
   return NextResponse.json({ success: true, message: 'Webhook retry queued' })
 }
 
-export const GET = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req, ['webhook:read']).then((result) => {
-    if (!result.success) return result.response
-    return ctx.params.then(async (params: { qrCodeId: string }) => {
-      return handleGet(req, { qrCodeId: params.qrCodeId }, result.context)
-    })
-  })
-)
+export const GET = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  // Check scope
+  const { data: apiKey } = await supabaseAdmin!.from('ApiKey').select('*').eq('id', authContext.apiKeyId).single()
+  if (!apiKey || !hasScope(apiKey, 'webhook:read')) {
+    return NextResponse.json({ error: 'Forbidden', message: 'Missing required scope: webhook:read' }, { status: 403 })
+  }
 
-export const POST = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req, ['webhook:write']).then((result) => {
-    if (!result.success) return result.response
-    return ctx.params.then(async (params: { qrCodeId: string }) => {
-      return handlePost(req, { qrCodeId: params.qrCodeId }, result.context)
-    })
-  })
-)
+  const context = ctx as { params: Promise<{ qrCodeId: string }> }
+  const params = await context.params
+  return handleGet(req, { qrCodeId: params.qrCodeId }, authContext)
+})
+
+export const POST = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  // Check scope
+  const { data: apiKey } = await supabaseAdmin!.from('ApiKey').select('*').eq('id', authContext.apiKeyId).single()
+  if (!apiKey || !hasScope(apiKey, 'webhook:write')) {
+    return NextResponse.json({ error: 'Forbidden', message: 'Missing required scope: webhook:write' }, { status: 403 })
+  }
+
+  const context = ctx as { params: Promise<{ qrCodeId: string }> }
+  const params = await context.params
+  return handlePost(req, { qrCodeId: params.qrCodeId }, authContext)
+})
 

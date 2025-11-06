@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -51,7 +51,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -87,7 +87,16 @@ export async function PUT(
     }
 
     // Update the QR code
-    const updateData: any = {
+    const updateData: {
+      updatedAt: string
+      url?: string
+      title?: string
+      dynamicContent?: string
+      isActive?: boolean
+      expiresAt?: string | null
+      maxScans?: number
+      redirectUrl?: string
+    } = {
       updatedAt: new Date().toISOString()
     }
 
@@ -132,7 +141,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(

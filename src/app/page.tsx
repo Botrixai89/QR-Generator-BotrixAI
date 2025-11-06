@@ -1,17 +1,15 @@
 "use client"
 
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import QRGenerator from "@/components/qr-generator"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { QrCode, BarChart3, Palette, Download } from "lucide-react"
+import { QrCode, BarChart3, Palette } from "lucide-react"
 import Link from "next/link"
 
 export default function Home() {
   const { data: session, status } = useSession()
-  const router = useRouter()
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
@@ -102,5 +100,6 @@ export default function Home() {
   }
 
   // User is logged in, show the full QR generator
-  return <QRGenerator userId={session.user?.id} />
+  const user = session.user as { id?: string } | undefined
+  return <QRGenerator userId={user?.id} />
 }

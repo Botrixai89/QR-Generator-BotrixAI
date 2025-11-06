@@ -127,10 +127,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
     }
   }
 
-  const handleScanResult = (result: string) => {
-    setLastScanResult(result)
-    onScan(result)
-  }
+  // When a scan result is obtained elsewhere, update state and propagate via onScan
 
   return (
     <Card className="w-full max-w-md mx-auto">

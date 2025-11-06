@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
           .eq('gatewaySubscriptionId', sub.id)
           .maybeSingle()
         if (existing) {
-          const graceUntil = sub.end_at ? new Date((sub.end_at + 7 * 24 * 60 * 60) * 1000).toISOString() : null
           await supabaseAdmin!.from('Subscription').update({
             status: 'active',
             currentPeriodStart: new Date(sub.current_start * 1000).toISOString(),
@@ -88,7 +87,7 @@ export async function POST(request: NextRequest) {
           }).eq('id', existing.id)
           
           // Optionally downgrade user after grace period
-          const { data: user } = await supabaseAdmin!.from('User').select('plan').eq('id', existing.userId).maybeSingle()
+          await supabaseAdmin!.from('User').select('plan').eq('id', existing.userId).maybeSingle()
           // Keep plan during grace period, downgrade handled separately if needed
         }
         break
@@ -217,15 +216,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function mapRazorpaySubStatus(status: string): string {
-  switch (status) {
-    case 'active': return 'active'
-    case 'pending': return 'incomplete'
-    case 'halted': return 'past_due'
-    case 'cancelled': return 'canceled'
-    case 'completed': return 'canceled'
-    default: return 'incomplete'
-  }
-}
+// mapRazorpaySubStatus not used currently; remove to satisfy linter
 
 

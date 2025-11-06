@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateApiRequest } from '@/lib/api-auth'
 import { withUsageMetering } from '@/lib/api-usage'
 import { supabaseAdmin } from '@/lib/supabase'
+import { hasScope } from '@/lib/api-keys'
 
 // GET - Get QR code by ID
 async function handleGet(
@@ -82,7 +82,7 @@ async function handlePut(
   }
 
   // Build update object
-  const updateData: any = {
+  const updateData: Record<string, unknown> & { updatedAt: string } = {
     updatedAt: new Date().toISOString(),
   }
 
@@ -173,30 +173,39 @@ async function handleDelete(
   return NextResponse.json({ success: true })
 }
 
-export const GET = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req, ['qr:read']).then((result) => {
-    if (!result.success) return result.response
-    return ctx.params.then(async (params: { id: string }) => {
-      return handleGet(req, { id: params.id }, result.context)
-    })
-  })
-)
+export const GET = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  // Check scope
+  const { data: apiKey } = await supabaseAdmin!.from('ApiKey').select('*').eq('id', authContext.apiKeyId).single()
+  if (!apiKey || !hasScope(apiKey, 'qr:read')) {
+    return NextResponse.json({ error: 'Forbidden', message: 'Missing required scope: qr:read' }, { status: 403 })
+  }
 
-export const PUT = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req, ['qr:write']).then((result) => {
-    if (!result.success) return result.response
-    return ctx.params.then(async (params: { id: string }) => {
-      return handlePut(req, { id: params.id }, result.context)
-    })
-  })
-)
+  const context = ctx as { params: Promise<{ id: string }> }
+  const params = await context.params
+  return handleGet(req, { id: params.id }, authContext)
+})
 
-export const DELETE = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req, ['qr:delete']).then((result) => {
-    if (!result.success) return result.response
-    return ctx.params.then(async (params: { id: string }) => {
-      return handleDelete(req, { id: params.id }, result.context)
-    })
-  })
-)
+export const PUT = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  // Check scope
+  const { data: apiKey } = await supabaseAdmin!.from('ApiKey').select('*').eq('id', authContext.apiKeyId).single()
+  if (!apiKey || !hasScope(apiKey, 'qr:write')) {
+    return NextResponse.json({ error: 'Forbidden', message: 'Missing required scope: qr:write' }, { status: 403 })
+  }
+
+  const context = ctx as { params: Promise<{ id: string }> }
+  const params = await context.params
+  return handlePut(req, { id: params.id }, authContext)
+})
+
+export const DELETE = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  // Check scope
+  const { data: apiKey } = await supabaseAdmin!.from('ApiKey').select('*').eq('id', authContext.apiKeyId).single()
+  if (!apiKey || !hasScope(apiKey, 'qr:delete')) {
+    return NextResponse.json({ error: 'Forbidden', message: 'Missing required scope: qr:delete' }, { status: 403 })
+  }
+
+  const context = ctx as { params: Promise<{ id: string }> }
+  const params = await context.params
+  return handleDelete(req, { id: params.id }, authContext)
+})
 

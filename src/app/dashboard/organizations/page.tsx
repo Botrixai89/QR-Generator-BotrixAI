@@ -8,13 +8,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Plus, Users, Settings, Crown } from "lucide-react"
+import { Building2, Plus, Settings } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 export default function OrganizationsPage() {
   const { status } = useSession()
   const [loading, setLoading] = useState(true)
-  const [organizations, setOrganizations] = useState<any[]>([])
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string; slug: string; description?: string }>>([])
   const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState("")
@@ -35,7 +35,7 @@ export default function OrganizationsPage() {
         const { organizations } = await res.json()
         setOrganizations(organizations || [])
       }
-    } catch (e) {
+    } catch {
       // noop
     } finally {
       setLoading(false)

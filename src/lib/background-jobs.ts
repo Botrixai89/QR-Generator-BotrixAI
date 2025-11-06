@@ -19,8 +19,8 @@ export interface BackgroundJob {
   jobType: JobType
   status: 'pending' | 'processing' | 'completed' | 'failed'
   priority: number
-  payload: any
-  result?: any
+  payload: Record<string, unknown>
+  result?: unknown
   error?: string
   retries: number
   maxRetries: number
@@ -36,7 +36,7 @@ export interface BackgroundJob {
  */
 export async function createBackgroundJob(
   jobType: JobType,
-  payload: any,
+  payload: Record<string, unknown>,
   options: {
     priority?: number
     maxRetries?: number
@@ -108,10 +108,10 @@ export async function getNextBackgroundJob(): Promise<BackgroundJob | null> {
 export async function updateJobStatus(
   jobId: string,
   status: 'completed' | 'failed',
-  result?: any,
+  result?: unknown,
   error?: string
 ): Promise<void> {
-  const updateData: any = {
+  const updateData: Record<string, unknown> = {
     status,
     updatedAt: new Date().toISOString(),
   }
@@ -123,7 +123,16 @@ export async function updateJobStatus(
 
   if (status === 'failed') {
     updateData.error = error
-    updateData.retries = supabaseAdmin!.raw('retries + 1')
+    // Fetch current retries value to increment it
+    const { data: currentJob } = await supabaseAdmin!
+      .from('BackgroundJob')
+      .select('retries')
+      .eq('id', jobId)
+      .single()
+    
+    if (currentJob) {
+      updateData.retries = (currentJob.retries || 0) + 1
+    }
   }
 
   const { error: updateError } = await supabaseAdmin!
@@ -141,11 +150,18 @@ export async function updateJobStatus(
  */
 export async function processBackgroundJob<T>(
   job: BackgroundJob,
-  processor: (payload: any) => Promise<T>
+  processor: (payload: Record<string, unknown>) => Promise<T>
 ): Promise<T | null> {
   try {
     // Update status to processing
-    await updateJobStatus(job.id, 'processing')
+    await supabaseAdmin!
+      .from('BackgroundJob')
+      .update({
+        status: 'processing',
+        startedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', job.id)
 
     // Process job with retry logic
     const result = await retryWithTimeout(

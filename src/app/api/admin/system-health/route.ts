@@ -3,8 +3,8 @@
  * Provides system health metrics for admin dashboard
  */
 
-import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
@@ -25,6 +25,7 @@ async function isAdmin(userId: string): Promise<boolean> {
     
     return user.role === 'admin'
   } catch (error) {
+    console.error("Error checking admin status:", error)
     return false
   }
 }
@@ -32,9 +33,9 @@ async function isAdmin(userId: string): Promise<boolean> {
 /**
  * GET - Get system health metrics
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -83,8 +84,10 @@ export async function GET(request: NextRequest) {
         .select('status')
         .then(({ data }) => {
           const counts = { pending: 0, processing: 0, completed: 0, failed: 0 }
-          data?.forEach((job: any) => {
-            counts[job.status as keyof typeof counts]++
+          data?.forEach((job: { status: keyof typeof counts | string }) => {
+            if ((job.status as string) in counts) {
+              counts[job.status as keyof typeof counts]++
+            }
           })
           return counts
         }),
@@ -94,8 +97,10 @@ export async function GET(request: NextRequest) {
         .select('status')
         .then(({ data }) => {
           const counts = { pending: 0, processing: 0, sent: 0, failed: 0 }
-          data?.forEach((item: any) => {
-            counts[item.status as keyof typeof counts]++
+          data?.forEach((item: { status: keyof typeof counts | string }) => {
+            if ((item.status as string) in counts) {
+              counts[item.status as keyof typeof counts]++
+            }
           })
           return counts
         }),
@@ -105,8 +110,10 @@ export async function GET(request: NextRequest) {
         .select('status')
         .then(({ data }) => {
           const counts = { pending: 0, processing: 0, delivered: 0, failed: 0 }
-          data?.forEach((item: any) => {
-            counts[item.status as keyof typeof counts]++
+          data?.forEach((item: { status: keyof typeof counts | string }) => {
+            if ((item.status as string) in counts) {
+              counts[item.status as keyof typeof counts]++
+            }
           })
           return counts
         }),
@@ -123,16 +130,16 @@ export async function GET(request: NextRequest) {
       .gte('lastAttemptAt', yesterday.toISOString())
     
     // Get domain verification status
-    const { data: domains, error: domainsError } = await supabaseAdmin!
+    const { data: domains } = await supabaseAdmin!
       .from('QrCodeCustomDomain')
       .select('status, isVerified')
     
     const domainVerificationStatus = {
       total: domains?.length || 0,
-      verified: domains?.filter((d: any) => d.isVerified).length || 0,
-      pending: domains?.filter((d: any) => !d.isVerified && d.status === 'pending').length || 0,
-      error: domains?.filter((d: any) => d.status === 'error').length || 0,
-      active: domains?.filter((d: any) => d.status === 'active').length || 0,
+      verified: domains?.filter((d: { isVerified: boolean }) => d.isVerified).length || 0,
+      pending: domains?.filter((d: { isVerified: boolean; status: string }) => !d.isVerified && d.status === 'pending').length || 0,
+      error: domains?.filter((d: { status: string }) => d.status === 'error').length || 0,
+      active: domains?.filter((d: { status: string }) => d.status === 'active').length || 0,
     }
     
     // Get recent errors (last 24 hours)
@@ -155,9 +162,9 @@ export async function GET(request: NextRequest) {
     
     const metrics = {
       requestCount: recentMetrics?.length || 0,
-      errorCount: recentMetrics?.filter((m: any) => m.statusCode >= 500).length || 0,
+      errorCount: recentMetrics?.filter((m: { statusCode: number }) => m.statusCode >= 500).length || 0,
       avgResponseTime: recentMetrics?.length
-        ? recentMetrics.reduce((sum: number, m: any) => sum + (m.responseTime || 0), 0) / recentMetrics.length
+        ? recentMetrics.reduce((sum: number, m: { responseTime: number | null }) => sum + (m.responseTime || 0), 0) / recentMetrics.length
         : 0,
     }
     

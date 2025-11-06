@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
@@ -9,12 +9,13 @@ import { supabaseAdmin } from "@/lib/supabase"
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id: string } } | null
     
     if (!session?.user?.id) {
       return new Response(null, { status: 401 })
     }
 
+    const userId = session.user.id
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = parseInt(searchParams.get('offset') || '0')
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
             const { data: qrCodes, error } = await supabaseAdmin!
               .from('QrCode')
               .select('id, title, url, createdAt, scanCount')
-              .eq('userId', session.user.id)
+              .eq('userId', userId)
               .order('createdAt', { ascending: false })
               .range(currentOffset, currentOffset + batchLimit - 1)
 

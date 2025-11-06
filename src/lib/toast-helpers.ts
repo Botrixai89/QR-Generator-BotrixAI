@@ -165,12 +165,11 @@ export function toastPromise<T>(
   }: {
     loading: string
     success: string | ((data: T) => string)
-    error: string | ((error: any) => string)
+    error: string | ((error: unknown) => string)
     actionUrl?: string
     actionLabel?: string
-  }
-): Promise<T> {
-  return toast.promise(promise, {
+  }): Promise<T> {
+  toast.promise(promise, {
     loading,
     success: (data) => {
       const message = typeof success === "function" ? success(data) : success
@@ -189,5 +188,6 @@ export function toastPromise<T>(
         }
       : undefined,
   })
+  return promise
 }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
@@ -30,7 +30,7 @@ export async function GET(
     }
 
     return NextResponse.json({ invitation })
-  } catch (e: any) {
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -41,7 +41,7 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -110,9 +110,10 @@ export async function POST(
       .eq('id', invitation.id)
 
     return NextResponse.json({ ok: true })
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Internal server error'
     console.error('Error accepting invitation:', e)
-    return NextResponse.json({ error: "Internal server error", details: e.message }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error", details: message }, { status: 500 })
   }
 }
 

@@ -16,7 +16,7 @@ export interface EmailOptions {
   htmlBody: string
   textBody?: string
   templateName?: string
-  templateVariables?: Record<string, any>
+  templateVariables?: Record<string, unknown>
   userId?: string
   organizationId?: string
   scheduledFor?: Date
@@ -141,7 +141,8 @@ async function sendWithSendGrid(options: EmailOptions): Promise<EmailResult> {
 /**
  * Sends email using AWS SES
  */
-async function sendWithSES(options: EmailOptions): Promise<EmailResult> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function sendWithSES(_: EmailOptions): Promise<EmailResult> {
   // AWS SES implementation would use AWS SDK
   // For now, return error to indicate it needs AWS SDK
   return {
@@ -153,7 +154,8 @@ async function sendWithSES(options: EmailOptions): Promise<EmailResult> {
 /**
  * Sends email using SMTP
  */
-async function sendWithSMTP(options: EmailOptions): Promise<EmailResult> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function sendWithSMTP(_: EmailOptions): Promise<EmailResult> {
   // SMTP implementation would use nodemailer
   // For now, return error to indicate it needs nodemailer configuration
   return {
@@ -295,7 +297,7 @@ async function sendEmailDirectly(options: EmailOptions): Promise<EmailResult> {
  */
 export async function getEmailTemplate(
   templateName: string,
-  variables: Record<string, any> = {}
+  variables: Record<string, unknown> = {}
 ): Promise<{ subject: string; htmlBody: string; textBody?: string } | null> {
   try {
     const { data: template, error } = await supabaseAdmin!

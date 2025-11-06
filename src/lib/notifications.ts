@@ -24,7 +24,7 @@ export interface NotificationInput {
   message: string
   actionUrl?: string
   actionLabel?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 /**
@@ -52,7 +52,7 @@ export async function createNotification(input: NotificationInput): Promise<stri
       .single()
 
     if (error || !notification) {
-      if ((error as any)?.code === 'PGRST205') {
+      if ((error as { code?: string })?.code === 'PGRST205') {
         // Table does not exist in this environment; skip silently
         return null
       }
@@ -78,7 +78,7 @@ export async function getUserNotifications(
   limit: number = 50,
   offset: number = 0,
   unreadOnly: boolean = false
-): Promise<{ notifications: any[]; total: number }> {
+): Promise<{ notifications: Array<Record<string, unknown>>; total: number }> {
   try {
     if (!supabaseAdmin) {
       return { notifications: [], total: 0 }
@@ -96,7 +96,7 @@ export async function getUserNotifications(
     const { data: paged, error, count } = await query.range(offset, offset + limit - 1)
 
     if (error) {
-      if ((error as any)?.code === 'PGRST205') {
+      if ((error as { code?: string })?.code === 'PGRST205') {
         return { notifications: [], total: 0 }
       }
       throw new Error('Failed to fetch notifications')
@@ -148,7 +148,7 @@ export async function markAllNotificationsRead(userId: string): Promise<boolean>
       .eq('userId', userId)
       .eq('isRead', false)
 
-    if ((error as any)?.code === 'PGRST205') return true
+    if ((error as { code?: string })?.code === 'PGRST205') return true
     return !error
   } catch (error) {
     console.error('Error marking all notifications as read:', error)
@@ -169,7 +169,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
       .eq('isRead', false)
 
     if (error) {
-      if ((error as any)?.code === 'PGRST205') return 0
+      if ((error as { code?: string })?.code === 'PGRST205') return 0
       throw new Error('Failed to fetch unread count')
     }
 
@@ -227,7 +227,14 @@ async function sendNotificationEmailIfEnabled(
 /**
  * Gets or creates notification preferences for user
  */
-export async function getNotificationPreferences(userId: string): Promise<any> {
+export async function getNotificationPreferences(userId: string): Promise<{
+  userId: string
+  emailEnabled: boolean
+  inAppEnabled: boolean
+  emailFrequency: 'immediate' | 'daily' | 'weekly'
+  notificationTypes: Record<string, unknown>
+  thresholds: Record<string, number>
+} | null> {
   try {
     if (!supabaseAdmin) {
       return {
@@ -239,11 +246,14 @@ export async function getNotificationPreferences(userId: string): Promise<any> {
         thresholds: {},
       }
     }
-    let { data: preferences, error: prefError } = await supabaseAdmin!
+    const result = await supabaseAdmin!
       .from('NotificationPreference')
       .select('*')
       .eq('userId', userId)
       .maybeSingle()
+    
+    let preferences = result.data
+    const prefError = result.error
 
     // Create default preferences if not found
     if (!preferences) {
@@ -261,7 +271,7 @@ export async function getNotificationPreferences(userId: string): Promise<any> {
         .single()
 
       if (error || !newPreferences) {
-        if ((error as any)?.code === 'PGRST205' || (prefError as any)?.code === 'PGRST205') {
+        if ((error as { code?: string })?.code === 'PGRST205' || (prefError as { code?: string })?.code === 'PGRST205') {
           return {
             userId,
             emailEnabled: true,
@@ -293,7 +303,7 @@ export async function updateNotificationPreferences(
     emailEnabled?: boolean
     inAppEnabled?: boolean
     emailFrequency?: 'immediate' | 'daily' | 'weekly'
-    notificationTypes?: Record<string, any>
+    notificationTypes?: Record<string, unknown>
     thresholds?: Record<string, number>
   }
 ): Promise<boolean> {

@@ -11,7 +11,6 @@ interface ShortUrlPageProps {
 export default function ShortUrlPage({ params }: ShortUrlPageProps) {
   const router = useRouter()
   const [resolvedParams, setResolvedParams] = useState<{ code: string } | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     params.then(setResolvedParams)

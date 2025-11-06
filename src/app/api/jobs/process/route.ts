@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getNextBackgroundJob, processBackgroundJob } from "@/lib/background-jobs"
 import { processWebhookOutbox } from "@/lib/webhook-outbox"
 import { supabaseAdmin } from "@/lib/supabase"
-import crypto from 'crypto'
+// crypto not used here
 
 /**
  * POST - Process background jobs
@@ -47,17 +47,17 @@ export async function POST(request: NextRequest) {
           await processBackgroundJob(job, async (payload) => {
             switch (job.jobType) {
               case 'bulk_qr_create':
-                return await processBulkQRCreate(payload)
+                return await processBulkQRCreate(payload as BulkQrCreatePayload)
               case 'bulk_qr_update':
-                return await processBulkQRUpdate(payload)
+                return await processBulkQRUpdate(payload as BulkQrUpdatePayload)
               case 'qr_export':
-                return await processQRExport(payload)
+                return await processQRExport(payload as QrExportPayload)
               case 'webhook_retry':
                 return await processWebhookRetry(payload)
               case 'analytics_aggregate':
-                return await processAnalyticsAggregate(payload)
+                return await processAnalyticsAggregate(payload as AnalyticsAggregatePayload)
               case 'image_optimization':
-                return await processImageOptimization(payload)
+                return await processImageOptimization(payload as ImageOptimizationPayload)
               default:
                 throw new Error(`Unknown job type: ${job.jobType}`)
             }
@@ -87,7 +87,8 @@ export async function POST(request: NextRequest) {
 }
 
 // Job processors
-async function processBulkQRCreate(payload: any) {
+type BulkQrCreatePayload = { userId: string; qrCodes: Array<Record<string, unknown>> }
+async function processBulkQRCreate(payload: BulkQrCreatePayload) {
   const { userId, qrCodes } = payload
 
   const results = []
@@ -111,7 +112,8 @@ async function processBulkQRCreate(payload: any) {
   return results
 }
 
-async function processBulkQRUpdate(payload: any) {
+type BulkQrUpdatePayload = { updates: Array<Record<string, unknown> & { id: string }> }
+async function processBulkQRUpdate(payload: BulkQrUpdatePayload) {
   const { updates } = payload
 
   const results = []
@@ -132,29 +134,33 @@ async function processBulkQRUpdate(payload: any) {
   return results
 }
 
-async function processQRExport(payload: any) {
-  const { userId, format, filters } = payload
+type QrExportPayload = { userId: string; format: string; filters?: Record<string, unknown> }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function processQRExport(_payload: QrExportPayload) {
   
   // Generate export file (implement based on format)
   // For now, return success
   return { success: true, fileUrl: null }
 }
 
-async function processWebhookRetry(payload: any) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function processWebhookRetry(_payload: unknown) {
   // Webhook retry is handled by processWebhookOutbox
   return { success: true }
 }
 
-async function processAnalyticsAggregate(payload: any) {
-  const { date } = payload
+type AnalyticsAggregatePayload = { date: string }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function processAnalyticsAggregate(_payload: AnalyticsAggregatePayload) {
   
   // Aggregate analytics for date
   // Implementation depends on analytics structure
   return { success: true }
 }
 
-async function processImageOptimization(payload: any) {
-  const { imageUrl, options } = payload
+type ImageOptimizationPayload = { imageUrl: string; options?: Record<string, unknown> }
+async function processImageOptimization(payload: ImageOptimizationPayload) {
+  const { imageUrl } = payload
   
   // Optimize image (implement using image optimization utilities)
   // For now, return success

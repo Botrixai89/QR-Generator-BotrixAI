@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
 // Analytics export endpoints
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     if (dateRange && dateRange.start && dateRange.end) {
       filteredQrCodes = qrCodes.map(qrCode => ({
         ...qrCode,
-        QrCodeScan: qrCode.QrCodeScan.filter((scan: any) => {
+        QrCodeScan: qrCode.QrCodeScan.filter((scan: { scannedAt: string }) => {
           const scanDate = new Date(scan.scannedAt)
           const startDate = new Date(dateRange.start)
           const endDate = new Date(dateRange.end)
@@ -119,8 +119,29 @@ export async function POST(request: NextRequest) {
   }
 }
 
+type QrCodeWithScans = {
+  id: string
+  title: string
+  url: string
+  isDynamic: boolean
+  isActive: boolean
+  createdAt: string
+  lastScannedAt?: string
+  customDomain?: string
+  redirectUrl?: string
+  QrCodeScan?: Array<{
+    scannedAt: string
+    device?: string
+    browser?: string
+    os?: string
+    country?: string
+    city?: string
+    abTestVariant?: string
+  }>
+}
+
 // Generate export data structure
-function generateExportData(qrCodes: any[], includeAnalytics: boolean, includeScans: boolean) {
+function generateExportData(qrCodes: QrCodeWithScans[], includeAnalytics: boolean, includeScans: boolean) {
   return qrCodes.map(qrCode => {
     const scans = qrCode.QrCodeScan || []
     
@@ -139,33 +160,33 @@ function generateExportData(qrCodes: any[], includeAnalytics: boolean, includeSc
     if (includeAnalytics) {
       const analytics = {
         totalScans: scans.length,
-        uniqueDevices: new Set(scans.map((s: any) => s.device)).size,
-        uniqueCountries: new Set(scans.map((s: any) => s.country).filter(Boolean)).size,
-        uniqueCities: new Set(scans.map((s: any) => s.city).filter(Boolean)).size,
-        scansByDevice: scans.reduce((acc: any, scan: any) => {
+        uniqueDevices: new Set(scans.map((s: { device?: string }) => s.device)).size,
+        uniqueCountries: new Set(scans.map((s: { country?: string }) => s.country).filter(Boolean)).size,
+        uniqueCities: new Set(scans.map((s: { city?: string }) => s.city).filter(Boolean)).size,
+        scansByDevice: scans.reduce((acc: Record<string, number>, scan: { device?: string }) => {
           acc[scan.device || 'Unknown'] = (acc[scan.device || 'Unknown'] || 0) + 1
           return acc
         }, {}),
-        scansByCountry: scans.reduce((acc: any, scan: any) => {
+        scansByCountry: scans.reduce((acc: Record<string, number>, scan: { country?: string }) => {
           if (scan.country) {
             acc[scan.country] = (acc[scan.country] || 0) + 1
           }
           return acc
         }, {}),
-        scansByBrowser: scans.reduce((acc: any, scan: any) => {
+        scansByBrowser: scans.reduce((acc: Record<string, number>, scan: { browser?: string }) => {
           acc[scan.browser || 'Unknown'] = (acc[scan.browser || 'Unknown'] || 0) + 1
           return acc
         }, {}),
-        scansByOS: scans.reduce((acc: any, scan: any) => {
+        scansByOS: scans.reduce((acc: Record<string, number>, scan: { os?: string }) => {
           acc[scan.os || 'Unknown'] = (acc[scan.os || 'Unknown'] || 0) + 1
           return acc
         }, {}),
-        scansByDate: scans.reduce((acc: any, scan: any) => {
+        scansByDate: scans.reduce((acc: Record<string, number>, scan: { scannedAt: string }) => {
           const date = new Date(scan.scannedAt).toISOString().split('T')[0]
           acc[date] = (acc[date] || 0) + 1
           return acc
         }, {}),
-        abTestResults: scans.reduce((acc: any, scan: any) => {
+        abTestResults: scans.reduce((acc: Record<string, number>, scan: { abTestVariant?: string }) => {
           if (scan.abTestVariant) {
             acc[scan.abTestVariant] = (acc[scan.abTestVariant] || 0) + 1
           }
@@ -176,7 +197,7 @@ function generateExportData(qrCodes: any[], includeAnalytics: boolean, includeSc
       return {
         ...baseData,
         analytics,
-        ...(includeScans && { scans: scans.map((scan: any) => ({
+        ...(includeScans && { scans: scans.map((scan: { scannedAt: string; device?: string; browser?: string; os?: string; country?: string; city?: string; ipAddress?: string; abTestVariant?: string }) => ({
           scannedAt: scan.scannedAt,
           device: scan.device,
           browser: scan.browser,
@@ -194,7 +215,18 @@ function generateExportData(qrCodes: any[], includeAnalytics: boolean, includeSc
 }
 
 // Generate CSV content
-function generateCSV(exportData: any[]): string {
+type AnalyticsSummary = {
+  totalScans: number
+  uniqueDevices: number
+  uniqueCountries: number
+  uniqueCities: number
+  scansByDevice?: Record<string, number>
+  scansByCountry?: Record<string, number>
+  scansByBrowser?: Record<string, number>
+  scansByOS?: Record<string, number>
+}
+
+function generateCSV(exportData: Array<Record<string, unknown>>): string {
   const headers = [
     'QR Code ID',
     'Title',
@@ -214,7 +246,7 @@ function generateCSV(exportData: any[]): string {
   ]
 
   const rows = exportData.map(qrCode => {
-    const analytics = qrCode.analytics || {}
+    const analytics = (qrCode.analytics as AnalyticsSummary | undefined) || ({} as AnalyticsSummary)
     return [
       qrCode.id,
       qrCode.title,
@@ -223,10 +255,10 @@ function generateCSV(exportData: any[]): string {
       qrCode.isActive,
       qrCode.createdAt,
       qrCode.lastScannedAt || 'Never',
-      analytics.totalScans || 0,
-      analytics.uniqueDevices || 0,
-      analytics.uniqueCountries || 0,
-      analytics.uniqueCities || 0,
+      analytics.totalScans ?? 0,
+      analytics.uniqueDevices ?? 0,
+      analytics.uniqueCountries ?? 0,
+      analytics.uniqueCities ?? 0,
       getTopItem(analytics.scansByDevice),
       getTopItem(analytics.scansByCountry),
       getTopItem(analytics.scansByBrowser),
@@ -242,15 +274,16 @@ function generateCSV(exportData: any[]): string {
 }
 
 // Generate Excel content
-async function generateExcel(exportData: any[]): Promise<Buffer> {
-  const XLSX = require('xlsx')
+async function generateExcel(exportData: Array<Record<string, unknown>>): Promise<Buffer> {
+  const XLSX = await import('xlsx')
+  const xlsxDefault = XLSX.default || XLSX
   
   // Create workbook
-  const workbook = XLSX.utils.book_new()
+  const workbook = xlsxDefault.utils.book_new()
   
   // Summary sheet
   const summaryData = exportData.map(qrCode => {
-    const analytics = qrCode.analytics || {}
+    const analytics = (qrCode.analytics as Record<string, unknown>) || {}
     return {
       'QR Code ID': qrCode.id,
       'Title': qrCode.title,
@@ -263,21 +296,21 @@ async function generateExcel(exportData: any[]): Promise<Buffer> {
       'Unique Devices': analytics.uniqueDevices || 0,
       'Unique Countries': analytics.uniqueCountries || 0,
       'Unique Cities': analytics.uniqueCities || 0,
-      'Top Device': getTopItem(analytics.scansByDevice),
-      'Top Country': getTopItem(analytics.scansByCountry),
-      'Top Browser': getTopItem(analytics.scansByBrowser),
-      'Top OS': getTopItem(analytics.scansByOS)
+      'Top Device': getTopItem(analytics.scansByDevice as Record<string, number>),
+      'Top Country': getTopItem(analytics.scansByCountry as Record<string, number>),
+      'Top Browser': getTopItem(analytics.scansByBrowser as Record<string, number>),
+      'Top OS': getTopItem(analytics.scansByOS as Record<string, number>)
     }
   })
   
-  const summarySheet = XLSX.utils.json_to_sheet(summaryData)
-  XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary')
+  const summarySheet = xlsxDefault.utils.json_to_sheet(summaryData)
+  xlsxDefault.utils.book_append_sheet(workbook, summarySheet, 'Summary')
   
   // Detailed scans sheet (if any QR code has scans)
   const allScans = exportData
-    .filter(qrCode => qrCode.scans && qrCode.scans.length > 0)
+    .filter(qrCode => qrCode.scans && Array.isArray(qrCode.scans) && qrCode.scans.length > 0)
     .flatMap(qrCode => 
-      qrCode.scans.map((scan: any) => ({
+      (qrCode.scans as Array<{ scannedAt: string; device?: string; browser?: string; os?: string; country?: string; city?: string; abTestVariant?: string }>).map((scan) => ({
         'QR Code ID': qrCode.id,
         'QR Code Title': qrCode.title,
         'Scanned At': scan.scannedAt,
@@ -291,16 +324,16 @@ async function generateExcel(exportData: any[]): Promise<Buffer> {
     )
   
   if (allScans.length > 0) {
-    const scansSheet = XLSX.utils.json_to_sheet(allScans)
-    XLSX.utils.book_append_sheet(workbook, scansSheet, 'Detailed Scans')
+    const scansSheet = xlsxDefault.utils.json_to_sheet(allScans)
+    xlsxDefault.utils.book_append_sheet(workbook, scansSheet, 'Detailed Scans')
   }
   
   // Generate Excel buffer
-  return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
+  return xlsxDefault.write(workbook, { type: 'buffer', bookType: 'xlsx' }) as Buffer
 }
 
 // Helper function to get top item from analytics object
-function getTopItem(analyticsObject: any): string {
+function getTopItem(analyticsObject: Record<string, number> | undefined): string {
   if (!analyticsObject || typeof analyticsObject !== 'object') {
     return 'N/A'
   }
@@ -310,6 +343,6 @@ function getTopItem(analyticsObject: any): string {
     return 'N/A'
   }
   
-  const sorted = entries.sort((a: any, b: any) => b[1] - a[1])
+  const sorted = entries.sort((a, b) => b[1] - a[1])
   return sorted[0][0]
 }

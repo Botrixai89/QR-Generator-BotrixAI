@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,13 +12,10 @@ import { Badge } from "@/components/ui/badge"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { 
   Edit, 
-  Eye, 
   Trash2, 
   BarChart3, 
   Copy, 
   ExternalLink, 
-  Calendar,
-  Users,
   Zap,
   Link
 } from "lucide-react"
@@ -32,7 +29,7 @@ interface DynamicQRCode {
   scanCount?: number
   createdAt: string
   lastScannedAt?: string | null
-  dynamicContent?: any
+  dynamicContent?: Record<string, unknown>
   redirectUrl?: string
   expiresAt?: string
   maxScans?: number
@@ -56,7 +53,7 @@ export default function DynamicQRManager({ qrCode, onUpdate }: DynamicQRManagerP
     maxScans: qrCode.maxScans?.toString() || ""
   })
 
-  const [analytics, setAnalytics] = useState<any>(null)
+  const [analytics, setAnalytics] = useState<Record<string, unknown> | null>(null)
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean
@@ -299,36 +296,42 @@ export default function DynamicQRManager({ qrCode, onUpdate }: DynamicQRManagerP
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="text-center">
-                          <div className="text-2xl font-bold">{analytics.totalScans}</div>
+                          <div className="text-2xl font-bold">{Number(analytics.totalScans) || 0}</div>
                           <div className="text-sm text-muted-foreground">Total Scans</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-2xl font-bold">{analytics.uniqueDevices}</div>
+                          <div className="text-2xl font-bold">{Number(analytics.uniqueDevices) || 0}</div>
                           <div className="text-sm text-muted-foreground">Unique Devices</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-2xl font-bold">{analytics.uniqueCountries}</div>
+                          <div className="text-2xl font-bold">{Number(analytics.uniqueCountries) || 0}</div>
                           <div className="text-sm text-muted-foreground">Countries</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-2xl font-bold">{analytics.uniqueCities}</div>
+                          <div className="text-2xl font-bold">{Number(analytics.uniqueCities) || 0}</div>
                           <div className="text-sm text-muted-foreground">Cities</div>
                         </div>
                       </div>
                       
-                      {Object.keys(analytics.scansByDevice).length > 0 && (
-                        <div>
-                          <h4 className="font-medium mb-2">Scans by Device</h4>
-                          <div className="space-y-1">
-                            {Object.entries(analytics.scansByDevice).map(([device, count]) => (
-                              <div key={device} className="flex justify-between text-sm">
-                                <span>{device}</span>
-                                <span className="font-medium">{count as number}</span>
+                      {(() => {
+                        const scansByDevice = analytics.scansByDevice as Record<string, unknown> | undefined
+                        if (scansByDevice && typeof scansByDevice === 'object' && Object.keys(scansByDevice).length > 0) {
+                          return (
+                            <div>
+                              <h4 className="font-medium mb-2">Scans by Device</h4>
+                              <div className="space-y-1">
+                                {Object.entries(scansByDevice).map(([device, count]) => (
+                                  <div key={device} className="flex justify-between text-sm">
+                                    <span>{device}</span>
+                                    <span className="font-medium">{Number(count) || 0}</span>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                            </div>
+                          )
+                        }
+                        return null
+                      })()}
                     </div>
                   )}
                 </DialogContent>

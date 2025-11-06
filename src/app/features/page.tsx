@@ -105,7 +105,6 @@ const features = [
   },
 ]
 
-const categories = ['All', 'Core', 'Design', 'Analytics', 'Branding', 'Productivity', 'Security', 'Developer']
 
 export default function FeaturesPage() {
   return (

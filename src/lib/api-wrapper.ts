@@ -9,7 +9,7 @@ import { recordRequestMetric, RequestMetric } from '@/lib/metrics'
 import * as Sentry from '@sentry/nextjs'
 
 export interface ApiHandler {
-  (request: NextRequest, context: any, logger: Logger): Promise<NextResponse>
+  (request: NextRequest, context: unknown, logger: Logger): Promise<NextResponse>
 }
 
 /**
@@ -22,7 +22,7 @@ export function withObservability(
     trackErrors?: boolean
   }
 ) {
-  return async (request: NextRequest, context: any): Promise<NextResponse> => {
+  return async (request: NextRequest, context: unknown): Promise<NextResponse> => {
     const startTime = Date.now()
     const logger = createLoggerFromRequest(request, {
       ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,

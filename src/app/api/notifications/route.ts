@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import {
   getUserNotifications,
@@ -34,10 +34,10 @@ function withSecurityHeaders(response: NextResponse | undefined | null, request:
 // GET - Get user notifications
 export async function GET(request: NextRequest) {
   try {
-    let session: any = null
+    let session: { user?: { id?: string | null } | null } | null = null
     try {
-      session = await getServerSession(authOptions)
-    } catch (e) {
+      session = await getServerSession(authOptions) as { user?: { id?: string | null } | null } | null
+    } catch {
       // In dev or if auth is not configured, fail soft and return empty set
       console.warn('getServerSession failed in /api/notifications, returning empty set')
     }
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const validation = validateQuery(notificationQuerySchema, searchParams)
+    const validation = await validateQuery(notificationQuerySchema, searchParams)
 
     if (!validation.success) {
       return withSecurityHeaders(validation.response, request)
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 // PATCH - Mark all notifications as read
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       const response = NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       return withSecurityHeaders(response, request)

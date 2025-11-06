@@ -5,22 +5,18 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Activity,
   AlertTriangle,
-  CheckCircle2,
-  Clock,
   Database,
   Globe,
   Mail,
   RefreshCw,
-  Server,
   Webhook,
   XCircle,
 } from 'lucide-react'
@@ -70,25 +66,7 @@ export default function SystemHealthPage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin')
-      return
-    }
-
-    if (status === 'authenticated' && session) {
-      fetchHealth()
-      
-      // Auto-refresh every 30 seconds
-      const interval = setInterval(() => {
-        fetchHealth(true)
-      }, 30000)
-      
-      return () => clearInterval(interval)
-    }
-  }, [status, session, router])
-
-  const fetchHealth = async (silent = false) => {
+  const fetchHealth = useCallback(async (silent = false) => {
     if (!silent) {
       setLoading(true)
     } else {
@@ -116,7 +94,25 @@ export default function SystemHealthPage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+      return
+    }
+
+    if (status === 'authenticated' && session) {
+      void fetchHealth()
+
+      // Auto-refresh every 30 seconds
+      const interval = setInterval(() => {
+        void fetchHealth(true)
+      }, 30000)
+      
+      return () => clearInterval(interval)
+    }
+  }, [status, session, router, fetchHealth])
 
   if (status === 'loading' || !session || loading) {
     return (
@@ -151,23 +147,7 @@ export default function SystemHealthPage() {
     return 'bg-red-500'
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-      case 'verified':
-      case 'delivered':
-      case 'sent':
-      case 'completed':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>
-      case 'error':
-      case 'failed':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Error</Badge>
-      default:
-        return <Badge variant="outline">{status}</Badge>
-    }
-  }
+  // Removed unused getStatusBadge helper
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">

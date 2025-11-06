@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Circle, ArrowRight, X } from "lucide-react"
+import { CheckCircle2, ArrowRight, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 

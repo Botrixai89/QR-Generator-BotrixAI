@@ -3,8 +3,8 @@
  * Provides overview statistics for admin dashboard
  */
 
-import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { isAdmin } from "@/lib/admin"
 import { supabaseAdmin } from "@/lib/supabase"
@@ -12,9 +12,9 @@ import { supabaseAdmin } from "@/lib/supabase"
 /**
  * GET - Get admin statistics
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -34,7 +34,6 @@ export async function GET(request: NextRequest) {
     // Get statistics
     const [
       { count: totalUsers },
-      { count: activeUsers },
       { count: lockedUsers },
       { count: totalOrganizations },
       { data: revenueData },
@@ -43,7 +42,6 @@ export async function GET(request: NextRequest) {
       { count: pendingEmails },
     ] = await Promise.all([
       supabaseAdmin!.from('User').select('id', { count: 'exact', head: true }),
-      supabaseAdmin!.from('User').select('id', { count: 'exact', head: true }).neq('role', 'locked'),
       supabaseAdmin!.from('User').select('id', { count: 'exact', head: true }).eq('role', 'locked'),
       supabaseAdmin!.from('Organization').select('id', { count: 'exact', head: true }),
       supabaseAdmin!.from('Invoice').select('amountCents').eq('status', 'paid'),
@@ -53,7 +51,7 @@ export async function GET(request: NextRequest) {
     ])
     
     // Calculate total revenue
-    const totalRevenue = revenueData?.reduce((sum: number, invoice: any) => {
+    const totalRevenue = revenueData?.reduce((sum: number, invoice: { amountCents: number | null }) => {
       return sum + (invoice.amountCents || 0)
     }, 0) || 0
     

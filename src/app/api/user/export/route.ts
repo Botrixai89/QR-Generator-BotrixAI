@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { z } from 'zod'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -17,13 +17,13 @@ const exportQuerySchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
-    const validation = validateQuery(exportQuerySchema, searchParams)
+    const validation = await validateQuery(exportQuerySchema, searchParams)
 
     if (!validation.success) {
       return validation.response
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -189,10 +189,34 @@ async function generateExportFile(
   }
 }
 
+type UserExportData = {
+  user: {
+    id?: string
+    email?: string
+    name?: string | null
+    createdAt?: string
+    updatedAt?: string
+  }
+  qrCodes: Array<Record<string, unknown>>
+  scans: Array<Record<string, unknown>>
+  organizations: Array<Record<string, unknown>>
+  apiKeys: Array<{
+    id: string
+    name: string
+    keyPrefix: string
+    scopes: string[]
+    createdAt: string
+    lastUsedAt?: string | null
+  }>
+  subscriptions: Array<Record<string, unknown>>
+  invoices: Array<Record<string, unknown>>
+  exportedAt: string
+}
+
 /**
  * Gathers all user data for export
  */
-async function gatherUserData(userId: string): Promise<any> {
+async function gatherUserData(userId: string): Promise<UserExportData> {
   // Get user profile
   const { data: user } = await supabaseAdmin!
     .from('User')
@@ -268,12 +292,12 @@ async function gatherUserData(userId: string): Promise<any> {
  */
 async function generateJsonExport(
   userId: string,
-  data: any,
+  data: UserExportData,
   exportRequestId: string
 ): Promise<string> {
   // In production, upload to S3/cloud storage
   // For now, return a placeholder
-  const jsonData = JSON.stringify(data, null, 2)
+  void JSON.stringify(data, null, 2)
   // Store in database or upload to storage service
   // Return signed URL or storage path
   return `https://your-storage.com/exports/${exportRequestId}.json`
@@ -284,7 +308,7 @@ async function generateJsonExport(
  */
 async function generateCsvExport(
   userId: string,
-  data: any,
+  data: UserExportData,
   exportRequestId: string
 ): Promise<string> {
   // Convert to CSV format

@@ -4,11 +4,6 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  css: {
-    modules: {
-      classNameStrategy: 'non-scoped',
-    },
-  },
   test: {
     environment: 'node',
     globals: true,

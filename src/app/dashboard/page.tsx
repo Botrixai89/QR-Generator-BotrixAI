@@ -6,25 +6,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
 import { 
   QrCode, 
   Download, 
   Calendar, 
   BarChart3, 
   Plus,
-  ExternalLink,
   Trash2,
   Eye,
   Zap
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
-import QRCodeStyling from "qr-code-styling"
+import type QRCodeStyling from "qr-code-styling"
+import { loadQRCodeStyling } from "@/lib/qr-loader"
 import DynamicQRManager from "@/components/dynamic-qr-manager"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { addBotrixLogoToQR } from "@/lib/qr-watermark"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface QRCodeData {
   id: string
@@ -44,7 +43,7 @@ interface QRCodeData {
   isActive?: boolean
   scanCount?: number
   lastScannedAt?: string | null
-  dynamicContent?: any
+  dynamicContent?: Record<string, unknown>
   redirectUrl?: string
   expiresAt?: string
   maxScans?: number
@@ -52,10 +51,10 @@ interface QRCodeData {
   shape?: string
   template?: string
   eyePattern?: string
-  gradient?: any
-  sticker?: any
-  effects?: any
-  customStyling?: any
+  gradient?: Record<string, unknown>
+  sticker?: Record<string, unknown>
+  effects?: Record<string, unknown>
+  customStyling?: Record<string, unknown>
 }
 
 // QR Code Preview Component
@@ -80,54 +79,61 @@ function QRCodePreview({ qrCode }: { qrCode: QRCodeData }) {
       
       qrRef.current.innerHTML = ""
       
-      try {
-        // For dynamic QR codes, use the redirect URL if available, otherwise use the QR code URL
-        const qrData = qrCode.isDynamic 
-          ? (qrCode.redirectUrl || `${window.location.origin}/qr/${qrCode.id}`)
-          : qrCode.url
-
-        qrCodeRef.current = new QRCodeStyling({
-          width: 80,
-          height: 80,
-          type: "svg",
-          data: qrData,
-          image: qrCode.logoUrl || undefined,
-          dotsOptions: {
-            color: qrCode.foregroundColor,
-            type: qrCode.dotType as any,
-          },
-          backgroundOptions: {
-            color: formattedBackgroundColor,
-          },
-          cornersSquareOptions: {
-            color: qrCode.foregroundColor,
-            type: qrCode.cornerType as any,
-          },
-          cornersDotOptions: {
-            color: qrCode.foregroundColor,
-            type: qrCode.dotType as any,
-          },
-        })
-        
-        if (qrCodeRef.current && qrRef.current) {
-          qrCodeRef.current.append(qrRef.current)
+      // Load QRCodeStyling dynamically
+      loadQRCodeStyling()
+        .then((QRCodeStylingClass) => {
+          if (!QRCodeStylingClass) {
+            throw new Error('QRCodeStyling not available on server')
+          }
           
-          // Add watermark after QR code is rendered
-          setTimeout(() => {
-            if (qrRef.current && qrCode.hasWatermark) {
-              const svg = qrRef.current.querySelector('svg')
-              if (svg) {
-                addBotrixLogoToQR(svg)
+          // For dynamic QR codes, use the redirect URL if available, otherwise use the QR code URL
+          const qrData = qrCode.isDynamic 
+            ? (qrCode.redirectUrl || `${window.location.origin}/qr/${qrCode.id}`)
+            : qrCode.url
+
+          qrCodeRef.current = new QRCodeStylingClass({
+            width: 80,
+            height: 80,
+            type: "svg",
+            data: qrData,
+            image: qrCode.logoUrl || undefined,
+            dotsOptions: {
+              color: qrCode.foregroundColor,
+              type: qrCode.dotType as 'rounded' | 'dots' | 'classy' | 'classy-rounded' | 'square' | 'extra-rounded',
+            },
+            backgroundOptions: {
+              color: formattedBackgroundColor,
+            },
+            cornersSquareOptions: {
+              color: qrCode.foregroundColor,
+              type: qrCode.cornerType as 'square' | 'dot' | 'extra-rounded',
+            },
+            cornersDotOptions: {
+              color: qrCode.foregroundColor,
+              type: qrCode.dotType as 'square' | 'dot',
+            },
+          })
+          
+          if (qrCodeRef.current && qrRef.current) {
+            qrCodeRef.current.append(qrRef.current)
+            
+            // Add watermark after QR code is rendered
+            setTimeout(() => {
+              if (qrRef.current && qrCode.hasWatermark) {
+                const svg = qrRef.current.querySelector('svg')
+                if (svg) {
+                  addBotrixLogoToQR(svg)
+                }
               }
-            }
-          }, 200)
-        }
-      } catch (error) {
-        console.error("Error creating QR code preview:", error)
-        if (qrRef.current) {
-          qrRef.current.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 80px; color: #666; font-size: 12px;">Error</div>`
-        }
-      }
+            }, 200)
+          }
+        })
+        .catch((error) => {
+          console.error("Error creating QR code preview:", error)
+          if (qrRef.current) {
+            qrRef.current.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 80px; color: #666; font-size: 12px;">Error</div>`
+          }
+        })
     }
   }, [isClient, qrCode])
 
@@ -170,7 +176,7 @@ export default function DashboardPage() {
     open: boolean
     qrCode: QRCodeData | null
     isLoading: boolean
-    data: any | null
+    data: Record<string, unknown> | null
   }>({ open: false, qrCode: null, isLoading: false, data: null })
 
   useEffect(() => {
@@ -184,7 +190,8 @@ export default function DashboardPage() {
   }, [status, router])
 
   useEffect(() => {
-    if (session?.user?.id) {
+    const user = session?.user as { id?: string } | undefined
+    if (user?.id) {
       fetchQrCodes()
       fetchUserCredits()
     }
@@ -200,7 +207,7 @@ export default function DashboardPage() {
       })
       
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json() as QRCodeData[]
         setQrCodes(data)
         
         // Calculate stats
@@ -226,7 +233,7 @@ export default function DashboardPage() {
           lastMonth
         })
       } else {
-        const errorData = await response.json()
+        const errorData = await response.json() as { error?: string }
         toast.error(errorData.error || "Failed to load QR codes")
       }
     } catch (error) {
@@ -247,8 +254,8 @@ export default function DashboardPage() {
       })
       
       if (response.ok) {
-        const data = await response.json()
-        setUserCredits(data.credits)
+        const data = await response.json() as { credits?: number; plan?: string }
+        setUserCredits(data.credits ?? null)
         setUserPlan(data.plan || 'FREE')
       } else {
         console.error("Failed to fetch user credits")
@@ -300,13 +307,13 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/qr-codes/${qrCode.id}/scan`)
       if (res.ok) {
-        const data = await res.json()
+        const data = await res.json() as Record<string, unknown>
         setAnalyticsDialog(prev => ({ ...prev, isLoading: false, data }))
       } else {
         setAnalyticsDialog(prev => ({ ...prev, isLoading: false }))
         toast.error("Failed to load analytics")
       }
-    } catch (e) {
+    } catch {
       setAnalyticsDialog(prev => ({ ...prev, isLoading: false }))
       toast.error("Failed to load analytics")
     }
@@ -586,10 +593,10 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <div className="flex flex-wrap gap-4 text-sm">
                 <span>Downloads: <strong>{analyticsDialog.qrCode?.downloadCount ?? 0}</strong></span>
-                <span>Scans: <strong>{analyticsDialog.data.qrCode?.scanCount ?? analyticsDialog.data.analytics?.totalScans ?? 0}</strong></span>
+                <span>Scans: <strong>{((analyticsDialog.data.qrCode as { scanCount?: number } | undefined)?.scanCount) ?? ((analyticsDialog.data.analytics as { totalScans?: number } | undefined)?.totalScans) ?? 0}</strong></span>
                 <span>Last Scanned: <strong>{analyticsDialog.qrCode?.lastScannedAt ? new Date(analyticsDialog.qrCode.lastScannedAt).toLocaleString() : "Never"}</strong></span>
               </div>
-              {analyticsDialog.data.analytics?.scans?.length ? (
+              {((analyticsDialog.data.analytics as { scans?: unknown[] } | undefined)?.scans?.length) ? (
                 <div className="max-h-64 overflow-auto border rounded">
                   <table className="w-full text-sm">
                     <thead>
@@ -602,7 +609,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {analyticsDialog.data.analytics.scans.map((s: any, i: number) => (
+                      {((analyticsDialog.data.analytics as { scans?: Array<{ createdAt?: string; device?: string; browser?: string; country?: string; city?: string }> })?.scans || []).map((s, i) => (
                         <tr key={i} className="border-t">
                           <td className="p-2">{s.createdAt ? new Date(s.createdAt).toLocaleString() : "-"}</td>
                           <td className="p-2">{s.device || "-"}</td>

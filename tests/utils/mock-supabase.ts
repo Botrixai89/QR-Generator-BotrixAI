@@ -25,7 +25,6 @@ export interface MockQueryBuilder {
   then: (onFulfilled?: (value: any) => any, onRejected?: (reason: any) => any) => Promise<any>
   catch: (onRejected?: (reason: any) => any) => Promise<any>
   count?: number
-  data?: any[]
 }
 
 export class MockSupabase implements MockSupabaseClient {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
@@ -17,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -35,7 +35,7 @@ export async function GET(
     }
 
     return NextResponse.json({ subscription: sub })
-  } catch (e: any) {
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -46,7 +46,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -74,9 +74,7 @@ export async function PATCH(
 
     if (action === 'cancel') {
       // Cancel at period end
-      await razorpay.subscriptions.cancel(sub.gatewaySubscriptionId, {
-        cancel_at_cycle_end: 1
-      })
+      await razorpay.subscriptions.cancel(sub.gatewaySubscriptionId, true)
       await supabaseAdmin!.from('Subscription').update({
         cancelAtPeriodEnd: true,
         updatedAt: new Date().toISOString(),
@@ -86,9 +84,7 @@ export async function PATCH(
 
     if (action === 'resume') {
       // Resume subscription - cancel the cancellation
-      await razorpay.subscriptions.cancel(sub.gatewaySubscriptionId, {
-        cancel_at_cycle_end: 0
-      })
+      await razorpay.subscriptions.cancel(sub.gatewaySubscriptionId, false)
       await supabaseAdmin!.from('Subscription').update({
         cancelAtPeriodEnd: false,
         status: 'active',
@@ -99,9 +95,10 @@ export async function PATCH(
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 })
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Internal server error'
     console.error('Subscription management error:', e)
-    return NextResponse.json({ error: "Internal server error", details: e.message }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error", details: message }, { status: 500 })
   }
 }
 
@@ -111,7 +108,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -143,9 +140,10 @@ export async function DELETE(
     await supabaseAdmin!.from('User').update({ plan: 'FREE' }).eq('id', session.user.id)
 
     return NextResponse.json({ ok: true, message: "Subscription canceled" })
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Internal server error'
     console.error('Subscription cancellation error:', e)
-    return NextResponse.json({ error: "Internal server error", details: e.message }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error", details: message }, { status: 500 })
   }
 }
 

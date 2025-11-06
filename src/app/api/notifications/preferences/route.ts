@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import {
   getNotificationPreferences,
@@ -13,14 +13,14 @@ const preferencesUpdateSchema = z.object({
   emailEnabled: z.boolean().optional(),
   inAppEnabled: z.boolean().optional(),
   emailFrequency: z.enum(['immediate', 'daily', 'weekly']).optional(),
-  notificationTypes: z.record(z.any()).optional(),
-  thresholds: z.record(z.number()).optional(),
+  notificationTypes: z.record(z.string(), z.any()).optional(),
+  thresholds: z.record(z.string(), z.number()).optional(),
 })
 
 // GET - Get notification preferences
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 // PUT - Update notification preferences
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

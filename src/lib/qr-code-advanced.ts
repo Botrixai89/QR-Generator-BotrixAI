@@ -3,9 +3,7 @@ import {
   AdvancedQROptions, 
   QRGradient, 
   QRStickerConfig, 
-  QRTemplateConfig,
-  QR_TEMPLATES,
-  QR_STICKERS
+  QR_TEMPLATES
 } from '@/types/qr-code-advanced'
 
 // Advanced QR Code Generator Class
@@ -152,10 +150,11 @@ export class AdvancedQRCodeGenerator {
   }
 
   // Apply template configuration
-  private async applyTemplate(templateId: string): Promise<void> {
+  private async applyTemplate(_templateId: string): Promise<void> {
     // Template is already applied during QR code generation
     // This method is kept for backward compatibility but does nothing
     // since template settings are applied in the generate method
+    void _templateId // Mark parameter as intentionally unused
     return
   }
 
@@ -839,7 +838,7 @@ export const applyTemplateToQR = (qrGenerator: AdvancedQRCodeGenerator, template
   const template = QR_TEMPLATES[templateId as keyof typeof QR_TEMPLATES]
   if (template) {
     qrGenerator.updateOptions({
-      template: templateId as any,
+      template: templateId as keyof typeof QR_TEMPLATES | undefined,
       foregroundColor: template.colors.foreground,
       backgroundColor: template.colors.background,
       gradient: template.colors.gradient,

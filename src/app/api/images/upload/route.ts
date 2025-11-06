@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { supabaseAdmin } from "@/lib/supabase"
 import { optimizeImage, validateImageFile, getImageCacheHeaders } from "@/lib/image-optimization"
 import { retryWithTimeout } from "@/lib/retry-with-timeout"
 import { createClient } from "@supabase/supabase-js"
@@ -11,7 +10,7 @@ import { createClient } from "@supabase/supabase-js"
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(

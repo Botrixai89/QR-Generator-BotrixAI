@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,12 +22,9 @@ import {
   Trash2,
   RefreshCw,
   Plus,
-  Eye,
-  EyeOff,
   CheckCircle2,
   XCircle,
   Clock,
-  AlertCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
@@ -48,30 +45,30 @@ interface ApiKey {
 export default function ApiKeysManager() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
   const [loading, setLoading] = useState(true)
-  const [organizationId, setOrganizationId] = useState<string | null>(null)
+  const [organizationId] = useState<string | null>(null)
   const [newKeyDialogOpen, setNewKeyDialogOpen] = useState(false)
   const [newKeyValue, setNewKeyValue] = useState<string | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null)
 
   useEffect(() => {
-    loadApiKeys()
-  }, [organizationId])
-
-  const loadApiKeys = async () => {
-    try {
-      const url = organizationId
-        ? `/api/api-keys?organizationId=${organizationId}`
-        : '/api/api-keys'
-      const res = await fetch(url)
-      if (!res.ok) throw new Error('Failed to load API keys')
-      const data = await res.json()
-      setApiKeys(data.apiKeys || [])
-    } catch (error) {
-      console.error('Error loading API keys:', error)
-      toast.error('Failed to load API keys')
-    } finally {
-      setLoading(false)
+    const loadApiKeys = async () => {
+      try {
+        const url = organizationId
+          ? `/api/api-keys?organizationId=${organizationId}`
+          : '/api/api-keys'
+        const res = await fetch(url)
+        if (!res.ok) throw new Error('Failed to load API keys')
+        const data = (await res.json()) as { apiKeys?: ApiKey[] }
+        setApiKeys(data.apiKeys || [])
+      } catch {
+        console.error('Error loading API keys')
+        toast.error('Failed to load API keys')
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+    void loadApiKeys()
+  }, [organizationId])
 
   const handleCreateKey = async (name: string, scopes: string[], expiresAt?: string) => {
     try {
@@ -82,17 +79,26 @@ export default function ApiKeysManager() {
       })
 
       if (!res.ok) {
-        const error = await res.json()
+        const error = (await res.json()) as { error?: string }
         throw new Error(error.error || 'Failed to create API key')
       }
 
-      const data = await res.json()
+      const data = (await res.json()) as { key: string }
       setNewKeyValue(data.key)
       setNewKeyDialogOpen(true)
       toast.success('API key created successfully')
-      await loadApiKeys()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create API key')
+      // Reload API keys after creation
+      const url = organizationId
+        ? `/api/api-keys?organizationId=${organizationId}`
+        : '/api/api-keys'
+      const reloadRes = await fetch(url)
+      if (reloadRes.ok) {
+        const reloadData = (await reloadRes.json()) as { apiKeys?: ApiKey[] }
+        setApiKeys(reloadData.apiKeys || [])
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create API key'
+      toast.error(message)
     }
   }
 
@@ -105,17 +111,26 @@ export default function ApiKeysManager() {
       })
 
       if (!res.ok) {
-        const error = await res.json()
+        const error = (await res.json()) as { error?: string }
         throw new Error(error.error || 'Failed to rotate API key')
       }
 
-      const data = await res.json()
+      const data = (await res.json()) as { key: string }
       setNewKeyValue(data.key)
       setNewKeyDialogOpen(true)
       toast.success('API key rotated successfully')
-      await loadApiKeys()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to rotate API key')
+      // Reload API keys after rotation
+      const url = organizationId
+        ? `/api/api-keys?organizationId=${organizationId}`
+        : '/api/api-keys'
+      const reloadRes = await fetch(url)
+      if (reloadRes.ok) {
+        const reloadData = (await reloadRes.json()) as { apiKeys?: ApiKey[] }
+        setApiKeys(reloadData.apiKeys || [])
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to rotate API key'
+      toast.error(message)
     }
   }
 
@@ -128,8 +143,16 @@ export default function ApiKeysManager() {
       if (!res.ok) throw new Error('Failed to delete API key')
 
       toast.success('API key deleted')
-      await loadApiKeys()
-    } catch (error) {
+      // Reload API keys after deletion
+      const url = organizationId
+        ? `/api/api-keys?organizationId=${organizationId}`
+        : '/api/api-keys'
+      const reloadRes = await fetch(url)
+      if (reloadRes.ok) {
+        const reloadData = (await reloadRes.json()) as { apiKeys?: ApiKey[] }
+        setApiKeys(reloadData.apiKeys || [])
+      }
+    } catch {
       toast.error('Failed to delete API key')
     }
   }
@@ -246,15 +269,13 @@ export default function ApiKeysManager() {
                       name={key.name}
                       onRotate={handleRotateKey}
                     />
-                    <ConfirmationDialog
-                      title="Delete API Key"
-                      description="Are you sure you want to delete this API key? This action cannot be undone."
-                      onConfirm={() => handleDeleteKey(key.id)}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteDialogOpen(key.id)}
                     >
-                      <Button variant="destructive" size="sm">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </ConfirmationDialog>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -262,6 +283,18 @@ export default function ApiKeysManager() {
           ))}
         </div>
       )}
+
+      {apiKeys.map((key) => (
+        <ConfirmationDialog
+          key={`delete-${key.id}`}
+          open={deleteDialogOpen === key.id}
+          onOpenChange={(open) => setDeleteDialogOpen(open ? key.id : null)}
+          title="Delete API Key"
+          description="Are you sure you want to delete this API key? This action cannot be undone."
+          onConfirm={() => handleDeleteKey(key.id)}
+          variant="destructive"
+        />
+      ))}
     </div>
   )
 }

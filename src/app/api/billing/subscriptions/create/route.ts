@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
@@ -18,7 +18,7 @@ const PLAN_PRICES: Record<string, number> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string; email?: string | null; name?: string | null } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
     })
 
     // Get customer or create billing profile
-    let customerId: string | null = null
     const { data: profile } = await supabaseAdmin!
       .from('BillingProfile')
       .select('customerId')
@@ -71,14 +70,11 @@ export async function POST(request: NextRequest) {
           user_id: session.user.id
         }
       })
-      customerId = customer.id
       await supabaseAdmin!.from('BillingProfile').upsert({
         userId: session.user.id,
         customerId: customer.id,
         billingEmail: session.user.email || null,
       })
-    } else {
-      customerId = profile.customerId
     }
 
     const currentPeriodStart = new Date()
@@ -115,9 +111,10 @@ export async function POST(request: NextRequest) {
       razorpay_subscription_id: subscription.id,
       razorpay_key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
     })
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Internal server error'
     console.error('Subscription creation error:', e)
-    return NextResponse.json({ error: "Internal server error", details: e.message }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error", details: message }, { status: 500 })
   }
 }
 

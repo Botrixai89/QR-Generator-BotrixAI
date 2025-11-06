@@ -11,7 +11,7 @@ export default function TestAdvancedQR() {
     // Test 1: Basic QR generation
     console.log('\n1. Testing basic QR generation...')
     try {
-      const basicQR = createAdvancedQR({
+      createAdvancedQR({
         data: 'https://example.com',
         width: 200,
         height: 200,
@@ -27,7 +27,7 @@ export default function TestAdvancedQR() {
     // Test 2: Template application
     console.log('\n2. Testing template application...')
     try {
-      const templateQR = createAdvancedQR({
+      createAdvancedQR({
         data: 'https://example.com',
         width: 200,
         height: 200,
@@ -42,7 +42,7 @@ export default function TestAdvancedQR() {
     // Test 3: Shape application
     console.log('\n3. Testing shape application...')
     try {
-      const shapeQR = createAdvancedQR({
+      createAdvancedQR({
         data: 'https://example.com',
         width: 200,
         height: 200,
@@ -57,7 +57,7 @@ export default function TestAdvancedQR() {
     // Test 4: Gradient application
     console.log('\n4. Testing gradient application...')
     try {
-      const gradientQR = createAdvancedQR({
+      createAdvancedQR({
         data: 'https://example.com',
         width: 200,
         height: 200,
@@ -76,7 +76,7 @@ export default function TestAdvancedQR() {
     // Test 5: Effects application
     console.log('\n5. Testing effects application...')
     try {
-      const effectsQR = createAdvancedQR({
+      createAdvancedQR({
         data: 'https://example.com',
         width: 200,
         height: 200,
@@ -95,14 +95,14 @@ export default function TestAdvancedQR() {
     // Test 6: All templates
     console.log('\n6. Testing all templates...')
     let templateCount = 0
-    for (const [id, template] of Object.entries(QR_TEMPLATES)) {
+    for (const [id] of Object.entries(QR_TEMPLATES)) {
       try {
-        const templateQR = createAdvancedQR({
+        createAdvancedQR({
           data: 'https://example.com',
           width: 200,
           height: 200,
           type: 'svg',
-          template: id as any
+          template: id as keyof typeof QR_TEMPLATES
         })
         templateCount++
       } catch (error) {

@@ -102,9 +102,11 @@ export async function POST(
     // Check owner's monthly scan quota before recording
     try {
       await assertWithinMonthlyScanQuota(qrCode.userId)
-    } catch (e: any) {
-      const status = e?.status || 403
-      return NextResponse.json({ error: e?.code || 'plan_limit', message: e?.message }, { status })
+    } catch (e: unknown) {
+      const status = (e as { status?: number })?.status || 403
+      const code = (e as { code?: string })?.code || 'plan_limit'
+      const message = (e as { message?: string })?.message
+      return NextResponse.json({ error: code, message }, { status })
     }
 
     // Record the scan

@@ -5,11 +5,11 @@
 
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+// Button not used
 import {
   Users,
   DollarSign,
@@ -49,32 +49,30 @@ export default function AdminDashboardPage() {
     }
 
     if (status === 'authenticated' && session) {
-      fetchStats()
+      ;(async () => {
+        try {
+          const response = await fetch('/api/admin/stats')
+          if (!response.ok) {
+            if (response.status === 403) {
+              toast.error('Access denied - Admin access required')
+              router.push('/dashboard')
+              return
+            }
+            throw new Error('Failed to fetch stats')
+          }
+          const data = await response.json()
+          setStats(data)
+        } catch (error) {
+          console.error('Error fetching admin stats:', error)
+          toast.error('Failed to load admin stats')
+        } finally {
+          setLoading(false)
+        }
+      })()
     }
   }, [status, session, router])
 
-  const fetchStats = async () => {
-    try {
-      const response = await fetch('/api/admin/stats')
-      
-      if (!response.ok) {
-        if (response.status === 403) {
-          toast.error('Access denied - Admin access required')
-          router.push('/dashboard')
-          return
-        }
-        throw new Error('Failed to fetch stats')
-      }
-      
-      const data = await response.json()
-      setStats(data)
-    } catch (error) {
-      console.error('Error fetching admin stats:', error)
-      toast.error('Failed to load admin stats')
-    } finally {
-      setLoading(false)
-    }
-  }
+  // fetchStats inlined in useEffect to satisfy exhaustive-deps
 
   if (status === 'loading' || !session || loading) {
     return (

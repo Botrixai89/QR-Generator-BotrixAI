@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateApiRequest } from '@/lib/api-auth'
 import { withUsageMetering } from '@/lib/api-usage'
 import { supabaseAdmin } from '@/lib/supabase'
+import { hasScope } from '@/lib/api-keys'
 import crypto from 'crypto'
 
 // GET - List webhooks for user/org's QR codes
 async function handleGet(
   request: NextRequest,
-  context: any,
+  context: unknown,
   authContext: { apiKeyId: string; userId: string; organizationId: string | null }
 ) {
   const { searchParams } = new URL(request.url)
@@ -71,7 +71,7 @@ async function handleGet(
 // POST - Create/update webhook for a QR code
 async function handlePost(
   request: NextRequest,
-  context: any,
+  context: unknown,
   authContext: { apiKeyId: string; userId: string; organizationId: string | null }
 ) {
   const body = await request.json()
@@ -154,7 +154,7 @@ async function handlePost(
 // DELETE - Remove webhook from QR code
 async function handleDelete(
   request: NextRequest,
-  context: any,
+  context: unknown,
   authContext: { apiKeyId: string; userId: string; organizationId: string | null }
 ) {
   const { searchParams } = new URL(request.url)
@@ -211,24 +211,33 @@ async function handleDelete(
   return NextResponse.json({ success: true })
 }
 
-export const GET = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req, ['webhook:read']).then((result) => {
-    if (!result.success) return result.response
-    return handleGet(req, ctx, result.context)
-  })
-)
+export const GET = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  // Check scope
+  const { data: apiKey } = await supabaseAdmin!.from('ApiKey').select('*').eq('id', authContext.apiKeyId).single()
+  if (!apiKey || !hasScope(apiKey, 'webhook:read')) {
+    return NextResponse.json({ error: 'Forbidden', message: 'Missing required scope: webhook:read' }, { status: 403 })
+  }
 
-export const POST = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req, ['webhook:write']).then((result) => {
-    if (!result.success) return result.response
-    return handlePost(req, ctx, result.context)
-  })
-)
+  return handleGet(req, ctx, authContext)
+})
 
-export const DELETE = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req, ['webhook:delete']).then((result) => {
-    if (!result.success) return result.response
-    return handleDelete(req, ctx, result.context)
-  })
-)
+export const POST = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  // Check scope
+  const { data: apiKey } = await supabaseAdmin!.from('ApiKey').select('*').eq('id', authContext.apiKeyId).single()
+  if (!apiKey || !hasScope(apiKey, 'webhook:write')) {
+    return NextResponse.json({ error: 'Forbidden', message: 'Missing required scope: webhook:write' }, { status: 403 })
+  }
+
+  return handlePost(req, ctx, authContext)
+})
+
+export const DELETE = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  // Check scope
+  const { data: apiKey } = await supabaseAdmin!.from('ApiKey').select('*').eq('id', authContext.apiKeyId).single()
+  if (!apiKey || !hasScope(apiKey, 'webhook:delete')) {
+    return NextResponse.json({ error: 'Forbidden', message: 'Missing required scope: webhook:delete' }, { status: 403 })
+  }
+
+  return handleDelete(req, ctx, authContext)
+})
 

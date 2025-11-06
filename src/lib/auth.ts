@@ -1,9 +1,10 @@
-import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { supabaseAdmin } from "@/lib/supabase"
 import bcrypt from "bcryptjs"
 
-export const authOptions: NextAuthOptions = {
+const jwtStrategy = "jwt" as const
+
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -46,17 +47,22 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: jwtStrategy,
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async jwt({ token, user }: { token: Record<string, unknown>; user?: any }) {
+      if (user?.id) {
         token.id = user.id
       }
       return token
     },
-    async session({ session, token }) {
-      if (token) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async session({ session, token }: { session: any; token: any }) {
+      if (token?.id) {
+        if (!session.user) {
+          session.user = {}
+        }
         session.user.id = token.id as string
       }
       return session

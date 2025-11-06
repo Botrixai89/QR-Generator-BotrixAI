@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
-import { generateApiKey, rotateApiKey } from '@/lib/api-keys'
+import { generateApiKey } from '@/lib/api-keys'
 
 // GET - List API keys for current user/org
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 // POST - Create new API key
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -139,10 +139,11 @@ export async function POST(request: NextRequest) {
       key, // Only returned on creation
       warning: 'Save this API key now. You will not be able to see it again.',
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in POST /api/api-keys:', error)
+    const message = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: message },
       { status: 500 }
     )
   }

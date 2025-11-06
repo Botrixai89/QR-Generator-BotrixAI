@@ -16,7 +16,8 @@ export interface SSLStatus {
  * Auto-manage SSL certificates for verified domains
  * In production, this would integrate with a certificate provider (Let's Encrypt, AWS ACM, etc.)
  */
-export async function manageSSLCertificate(domainId: string, domain: string): Promise<SSLStatus> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function manageSSLCertificate(domainId: string, _: string): Promise<SSLStatus> {
   try {
     // In production, this would:
     // 1. Request SSL certificate from provider (Let's Encrypt, AWS ACM, etc.)
@@ -45,12 +46,12 @@ export async function manageSSLCertificate(domainId: string, domain: string): Pr
       .eq('id', domainId)
     
     return sslStatus
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('SSL management error:', error)
-    
+    const errorMessage = error instanceof Error ? error.message : String(error)
     const sslStatus: SSLStatus = {
       status: 'error',
-      errorMessage: error.message
+      errorMessage
     }
     
     // Update domain with error status
@@ -58,7 +59,7 @@ export async function manageSSLCertificate(domainId: string, domain: string): Pr
       .from('QrCodeCustomDomain')
       .update({
         sslStatus: 'error',
-        errorMessage: `SSL setup failed: ${error.message}`
+        errorMessage: `SSL setup failed: ${errorMessage}`
       })
       .eq('id', domainId)
     

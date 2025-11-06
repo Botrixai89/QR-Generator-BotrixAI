@@ -3,7 +3,7 @@
  * Provides functions for sending specific transactional emails
  */
 
-import { sendEmail, getEmailTemplate } from './email'
+import { sendEmail, getEmailTemplate, type EmailResult } from './email'
 import { supabaseAdmin } from './supabase'
 
 // Use Web Crypto API for edge runtime compatibility (works in both edge and Node.js)

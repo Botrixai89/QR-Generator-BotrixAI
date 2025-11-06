@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
 // Bulk QR code operations
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -19,8 +19,7 @@ export async function POST(request: NextRequest) {
     const { 
       operation, // 'create', 'update', 'delete', 'export'
       qrCodes, // Array of QR code data
-      groupName,
-      options = {}
+      groupName
     } = body
 
     // Validate operation type
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process bulk operation asynchronously
-    processBulkOperation(bulkGroup.id, operation, qrCodes, session.user.id, options)
+    processBulkOperation(bulkGroup.id, operation, qrCodes, session.user.id)
 
     return NextResponse.json({
       success: true,
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
 // Get bulk operation status
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -134,14 +133,13 @@ export async function GET(request: NextRequest) {
 async function processBulkOperation(
   bulkGroupId: string, 
   operation: string, 
-  qrCodes: any[], 
-  userId: string,
-  options: any
+  qrCodes: Array<Record<string, unknown>>, 
+  userId: string
 ) {
   const results = {
-    successful: [] as any[],
-    failed: [] as any[],
-    errors: [] as any[]
+    successful: [] as Array<Record<string, unknown>>,
+    failed: [] as Array<Record<string, unknown>>,
+    errors: [] as Array<{ qrCode: Record<string, unknown>; error: string }>
   }
 
   let processedCount = 0
@@ -156,15 +154,27 @@ async function processBulkOperation(
           case 'create':
             result = await createBulkQRCode(qrCodeData, userId)
             break
-          case 'update':
-            result = await updateBulkQRCode(qrCodeData, userId)
+          case 'update': {
+            if (typeof qrCodeData.id !== 'string') {
+              throw new Error('QR code id is required for update operation')
+            }
+            result = await updateBulkQRCode(qrCodeData as Record<string, unknown> & { id: string }, userId)
             break
-          case 'delete':
+          }
+          case 'delete': {
+            if (typeof qrCodeData.id !== 'string') {
+              throw new Error('QR code id is required for delete operation')
+            }
             result = await deleteBulkQRCode(qrCodeData.id, userId)
             break
-          case 'export':
-            result = await exportBulkQRCode(qrCodeData, userId)
+          }
+          case 'export': {
+            if (typeof qrCodeData.id !== 'string') {
+              throw new Error('QR code id is required for export operation')
+            }
+            result = await exportBulkQRCode(qrCodeData as Record<string, unknown> & { id: string }, userId)
             break
+          }
         }
 
         if (result) {
@@ -206,7 +216,7 @@ async function processBulkOperation(
       })
       .eq('id', bulkGroupId)
 
-  } catch (error) {
+  } catch {
     // Mark as failed
     await supabaseAdmin!
       .from('QrCodeBulkGroup')
@@ -222,7 +232,7 @@ async function processBulkOperation(
 }
 
 // Bulk create QR codes
-async function createBulkQRCode(qrCodeData: any, userId: string) {
+async function createBulkQRCode(qrCodeData: Record<string, unknown>, userId: string) {
   const { data: qrCode, error } = await supabaseAdmin!
     .from('QrCode')
     .insert({
@@ -258,7 +268,7 @@ async function createBulkQRCode(qrCodeData: any, userId: string) {
 }
 
 // Bulk update QR codes
-async function updateBulkQRCode(qrCodeData: any, userId: string) {
+async function updateBulkQRCode(qrCodeData: Record<string, unknown> & { id: string }, userId: string) {
   const { data: qrCode, error } = await supabaseAdmin!
     .from('QrCode')
     .update({
@@ -309,7 +319,7 @@ async function deleteBulkQRCode(qrCodeId: string, userId: string) {
 }
 
 // Bulk export QR codes
-async function exportBulkQRCode(qrCodeData: any, userId: string) {
+async function exportBulkQRCode(qrCodeData: Record<string, unknown> & { id: string }, userId: string) {
   // Get full QR code data with analytics
   const { data: qrCode, error } = await supabaseAdmin!
     .from('QrCode')
@@ -329,14 +339,14 @@ async function exportBulkQRCode(qrCodeData: any, userId: string) {
   const scans = qrCode.QrCodeScan || []
   const analytics = {
     totalScans: scans.length,
-    uniqueDevices: new Set(scans.map((s: any) => s.device)).size,
-    uniqueCountries: new Set(scans.map((s: any) => s.country).filter(Boolean)).size,
-    uniqueCities: new Set(scans.map((s: any) => s.city).filter(Boolean)).size,
-    scansByDevice: scans.reduce((acc: any, scan: any) => {
+    uniqueDevices: new Set(scans.map((s: { device?: string }) => s.device)).size,
+    uniqueCountries: new Set(scans.map((s: { country?: string }) => s.country).filter(Boolean)).size,
+    uniqueCities: new Set(scans.map((s: { city?: string }) => s.city).filter(Boolean)).size,
+    scansByDevice: scans.reduce((acc: Record<string, number>, scan: { device?: string }) => {
       acc[scan.device || 'Unknown'] = (acc[scan.device || 'Unknown'] || 0) + 1
       return acc
     }, {}),
-    scansByCountry: scans.reduce((acc: any, scan: any) => {
+    scansByCountry: scans.reduce((acc: Record<string, number>, scan: { country?: string }) => {
       if (scan.country) {
         acc[scan.country] = (acc[scan.country] || 0) + 1
       }

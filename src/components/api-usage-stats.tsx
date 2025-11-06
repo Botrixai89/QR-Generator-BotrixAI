@@ -1,18 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useEffect, useCallback } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import {
   Activity,
   TrendingUp,
   Clock,
   AlertCircle,
-  Download,
-  Upload,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -33,11 +30,14 @@ export default function ApiUsageStats() {
   )
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0])
 
-  useEffect(() => {
-    loadStats()
-  }, [apiKeyId, startDate, endDate])
+  // Helper to get API key from session or prompt
+  const getApiKey = async (): Promise<string> => {
+    // In a real app, you'd get this from storage or prompt user
+    // For now, return empty string and let the API handle auth
+    return ''
+  }
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -58,22 +58,19 @@ export default function ApiUsageStats() {
         throw new Error('Failed to load usage stats')
       }
 
-      const data = await res.json()
+      const data = (await res.json()) as { usage: UsageStats }
       setStats(data.usage)
-    } catch (error) {
-      console.error('Error loading usage stats:', error)
+    } catch {
+      console.error('Error loading usage stats')
       toast.error('Failed to load usage statistics')
     } finally {
       setLoading(false)
     }
-  }
+  }, [apiKeyId, startDate, endDate])
 
-  // Helper to get API key from session or prompt
-  const getApiKey = async (): Promise<string> => {
-    // In a real app, you'd get this from storage or prompt user
-    // For now, return empty string and let the API handle auth
-    return ''
-  }
+  useEffect(() => {
+    void loadStats()
+  }, [loadStats])
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B'

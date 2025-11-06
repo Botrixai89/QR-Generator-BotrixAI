@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -53,9 +53,9 @@ export async function POST(request: NextRequest) {
           user_id: session.user.id
         }
       })
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Surface a precise error to the client while keeping secrets safe
-      const statusCode = e?.statusCode || 500
+      const statusCode = (e as { statusCode?: number })?.statusCode || 500
       if (statusCode === 401) {
         console.error('Razorpay authentication failed when creating order')
         return NextResponse.json({ error: 'Razorpay authentication failed' }, { status: 502 })

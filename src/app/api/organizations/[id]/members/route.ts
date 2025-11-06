@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
-import { getOrganizationMembers, canManageOrgMembers, getUserOrgRole, isOrgOwner } from "@/lib/rbac"
+import { getOrganizationMembers, canManageOrgMembers, getUserOrgRole } from "@/lib/rbac"
 
 // GET - List organization members
 export async function GET(
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -37,7 +37,7 @@ export async function GET(
     }))
 
     return NextResponse.json({ members: membersWithDetails })
-  } catch (e: any) {
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -48,7 +48,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -123,8 +123,9 @@ export async function POST(
         invitation: { token, expiresAt: expiresAt.toISOString(), link: inviteLink }
       })
     }
-  } catch (e: any) {
-    return NextResponse.json({ error: "Internal server error", details: e.message }, { status: 500 })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Internal server error'
+    return NextResponse.json({ error: "Internal server error", details: message }, { status: 500 })
   }
 }
 

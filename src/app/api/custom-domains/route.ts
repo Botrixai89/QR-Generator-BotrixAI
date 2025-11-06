@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 import crypto from 'crypto'
@@ -9,7 +9,7 @@ import { manageSSLCertificate } from "@/lib/ssl-management"
 // Custom domains management
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
 }
 
 // Get custom domains
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -103,10 +103,10 @@ export async function GET(request: NextRequest) {
 async function addCustomDomain(
   domain: string,
   userId: string,
-  config?: { routingConfig?: any; custom404Page?: string; customExpiryPage?: string }
+  config?: { routingConfig?: Record<string, unknown> | null; custom404Page?: string | null; customExpiryPage?: string | null }
 ) {
   // Check if domain already exists
-  const { data: existingDomain, error: checkError } = await supabaseAdmin!
+  const { data: existingDomain } = await supabaseAdmin!
     .from('QrCodeCustomDomain')
     .select('*')
     .eq('domain', domain)
@@ -272,7 +272,7 @@ async function verifyCustomDomain(domain: string, userId: string) {
 // Remove custom domain
 async function removeCustomDomain(domain: string, userId: string) {
   // Check if domain is being used by any QR codes
-  const { data: qrCodesUsingDomain, error: checkError } = await supabaseAdmin!
+  const { data: qrCodesUsingDomain } = await supabaseAdmin!
     .from('QrCode')
     .select('id, title')
     .eq('customDomain', domain)
@@ -313,7 +313,7 @@ async function removeCustomDomain(domain: string, userId: string) {
 async function updateCustomDomain(
   domain: string,
   userId: string,
-  config: { routingConfig?: any; custom404Page?: string; customExpiryPage?: string }
+  config: { routingConfig?: Record<string, unknown> | null; custom404Page?: string | null; customExpiryPage?: string | null }
 ) {
   // Get domain record
   const { data: customDomain, error: fetchError } = await supabaseAdmin!
@@ -331,9 +331,12 @@ async function updateCustomDomain(
   }
 
   // Update domain configuration
-  const updateData: any = {
-    updatedAt: new Date().toISOString()
-  }
+  const updateData: {
+    updatedAt: string
+    routingConfig?: Record<string, unknown> | null
+    custom404Page?: string | null
+    customExpiryPage?: string | null
+  } = { updatedAt: new Date().toISOString() }
 
   if (config.routingConfig !== undefined) {
     updateData.routingConfig = config.routingConfig

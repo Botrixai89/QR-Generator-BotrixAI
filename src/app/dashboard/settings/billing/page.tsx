@@ -14,9 +14,9 @@ import { AlertTriangle } from "lucide-react"
 export default function BillingSettingsPage() {
   const { status } = useSession()
   const [loading, setLoading] = useState(true)
-  const [invoices, setInvoices] = useState<any[]>([])
-  const [profile, setProfile] = useState<any | null>(null)
-  const [subscription, setSubscription] = useState<any | null>(null)
+  const [invoices, setInvoices] = useState<Array<Record<string, unknown>>>([])
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null)
+  const [subscription, setSubscription] = useState<Record<string, unknown> | null>(null)
   const [saving, setSaving] = useState(false)
   const [canceling, setCanceling] = useState(false)
 
@@ -35,18 +35,18 @@ export default function BillingSettingsPage() {
         fetch('/api/billing/subscriptions/current'),
       ])
       if (invRes.ok) {
-        const { invoices } = await invRes.json()
-        setInvoices(invoices || [])
+        const data = await invRes.json() as { invoices?: Array<Record<string, unknown>> }
+        setInvoices(data.invoices || [])
       }
       if (profRes.ok) {
-        const { profile } = await profRes.json()
-        setProfile(profile)
+        const data = await profRes.json() as { profile?: Record<string, unknown> }
+        setProfile(data.profile || null)
       }
       if (subRes.ok) {
-        const { subscription } = await subRes.json()
-        setSubscription(subscription)
+        const data = await subRes.json() as { subscription?: Record<string, unknown> }
+        setSubscription(data.subscription || null)
       }
-    } catch (e) {
+    } catch {
       // noop
     } finally {
       setLoading(false)
@@ -59,7 +59,7 @@ export default function BillingSettingsPage() {
 
     setCanceling(true)
     try {
-      const res = await fetch(`/api/billing/subscriptions/${subscription.id}`, {
+      const res = await fetch(`/api/billing/subscriptions/${(subscription as { id?: string }).id}`, {
         method: cancelImmediately ? 'DELETE' : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: cancelImmediately ? undefined : JSON.stringify({ action: 'cancel' }),
@@ -105,8 +105,10 @@ export default function BillingSettingsPage() {
     )
   }
 
-  const isInGracePeriod = subscription?.graceUntil && new Date(subscription.graceUntil) > new Date()
-  const isLockedOut = subscription && ['canceled', 'incomplete'].includes(subscription.status) && !isInGracePeriod
+  const subscriptionGraceUntil = (subscription as { graceUntil?: string } | null)?.graceUntil
+  const isInGracePeriod = subscriptionGraceUntil && new Date(subscriptionGraceUntil) > new Date()
+  const subscriptionStatus = (subscription as { status?: string } | null)?.status
+  const isLockedOut = subscription && subscriptionStatus && ['canceled', 'incomplete'].includes(subscriptionStatus) && !isInGracePeriod
 
   return (
     <div className="min-h-screen bg-background">
@@ -130,7 +132,7 @@ export default function BillingSettingsPage() {
             <AlertDescription>
               {isLockedOut
                 ? "Your subscription has been canceled and access will be limited. Please update your payment method to restore access."
-                : `Your subscription is in grace period until ${new Date(subscription.graceUntil).toLocaleDateString()}. Please update your payment method.`}
+                : `Your subscription is in grace period until ${subscriptionGraceUntil ? new Date(subscriptionGraceUntil).toLocaleDateString() : ''}. Please update your payment method.`}
             </AlertDescription>
           </Alert>
         )}
@@ -146,28 +148,28 @@ export default function BillingSettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium">{subscription.plan} Plan</div>
+                    <div className="font-medium">{(subscription as { plan?: string }).plan} Plan</div>
                     <div className="text-sm text-muted-foreground">
-                      Status: <Badge variant={subscription.status === 'active' ? 'default' : 'secondary'}>{subscription.status}</Badge>
-                      {subscription.cancelAtPeriodEnd && (
+                      Status: <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'}>{subscriptionStatus}</Badge>
+                      {(subscription as { cancelAtPeriodEnd?: boolean }).cancelAtPeriodEnd && (
                         <Badge variant="outline" className="ml-2">Cancels at period end</Badge>
                       )}
                     </div>
                   </div>
                   <div className="text-right text-sm text-muted-foreground">
-                    {subscription.currentPeriodEnd && (
+                    {(subscription as { currentPeriodEnd?: string }).currentPeriodEnd && (
                       <>
-                        <div>Renews: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}</div>
-                        {subscription.graceUntil && (
-                          <div className="text-amber-600">Grace until: {new Date(subscription.graceUntil).toLocaleDateString()}</div>
+                        <div>Renews: {new Date((subscription as { currentPeriodEnd: string }).currentPeriodEnd).toLocaleDateString()}</div>
+                        {subscriptionGraceUntil && (
+                          <div className="text-amber-600">Grace until: {new Date(subscriptionGraceUntil).toLocaleDateString()}</div>
                         )}
                       </>
                     )}
                   </div>
                 </div>
-                {subscription.status === 'active' && (
+                {subscriptionStatus === 'active' && (
                   <div className="flex gap-2">
-                    {subscription.cancelAtPeriodEnd ? (
+                    {(subscription as { cancelAtPeriodEnd?: boolean }).cancelAtPeriodEnd ? (
                       <Button variant="outline" onClick={() => handleCancelSubscription(false)} disabled={canceling}>
                         Resume Subscription
                       </Button>
@@ -206,19 +208,22 @@ export default function BillingSettingsPage() {
                 <div className="text-sm text-muted-foreground">No invoices yet.</div>
               ) : (
                 <div className="space-y-2">
-                  {invoices.map((inv) => (
-                    <div key={inv.id} className="flex items-center justify-between border rounded p-3">
-                      <div className="text-sm">
-                        <div className="font-medium">{(inv.amountCents/100).toFixed(2)} {inv.currency}</div>
-                        <div className="text-muted-foreground">{inv.status} · {new Date(inv.createdAt).toLocaleDateString()}</div>
+                  {invoices.map((inv) => {
+                    const invoice = inv as { id?: string; amountCents?: number; currency?: string; status?: string; createdAt?: string; pdfUrl?: string }
+                    return (
+                      <div key={invoice.id} className="flex items-center justify-between border rounded p-3">
+                        <div className="text-sm">
+                          <div className="font-medium">{invoice.amountCents && invoice.currency ? `${(invoice.amountCents / 100).toFixed(2)} ${invoice.currency}` : 'N/A'}</div>
+                          <div className="text-muted-foreground">{invoice.status && invoice.createdAt ? `${invoice.status} · ${new Date(invoice.createdAt).toLocaleDateString()}` : 'N/A'}</div>
+                        </div>
+                        {invoice.pdfUrl ? (
+                          <Button variant="outline" asChild>
+                            <a href={invoice.pdfUrl} target="_blank" rel="noreferrer">PDF</a>
+                          </Button>
+                        ) : null}
                       </div>
-                      {inv.pdfUrl ? (
-                        <Button variant="outline" asChild>
-                          <a href={inv.pdfUrl} target="_blank" rel="noreferrer">PDF</a>
-                        </Button>
-                      ) : null}
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </CardContent>
@@ -233,42 +238,69 @@ export default function BillingSettingsPage() {
               <form className="space-y-3" onSubmit={saveProfile}>
                 <div>
                   <Label>Email</Label>
-                  <Input value={profile?.billingEmail || ''} onChange={e => setProfile((p: any) => ({ ...(p||{}), billingEmail: e.target.value }))} />
+                  <Input 
+                    value={(profile?.billingEmail as string) || ''} 
+                    onChange={e => setProfile((p: Record<string, unknown> | null) => ({ ...(p || {}), billingEmail: e.target.value } as Record<string, unknown>))} 
+                  />
                 </div>
                 <div>
                   <Label>Name</Label>
-                  <Input value={profile?.billingName || ''} onChange={e => setProfile((p: any) => ({ ...(p||{}), billingName: e.target.value }))} />
+                  <Input 
+                    value={(profile?.billingName as string) || ''} 
+                    onChange={e => setProfile((p: Record<string, unknown> | null) => ({ ...(p || {}), billingName: e.target.value } as Record<string, unknown>))} 
+                  />
                 </div>
                 <div>
                   <Label>Tax ID</Label>
-                  <Input value={profile?.taxId || ''} onChange={e => setProfile((p: any) => ({ ...(p||{}), taxId: e.target.value }))} />
+                  <Input 
+                    value={(profile?.taxId as string) || ''} 
+                    onChange={e => setProfile((p: Record<string, unknown> | null) => ({ ...(p || {}), taxId: e.target.value } as Record<string, unknown>))} 
+                  />
                 </div>
                 <div>
                   <Label>Address Line 1</Label>
-                  <Input value={profile?.addressLine1 || ''} onChange={e => setProfile((p: any) => ({ ...(p||{}), addressLine1: e.target.value }))} />
+                  <Input 
+                    value={(profile?.addressLine1 as string) || ''} 
+                    onChange={e => setProfile((p: Record<string, unknown> | null) => ({ ...(p || {}), addressLine1: e.target.value } as Record<string, unknown>))} 
+                  />
                 </div>
                 <div>
                   <Label>Address Line 2</Label>
-                  <Input value={profile?.addressLine2 || ''} onChange={e => setProfile((p: any) => ({ ...(p||{}), addressLine2: e.target.value }))} />
+                  <Input 
+                    value={(profile?.addressLine2 as string) || ''} 
+                    onChange={e => setProfile((p: Record<string, unknown> | null) => ({ ...(p || {}), addressLine2: e.target.value } as Record<string, unknown>))} 
+                  />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label>City</Label>
-                    <Input value={profile?.city || ''} onChange={e => setProfile((p: any) => ({ ...(p||{}), city: e.target.value }))} />
+                    <Input 
+                      value={(profile?.city as string) || ''} 
+                      onChange={e => setProfile((p: Record<string, unknown> | null) => ({ ...(p || {}), city: e.target.value } as Record<string, unknown>))} 
+                    />
                   </div>
                   <div>
                     <Label>State</Label>
-                    <Input value={profile?.state || ''} onChange={e => setProfile((p: any) => ({ ...(p||{}), state: e.target.value }))} />
+                    <Input 
+                      value={(profile?.state as string) || ''} 
+                      onChange={e => setProfile((p: Record<string, unknown> | null) => ({ ...(p || {}), state: e.target.value } as Record<string, unknown>))} 
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label>Postal Code</Label>
-                    <Input value={profile?.postalCode || ''} onChange={e => setProfile((p: any) => ({ ...(p||{}), postalCode: e.target.value }))} />
+                    <Input 
+                      value={(profile?.postalCode as string) || ''} 
+                      onChange={e => setProfile((p: Record<string, unknown> | null) => ({ ...(p || {}), postalCode: e.target.value } as Record<string, unknown>))} 
+                    />
                   </div>
                   <div>
                     <Label>Country</Label>
-                    <Input value={profile?.country || ''} onChange={e => setProfile((p: any) => ({ ...(p||{}), country: e.target.value }))} />
+                    <Input 
+                      value={(profile?.country as string) || ''} 
+                      onChange={e => setProfile((p: Record<string, unknown> | null) => ({ ...(p || {}), country: e.target.value } as Record<string, unknown>))} 
+                    />
                   </div>
                 </div>
                 <div className="flex justify-end">

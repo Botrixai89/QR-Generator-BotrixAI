@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 import { checkVanityUrlAvailability } from "@/lib/domain-routing"
@@ -9,7 +9,7 @@ import { checkVanityUrlAvailability } from "@/lib/domain-routing"
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if vanity URL already exists for this QR code
-    const { data: existingMapping, error: existingError } = await supabaseAdmin!
+    const { data: existingMapping } = await supabaseAdmin!
       .from('QrCodeVanityUrl')
       .select('*')
       .eq('qrCodeId', qrCodeId)
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -218,13 +218,18 @@ export async function GET(request: NextRequest) {
 
       query = query.eq('qrCodeId', qrCodeId)
     } else {
-      // Get all vanity URLs for user's QR codes
-      query = query.in('qrCodeId', 
-        supabaseAdmin!
-          .from('QrCode')
-          .select('id')
-          .eq('userId', session.user.id)
-      )
+      // Get all QR code IDs for user first
+      const { data: userQrCodes } = await supabaseAdmin!
+        .from('QrCode')
+        .select('id')
+        .eq('userId', session.user.id)
+
+      if (!userQrCodes || userQrCodes.length === 0) {
+        return NextResponse.json([])
+      }
+
+      const qrCodeIds = userQrCodes.map((q) => q.id)
+      query = query.in('qrCodeId', qrCodeIds)
     }
 
     const { data: vanityUrls, error } = await query.order('createdAt', { ascending: false })
@@ -252,7 +257,7 @@ export async function GET(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -280,11 +285,26 @@ export async function DELETE(request: NextRequest) {
       // Verify ownership
       const { data: vanityUrl } = await supabaseAdmin!
         .from('QrCodeVanityUrl')
-        .select('qrCodeId, QrCode!inner(userId)')
+        .select('qrCodeId')
         .eq('id', vanityUrlId)
         .single()
 
-      if (!vanityUrl || vanityUrl.QrCode?.userId !== session.user.id) {
+      if (!vanityUrl) {
+        return NextResponse.json(
+          { error: "Vanity URL not found or access denied" },
+          { status: 404 }
+        )
+      }
+
+      // Verify QR code belongs to user
+      const { data: qrCode } = await supabaseAdmin!
+        .from('QrCode')
+        .select('id, userId')
+        .eq('id', vanityUrl.qrCodeId)
+        .eq('userId', session.user.id)
+        .single()
+
+      if (!qrCode) {
         return NextResponse.json(
           { error: "Vanity URL not found or access denied" },
           { status: 404 }

@@ -6,7 +6,7 @@
 // Generate cryptographically strong random bytes across environments (Edge, browser, Node)
 function generateRandomBytes(length: number): Uint8Array {
   // Use Web Crypto API in Edge/browsers; never import Node 'crypto' in middleware.
-  const anyGlobal = globalThis as any
+  const anyGlobal = globalThis as { crypto?: { getRandomValues?: (array: Uint8Array) => Uint8Array } }
   if (anyGlobal && anyGlobal.crypto && typeof anyGlobal.crypto.getRandomValues === 'function') {
     const array = new Uint8Array(length)
     anyGlobal.crypto.getRandomValues(array)
@@ -35,7 +35,7 @@ export interface LogContext {
   requestId?: string
   ipAddress?: string
   userAgent?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface LogEntry {
@@ -49,7 +49,7 @@ export interface LogEntry {
     message: string
     stack?: string
   }
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 /**
@@ -76,7 +76,7 @@ export function maskPII(text: string): string {
 /**
  * Mask PII in an object recursively
  */
-export function maskPIIInObject(obj: any): any {
+export function maskPIIInObject(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
     return obj
   }
@@ -90,7 +90,7 @@ export function maskPIIInObject(obj: any): any {
   }
   
   if (typeof obj === 'object') {
-    const masked: any = {}
+    const masked: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(obj)) {
       // Skip masking correlation IDs and technical fields
       if (['correlationId', 'requestId', 'timestamp', 'level', 'message'].includes(key)) {
@@ -113,7 +113,7 @@ function createLogEntry(
   message: string,
   context?: LogContext,
   error?: Error,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): LogEntry {
   const correlationId = context?.correlationId || generateCorrelationId()
   
@@ -122,8 +122,8 @@ function createLogEntry(
     message: maskPII(message),
     timestamp: new Date().toISOString(),
     correlationId,
-    context: context ? maskPIIInObject(context) : undefined,
-    metadata: metadata ? maskPIIInObject(metadata) : undefined,
+    context: context ? (maskPIIInObject(context) as LogContext) : undefined,
+    metadata: metadata ? (maskPIIInObject(metadata) as Record<string, unknown>) : undefined,
   }
   
   if (error) {
@@ -159,7 +159,7 @@ export class Logger {
   /**
    * Log debug message
    */
-  debug(message: string, metadata?: Record<string, any>): void {
+  debug(message: string, metadata?: Record<string, unknown>): void {
     const entry = createLogEntry('debug', message, this.context, undefined, metadata)
     this.writeLog(entry)
   }
@@ -167,7 +167,7 @@ export class Logger {
   /**
    * Log info message
    */
-  info(message: string, metadata?: Record<string, any>): void {
+  info(message: string, metadata?: Record<string, unknown>): void {
     const entry = createLogEntry('info', message, this.context, undefined, metadata)
     this.writeLog(entry)
   }
@@ -175,7 +175,7 @@ export class Logger {
   /**
    * Log warning message
    */
-  warn(message: string, error?: Error, metadata?: Record<string, any>): void {
+  warn(message: string, error?: Error, metadata?: Record<string, unknown>): void {
     const entry = createLogEntry('warn', message, this.context, error, metadata)
     this.writeLog(entry)
   }
@@ -183,7 +183,7 @@ export class Logger {
   /**
    * Log error message
    */
-  error(message: string, error?: Error, metadata?: Record<string, any>): void {
+  error(message: string, error?: Error, metadata?: Record<string, unknown>): void {
     const entry = createLogEntry('error', message, this.context, error, metadata)
     this.writeLog(entry)
   }
@@ -191,7 +191,7 @@ export class Logger {
   /**
    * Log fatal error
    */
-  fatal(message: string, error?: Error, metadata?: Record<string, any>): void {
+  fatal(message: string, error?: Error, metadata?: Record<string, unknown>): void {
     const entry = createLogEntry('fatal', message, this.context, error, metadata)
     this.writeLog(entry)
   }

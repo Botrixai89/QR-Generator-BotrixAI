@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 
 interface SocialMediaIconProps {
   className?: string
@@ -7,7 +8,7 @@ interface SocialMediaIconProps {
 
 // Instagram Logo Component - Using actual logo file
 export const InstagramIcon: React.FC<SocialMediaIconProps> = ({ className = "", size = 24 }) => (
-  <img
+  <Image
     src="/instagram-logo.png"
     alt="Instagram"
     width={size}
@@ -31,7 +32,7 @@ export const FacebookIcon: React.FC<SocialMediaIconProps> = ({ className = "", s
 
 // Snapchat Logo Component - Using actual logo file
 export const SnapchatIcon: React.FC<SocialMediaIconProps> = ({ className = "", size = 24 }) => (
-  <img
+  <Image
     src="/snapchat-logo.webp"
     alt="Snapchat"
     width={size}

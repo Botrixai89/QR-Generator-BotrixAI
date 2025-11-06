@@ -15,9 +15,6 @@ if (sentryDsn) {
   // Adjust this value in production
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
   
-  // Enable capturing of unhandled promise rejections
-  captureUnhandledRejections: true,
-  
   // Set environment
   environment: process.env.NODE_ENV || 'development',
   
@@ -68,11 +65,6 @@ if (sentryDsn) {
     
     return event
   },
-  
-    // Server-side integrations
-    integrations: [
-      new Sentry.Integrations.Http({ tracing: true }),
-    ],
   })
 }
 

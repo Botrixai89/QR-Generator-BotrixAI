@@ -5,11 +5,11 @@ import { recordApiUsage } from './api-keys'
 export function withUsageMetering(
   handler: (
     request: NextRequest,
-    context: any,
+    context: unknown,
     authContext: { apiKeyId: string; userId: string; organizationId: string | null }
   ) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context: any) => {
+  return async (request: NextRequest, context: unknown) => {
     const startTime = Date.now()
     let statusCode = 500
     let requestSize = 0
@@ -50,7 +50,7 @@ export function withUsageMetering(
     try {
       response = await handler(request, context, authContext)
       statusCode = response.status
-    } catch (error) {
+    } catch {
       statusCode = 500
       response = NextResponse.json(
         { error: 'Internal server error' },

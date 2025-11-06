@@ -20,6 +20,10 @@ export type AuditAction =
   | 'domain_update'
   | 'domain_delete'
   | 'user_delete'
+  | 'user_update'
+  | 'user_lock'
+  | 'user_unlock'
+  | 'credits_grant'
   | 'data_export'
   | 'data_deletion'
   | 'password_change'
@@ -30,6 +34,9 @@ export type AuditAction =
   | 'webhook_create'
   | 'webhook_delete'
   | 'webhook_secret_rotate'
+  | 'impersonate_start'
+  | 'impersonate_end'
+  | 'email_verified'
 
 export type ResourceType =
   | 'user'
@@ -42,7 +49,7 @@ export type ResourceType =
   | 'subscription'
 
 export interface AuditLogMetadata {
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface AuditLogInput {
@@ -98,7 +105,7 @@ export async function getAuditLogs(
   startDate?: Date,
   endDate?: Date
 ): Promise<{
-  logs: any[]
+  logs: Array<Record<string, unknown>>
   total: number
 }> {
   let query = supabaseAdmin!.from('AuditLog').select('*', { count: 'exact' })
@@ -123,8 +130,7 @@ export async function getAuditLogs(
 
   query = query
     .order('createdAt', { ascending: false })
-    .limit(limit)
-    .offset(offset)
+    .range(offset, offset + limit - 1)
 
   const { data, error, count } = await query
 

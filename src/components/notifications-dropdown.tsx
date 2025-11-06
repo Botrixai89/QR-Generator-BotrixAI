@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, Check, CheckCheck, X, Loader2 } from 'lucide-react'
+import { Bell, Check, CheckCheck, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuItem,
+  // DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -76,7 +76,7 @@ export default function NotificationsDropdown() {
       if (!res.ok) return
       const data = await res.json()
       setUnreadCount(data.unreadCount || 0)
-    } catch (error) {
+    } catch {
       // Silently fail
     }
   }
@@ -93,7 +93,7 @@ export default function NotificationsDropdown() {
         )
       )
       setUnreadCount((count) => Math.max(0, count - 1))
-    } catch (error) {
+    } catch {
       toast.error('Failed to mark notification as read')
     }
   }
@@ -111,7 +111,7 @@ export default function NotificationsDropdown() {
       )
       setUnreadCount(0)
       toast.success('All notifications marked as read')
-    } catch (error) {
+    } catch {
       toast.error('Failed to mark all notifications as read')
     }
   }

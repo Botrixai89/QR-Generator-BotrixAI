@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { validateJsonBody } from '@/lib/validation'
@@ -19,7 +19,7 @@ import { randomBytes } from 'crypto'
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -233,7 +233,11 @@ async function scheduleAccountDeletion(userId: string, deletionRequestId: string
 async function performAccountDeletion(userId: string, deletionRequestId: string): Promise<void> {
   try {
     // Gather deletion metadata for audit
-    const deletionMetadata: any = {
+    const deletionMetadata: {
+      userId: string
+      deletedAt: string
+      deletedItems: Array<{ type: string; id?: string; count?: number }>
+    } = {
       userId,
       deletedAt: new Date().toISOString(),
       deletedItems: [],

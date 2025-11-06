@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import { 
   Palette, 
   Shapes, 
@@ -44,7 +43,6 @@ import {
   QRShape, 
   QRTemplate, 
   QRSticker, 
-  QRGradient,
   QR_TEMPLATES,
   QR_STICKERS
 } from "@/types/qr-code-advanced"
@@ -82,7 +80,7 @@ const shapeIcons: Record<QRShape, React.ComponentType<{ className?: string }>> =
 
 // Template preview component
 function TemplatePreview({ template, isSelected, onClick }: { 
-  template: any, 
+  template: { name: string; description?: string }
   isSelected: boolean, 
   onClick: () => void 
 }) {
@@ -131,7 +129,7 @@ function ShapePreview({ shape, isSelected, onClick }: {
 
 // Sticker preview component
 function StickerPreview({ sticker, isSelected, onClick }: { 
-  sticker: any, 
+  sticker: { type: string }
   isSelected: boolean, 
   onClick: () => void 
 }) {
@@ -199,7 +197,7 @@ export default function QRCustomizationPanel({
 }: QRCustomizationPanelProps) {
   const [activeTab, setActiveTab] = useState("templates")
 
-  const handleOptionChange = (key: keyof AdvancedQROptions, value: any) => {
+  const handleOptionChange = (key: keyof AdvancedQROptions, value: unknown) => {
     onOptionsChange({
       ...options,
       [key]: value

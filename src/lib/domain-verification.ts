@@ -54,9 +54,10 @@ export async function verifyDomainOwnership(
       if (attempt < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, retryDelay))
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle DNS resolution errors
-      if (error.code === 'ENOTFOUND' || error.code === 'ENODATA') {
+      const err = error as { code?: string; message?: string }
+      if (err.code === 'ENOTFOUND' || err.code === 'ENODATA') {
         if (attempt === maxRetries) {
           return {
             verified: false,
@@ -64,7 +65,7 @@ export async function verifyDomainOwnership(
             lastChecked: new Date()
           }
         }
-      } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+      } else if (err.code === 'ETIMEDOUT' || err.code === 'ECONNREFUSED') {
         if (attempt === maxRetries) {
           return {
             verified: false,
@@ -78,7 +79,7 @@ export async function verifyDomainOwnership(
         if (attempt === maxRetries) {
           return {
             verified: false,
-            error: `DNS verification failed: ${error.message}`,
+            error: `DNS verification failed: ${err.message || String(error)}`,
             lastChecked: new Date()
           }
         }
@@ -114,11 +115,12 @@ export async function checkDomainDnsConfiguration(domain: string): Promise<{
       hasRecords: flattenedRecords.length > 0,
       records: flattenedRecords
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string } | null
     return {
       hasRecords: false,
       records: [],
-      error: error.message
+      error: err?.message || String(error)
     }
   }
 }

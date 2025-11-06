@@ -12,14 +12,14 @@ export async function getActiveSubscription(userId: string) {
   return data || null
 }
 
-export function isInGracePeriod(sub: any | null): boolean {
+export function isInGracePeriod(sub: { graceUntil?: string | null } | null): boolean {
   if (!sub?.graceUntil) return false
   return new Date(sub.graceUntil).getTime() > Date.now()
 }
 
-export function isLockedOut(sub: any | null): boolean {
+export function isLockedOut(sub: { status?: string | null; graceUntil?: string | null } | null): boolean {
   if (!sub) return false
-  if (['canceled', 'incomplete'].includes(sub.status)) {
+  if (sub.status && ['canceled', 'incomplete'].includes(sub.status)) {
     return !isInGracePeriod(sub)
   }
   if (sub.status === 'past_due') {

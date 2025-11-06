@@ -1,7 +1,8 @@
 "use client"
 
 import React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
+import type { QRTemplateConfig, QRStickerConfig } from "@/types/qr-code-advanced"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,18 +13,15 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { 
   Download, 
   Upload, 
-  Palette, 
   Settings, 
   Zap, 
   Calendar, 
   Users, 
   Link, 
   Sparkles,
-  Shapes,
   Sticker,
   Eye,
   Circle,
@@ -50,13 +48,12 @@ import {
   IndianRupee
 } from "lucide-react"
 import { socialMediaIcons, SocialMediaPlatform } from "@/components/social-media-icons"
-import { loadQRCodeStyling, loadQRWatermark, loadAdvancedQR } from "@/lib/qr-loader"
+import { loadAdvancedQR } from "@/lib/qr-loader"
 import { 
   AdvancedQROptions, 
   QRShape, 
   QRTemplate, 
   QRSticker, 
-  QRGradient,
   QR_TEMPLATES,
   QR_STICKERS
 } from "@/types/qr-code-advanced"
@@ -91,7 +88,7 @@ const shapeIcons: Record<QRShape, React.ComponentType<{ className?: string }>> =
 
 // Template preview component
 function TemplatePreview({ template, isSelected, onClick }: { 
-  template: any, 
+  template: QRTemplateConfig, 
   isSelected: boolean, 
   onClick: () => void 
 }) {
@@ -206,7 +203,7 @@ function ShapePreview({ shape, isSelected, onClick }: {
 
 // Sticker preview component
 function StickerPreview({ sticker, isSelected, onClick }: { 
-  sticker: any, 
+  sticker: QRStickerConfig, 
   isSelected: boolean, 
   onClick: () => void 
 }) {
@@ -345,7 +342,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isClient, setIsClient] = useState(false)
   const [downloadQuality, setDownloadQuality] = useState<'web' | 'print' | 'ultra-hd'>('ultra-hd')
-  const [downloadMessage, setDownloadMessage] = useState<string | null>(null)
+  const [downloadMessage] = useState<string | null>(null)
   
   // Dynamic QR code states
   const [isDynamic, setIsDynamic] = useState(false)
@@ -384,11 +381,15 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   const [logoFile, setLogoFile] = useState<File | null>(null)
   
   const qrRef = useRef<HTMLDivElement>(null)
-  const qrGeneratorRef = useRef<any>(null)
+  const qrGeneratorRef = useRef<{ 
+    generate: (element: HTMLElement) => Promise<unknown>
+    updateData?: (data: string) => void
+    download?: (filename?: string, format?: "png" | "svg", quality?: "web" | "print" | "ultra-hd") => void
+  } | null>(null)
   const retryOnceRef = useRef<boolean>(false)
 
   // Function to generate UPI payment URL using Bharat QR standard or UPI URL format
-  const generateUpiUrl = (upiId: string, amount?: string, merchantName?: string, transactionNote?: string, format: 'bharat-qr' | 'upi-url' = upiFormat) => {
+  const generateUpiUrl = useCallback((upiId: string, amount?: string, merchantName?: string, transactionNote?: string, format: 'bharat-qr' | 'upi-url' = upiFormat) => {
     if (!upiId.trim()) return ""
     
     // Clean and validate UPI ID
@@ -457,7 +458,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       
       return upiUrl
     }
-  }
+  }, [upiFormat])
 
   // Ensure we're on the client side and auto-fill URL
   useEffect(() => {
@@ -489,9 +490,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       const timeoutId = setTimeout(() => {
         try {
           ;(async () => {
+            if (!qrRef.current) return
             const getCreator = await loadAdvancedQR()
-            qrGeneratorRef.current = getCreator(options)
-            const result = qrGeneratorRef.current.generate(qrRef.current)
+            qrGeneratorRef.current = getCreator(options) as typeof qrGeneratorRef.current
+            const result = qrGeneratorRef.current?.generate(qrRef.current)
             Promise.resolve(result).then(() => {
               try {
                 if (qrRef.current && (options.watermark || false)) {
@@ -513,7 +515,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       
       return () => clearTimeout(timeoutId)
     }
-  }, [isClient, url, qrOptions, isUpiPayment, upiId, upiAmount, upiMerchantName, upiTransactionNote])
+  }, [isClient, url, qrOptions, isUpiPayment, upiId, upiAmount, upiMerchantName, upiTransactionNote, generateUpiUrl])
 
   // Retry generation once if SVG didn't render (e.g., racing updates after logo upload)
   useEffect(() => {
@@ -682,7 +684,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
             const qrCodeUrl = `${window.location.origin}/qr/${savedQrCode.id}`
             
             // Update the QR code data
-            if (qrGeneratorRef.current) {
+            if (qrGeneratorRef.current?.updateData) {
               qrGeneratorRef.current.updateData(qrCodeUrl)
             }
           }
@@ -715,7 +717,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   }
 
   const handleDownload = (format: "png" | "svg") => {
-    if (qrGeneratorRef.current) {
+    if (qrGeneratorRef.current?.download) {
       qrGeneratorRef.current.download(title || "qr-code", format, downloadQuality)
     }
   }
@@ -748,9 +750,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     setUpiFormat('upi-url')
   }
 
-  const handleOptionsChange = (newOptions: AdvancedQROptions) => {
-    setQrOptions(newOptions)
-  }
 
   // Function to generate social media logo as base64 data URL
   const generateSocialMediaLogoDataUrl = (platform: SocialMediaPlatform): string => {
@@ -1050,7 +1049,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                           <Label className="text-xs">Dot Style</Label>
                           <Select 
                             value={qrOptions.dotType || 'square'} 
-                            onValueChange={(value) => setQrOptions(prev => ({ ...prev, dotType: value as any }))}
+                            onValueChange={(value) => setQrOptions(prev => ({ ...prev, dotType: value as AdvancedQROptions['dotType'] }))}
                           >
                             <SelectTrigger className="h-8 text-xs">
                               <SelectValue />
@@ -1073,7 +1072,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                           <Label className="text-xs">Corner Style</Label>
                           <Select 
                             value={qrOptions.cornerType || 'square'} 
-                            onValueChange={(value) => setQrOptions(prev => ({ ...prev, cornerType: value as any }))}
+                            onValueChange={(value) => setQrOptions(prev => ({ ...prev, cornerType: value as AdvancedQROptions['cornerType'] }))}
                           >
                             <SelectTrigger className="h-8 text-xs">
                               <SelectValue />
@@ -1093,7 +1092,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                           <Label className="text-xs">Eye Pattern</Label>
                           <Select 
                             value={qrOptions.eyePattern || 'square'} 
-                            onValueChange={(value) => setQrOptions(prev => ({ ...prev, eyePattern: value as any }))}
+                            onValueChange={(value) => setQrOptions(prev => ({ ...prev, eyePattern: value as AdvancedQROptions['eyePattern'] }))}
                           >
                             <SelectTrigger className="h-8 text-xs">
                               <SelectValue />
@@ -1522,7 +1521,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             <p className="font-medium mb-1">Troubleshooting:</p>
                             <ul className="space-y-1 text-xs">
                               <li>• <strong>Getting alerts?</strong> Try UPI URL format instead of Bharat QR</li>
-                              <li>• <strong>Not opening UPI app?</strong> Use a UPI app's built-in QR scanner</li>
+                              <li>• <strong>Not opening UPI app?</strong> Use a UPI app&apos;s built-in QR scanner</li>
                               <li>• <strong>Invalid UPI ID?</strong> Check format: username@bankname</li>
                               <li>• <strong>Amount issues?</strong> Leave amount empty to allow any amount</li>
                               <li>• <strong>Still not working?</strong> Try minimal UPI URL with just pa and cu</li>

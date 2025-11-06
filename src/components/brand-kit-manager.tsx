@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
-import { Upload, Palette, Image as ImageIcon, Save, Trash2 } from "lucide-react"
+import { Palette, Image as ImageIcon, Save, Trash2 } from "lucide-react"
+import Image from "next/image"
 import { InlineHelper } from "@/components/inline-helper"
 import { applyBrandTheme, type BrandTheme } from "@/lib/design-tokens"
 import { cn } from "@/lib/utils"
@@ -38,7 +39,7 @@ export function BrandKitManager({
   onUpdate,
   className,
 }: BrandKitManagerProps) {
-  const { data: session } = useSession()
+  useSession() // Session data reserved for future use
   const [loading, setLoading] = useState(false)
   const [brandKit, setBrandKit] = useState<BrandKit>({
     primaryColor: '#1a365d',
@@ -47,31 +48,31 @@ export function BrandKitManager({
     presets: {},
   })
 
-  useEffect(() => {
-    if (organizationId) {
-      loadBrandKit()
-    }
-  }, [organizationId])
-
-  async function loadBrandKit() {
+  const loadBrandKit = useCallback(async () => {
     if (!organizationId) return
 
     setLoading(true)
     try {
       const response = await fetch(`/api/organizations/${organizationId}`)
       if (response.ok) {
-        const data = await response.json()
+        const data = (await response.json()) as { organization?: { brandKit?: BrandKit } }
         if (data.organization?.brandKit) {
           setBrandKit(data.organization.brandKit)
           applyBrandTheme(data.organization.brandKit as BrandTheme, organizationId)
         }
       }
-    } catch (error) {
-      console.error('Error loading brand kit:', error)
+    } catch {
+      console.error('Error loading brand kit')
     } finally {
       setLoading(false)
     }
-  }
+  }, [organizationId])
+
+  useEffect(() => {
+    if (organizationId) {
+      void loadBrandKit()
+    }
+  }, [organizationId, loadBrandKit])
 
   async function saveBrandKit() {
     if (!organizationId) return
@@ -115,7 +116,7 @@ export function BrandKitManager({
       <div>
         <h2 className="text-2xl font-bold mb-2">Brand Kit</h2>
         <p className="text-muted-foreground">
-          Customize your organization's branding for QR codes
+          Customize your organization&apos;s branding for QR codes
         </p>
       </div>
 
@@ -146,9 +147,11 @@ export function BrandKitManager({
             <CardContent className="space-y-4">
               {brandKit.logoUrl && (
                 <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
-                  <img
+                  <Image
                     src={brandKit.logoUrl}
                     alt="Logo preview"
+                    width={128}
+                    height={128}
                     className="w-full h-full object-contain"
                   />
                   <Button
@@ -183,7 +186,7 @@ export function BrandKitManager({
             <CardHeader>
               <CardTitle>Brand Colors</CardTitle>
               <CardDescription>
-                Define your organization's color palette
+                Define your organization&apos;s color palette
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

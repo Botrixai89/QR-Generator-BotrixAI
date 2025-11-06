@@ -4,9 +4,20 @@
  */
 
 // Dynamic import for sharp (server-side only)
-let sharpInstance: any = null
+interface SharpInstance {
+  resize: (width?: number, height?: number, options?: { fit?: string; withoutEnlargement?: boolean }) => SharpInstance
+  webp: (options?: { quality?: number; progressive?: boolean }) => SharpInstance
+  jpeg: (options?: { quality?: number; progressive?: boolean }) => SharpInstance
+  png: (options?: { quality?: number; progressive?: boolean }) => SharpInstance
+  avif: (options?: { quality?: number }) => SharpInstance
+  toBuffer: () => Promise<Buffer>
+}
 
-async function getSharp() {
+type SharpConstructor = (input?: Buffer) => SharpInstance
+
+let sharpInstance: SharpConstructor | null = null
+
+async function getSharp(): Promise<SharpConstructor> {
   if (typeof window !== 'undefined') {
     throw new Error('Image optimization is only available server-side')
   }
@@ -14,7 +25,8 @@ async function getSharp() {
   if (!sharpInstance) {
     try {
       const sharpModule = await import('sharp')
-      sharpInstance = sharpModule.default
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      sharpInstance = sharpModule.default as any as SharpConstructor
     } catch (error) {
       console.error('Failed to load sharp:', error)
       throw new Error('Image optimization library not available')

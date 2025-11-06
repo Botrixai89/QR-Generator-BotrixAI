@@ -1,4 +1,6 @@
 // Enhanced utility function to add BotrixAI logo watermark to QR code SVG
+const watermarkObserverMap = new WeakMap<SVGElement, MutationObserver>()
+
 export const addBotrixLogoToQR = (svg: SVGElement) => {
   // Use unique IDs to avoid conflicts and enable reliable updates
   const WATERMARK_LAYER_ID = 'botrix-watermark-layer'
@@ -97,13 +99,10 @@ export const addBotrixLogoToQR = (svg: SVGElement) => {
     ensureTopMost()
 
     // Attach a singleton MutationObserver to track late re-renders by the QR library
-    const observerAttachedFlag = 'botrixWatermarkObserver'
-    // @ts-ignore - using dataset on generic SVGElement
-    if (!(svg as any)[observerAttachedFlag]) {
+    if (!watermarkObserverMap.has(svg)) {
       const observer = new MutationObserver(() => ensureTopMost())
       observer.observe(svg, { childList: true })
-      // @ts-ignore
-      ;(svg as any)[observerAttachedFlag] = observer
+      watermarkObserverMap.set(svg, observer)
     }
   })
 }

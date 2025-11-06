@@ -14,9 +14,6 @@ import {
   Check,
   CheckCheck,
   Settings,
-  Mail,
-  Smartphone,
-  Clock,
   AlertCircle,
   Info,
   XCircle,
@@ -41,7 +38,7 @@ interface NotificationPreferences {
   emailEnabled: boolean
   inAppEnabled: boolean
   emailFrequency: 'immediate' | 'daily' | 'weekly'
-  notificationTypes: Record<string, any>
+  notificationTypes: Record<string, boolean>
   thresholds: Record<string, number>
 }
 
@@ -101,7 +98,7 @@ export default function NotificationsPage() {
         )
       )
       setUnreadCount((count) => Math.max(0, count - 1))
-    } catch (error) {
+    } catch {
       toast.error('Failed to mark notification as read')
     }
   }
@@ -119,7 +116,7 @@ export default function NotificationsPage() {
       )
       setUnreadCount(0)
       toast.success('All notifications marked as read')
-    } catch (error) {
+    } catch {
       toast.error('Failed to mark all notifications as read')
     }
   }
@@ -135,7 +132,7 @@ export default function NotificationsPage() {
       const data = await res.json()
       setPreferences(data.preferences)
       toast.success('Preferences updated')
-    } catch (error) {
+    } catch {
       toast.error('Failed to update preferences')
     }
   }

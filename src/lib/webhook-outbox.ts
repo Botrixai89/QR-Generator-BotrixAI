@@ -11,7 +11,7 @@ export interface WebhookOutbox {
   id: string
   qrCodeId: string
   webhookUrl: string
-  payload: any
+  payload: Record<string, unknown>
   secret?: string
   status: 'pending' | 'processing' | 'delivered' | 'failed'
   attempts: number
@@ -32,7 +32,7 @@ export interface WebhookOutbox {
 export async function addWebhookToOutbox(
   qrCodeId: string,
   webhookUrl: string,
-  payload: any,
+  payload: Record<string, unknown>,
   secret?: string
 ): Promise<WebhookOutbox> {
   const { data: outbox, error } = await supabaseAdmin!
@@ -74,7 +74,7 @@ export async function getNextWebhookRetries(limit: number = 10): Promise<Webhook
   }
 
   // Get full outbox details
-  const ids = data.map((item: any) => item.id)
+  const ids = data.map((item: { id: string }) => item.id)
   const { data: outboxes, error: outboxError } = await supabaseAdmin!
     .from('WebhookOutbox')
     .select('*')
@@ -91,7 +91,7 @@ export async function getNextWebhookRetries(limit: number = 10): Promise<Webhook
 /**
  * Generate webhook signature
  */
-function generateWebhookSignature(payload: any, secret: string): string {
+function generateWebhookSignature(payload: Record<string, unknown>, secret: string): string {
   const payloadString = JSON.stringify(payload)
   const signature = crypto
     .createHmac('sha256', secret)
@@ -121,7 +121,7 @@ export async function deliverWebhook(outbox: WebhookOutbox): Promise<boolean> {
       : null
 
     // Deliver webhook with retry and timeout
-    const response = await retryWithTimeout(
+    const response: Response = await retryWithTimeout(
       async () => {
         const fetchResponse = await fetch(outbox.webhookUrl, {
           method: 'POST',
@@ -134,11 +134,11 @@ export async function deliverWebhook(outbox: WebhookOutbox): Promise<boolean> {
           signal: AbortSignal.timeout(30000), // 30 second timeout
         })
 
-        if (!response.ok) {
-          throw new Error(`Webhook delivery failed: ${response.status} ${response.statusText}`)
+        if (!fetchResponse.ok) {
+          throw new Error(`Webhook delivery failed: ${fetchResponse.status} ${fetchResponse.statusText}`)
         }
 
-        return response
+        return fetchResponse
       },
       {
         maxRetries: 2, // Quick retry for transient errors

@@ -132,7 +132,7 @@ export async function retryWithTimeoutAndHandler<T>(
  * Supabase query wrapper with retry and timeout
  */
 export async function supabaseQueryWithRetry<T>(
-  queryFn: () => Promise<{ data: T | null; error: any }>,
+  queryFn: () => Promise<{ data: T | null; error: { message?: string; code?: string } | null }>,
   config: Partial<RetryConfig> = {}
 ): Promise<T> {
   const result = await retryWithTimeout(async () => {

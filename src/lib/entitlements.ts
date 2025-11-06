@@ -115,7 +115,7 @@ export async function assertCanCreateQr(userId: string) {
   if (usage.qrCodesCount >= ent.maxQrCodes) {
     const upgradeHint = plan === 'FREE' ? 'PRO' : 'BUSINESS'
     const message = `QR code limit reached for your plan (${ent.maxQrCodes}). Upgrade to ${upgradeHint} to increase your limit.`
-    const error: any = new Error(message)
+    const error = new Error(message) as Error & { status?: number; code?: string }
     error.status = 403
     error.code = 'PLAN_LIMIT_QR_CODES'
     throw error
@@ -130,7 +130,7 @@ export async function assertWithinMonthlyScanQuota(userId: string) {
   const ent = getEntitlements(plan)
   if (usage.monthlyScanCount >= ent.monthlyScanQuota) {
     const message = `Monthly scan quota reached for your plan (${ent.monthlyScanQuota}). Consider upgrading.`
-    const error: any = new Error(message)
+    const error = new Error(message) as Error & { status?: number; code?: string }
     error.status = 403
     error.code = 'PLAN_LIMIT_SCANS'
     throw error

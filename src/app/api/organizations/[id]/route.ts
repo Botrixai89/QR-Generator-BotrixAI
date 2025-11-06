@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 import { canManageOrgSettings, isOrgOwner, getUserOrgRole } from "@/lib/rbac"
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -33,7 +33,7 @@ export async function GET(
     }
 
     return NextResponse.json({ organization: org, userRole: role })
-  } catch (e: any) {
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -44,7 +44,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -58,7 +58,7 @@ export async function PATCH(
     const body = await request.json()
     const { name, description, slug } = body || {}
 
-    const updates: any = {
+    const updates: { name?: string; description?: string | null; slug?: string; updatedAt: string } = {
       updatedAt: new Date().toISOString(),
     }
     if (name !== undefined) updates.name = name
@@ -96,7 +96,7 @@ export async function PATCH(
     }
 
     return NextResponse.json({ organization: org })
-  } catch (e: any) {
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
@@ -107,7 +107,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
@@ -129,7 +129,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ ok: true })
-  } catch (e: any) {
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

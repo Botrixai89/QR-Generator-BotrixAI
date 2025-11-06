@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 import { randomUUID } from "crypto"
-import { shouldShortenUrl, createShortUrl, storeUrlMapping } from "@/lib/url-shortener"
 import { assertCanCreateQr, getUserPlan, hasFeature } from "@/lib/entitlements"
 import { rateLimit } from "@/lib/rate-limit"
 import { canAccessOrgResource } from "@/lib/rbac"
@@ -77,9 +76,11 @@ export async function POST(request: NextRequest) {
     // Enforce plan entitlements: QR creation limit
     try {
       await assertCanCreateQr(session.user.id)
-    } catch (e: any) {
-      const status = e?.status || 403
-      return NextResponse.json({ error: e?.code || 'plan_limit', message: e?.message }, { status })
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'plan_limit'
+      const status = (e as { status?: number })?.status || 403
+      const code = (e as { code?: string })?.code || 'plan_limit'
+      return NextResponse.json({ error: code, message }, { status })
     }
 
     const formData = await request.formData()
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
         
         // Convert File to Buffer and optimize
         const bytes = await logoFile.arrayBuffer()
-        let buffer = Buffer.from(bytes)
+        let buffer: Buffer = Buffer.from(new Uint8Array(bytes))
         
         // Optimize image if optimization utility is available
         try {
@@ -162,10 +163,10 @@ export async function POST(request: NextRequest) {
         
         // Ensure bucket exists (auto-create if missing)
         try {
-          const storageAny = (supabaseAdmin as any).storage
-          const { data: buckets } = await storageAny.listBuckets?.()
-          const bucketExists = Array.isArray(buckets) && buckets.some((b: any) => b.name === 'qr-logos' || b.id === 'qr-logos')
-          if (!bucketExists && storageAny.createBucket) {
+          const storageAny = (supabaseAdmin as { storage?: { listBuckets?: () => Promise<{ data?: Array<{ name?: string; id?: string }> }>; createBucket?: (name: string, options: { public: boolean }) => Promise<unknown> } }).storage
+          const { data: buckets } = await storageAny?.listBuckets?.() || { data: undefined }
+          const bucketExists = Array.isArray(buckets) && buckets.some((b: { name?: string; id?: string }) => b.name === 'qr-logos' || b.id === 'qr-logos')
+          if (!bucketExists && storageAny?.createBucket) {
             await storageAny.createBucket('qr-logos', { public: true })
           }
         } catch (bucketCheckErr) {
@@ -173,7 +174,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Upload to Supabase Storage
-        let { data: uploadData, error: uploadError } = await supabaseAdmin!
+        let uploadError: Error | null = null
+        const { error: initialError } = await supabaseAdmin!
           .storage
           .from('qr-logos')
           .upload(fileName, buffer, {
@@ -181,21 +183,24 @@ export async function POST(request: NextRequest) {
             upsert: false
           })
 
-        // If bucket was missing and upload failed, try to create and retry once
-        if (uploadError && (uploadError as any).status === 400) {
-          try {
-            const storageAny = (supabaseAdmin as any).storage
-            if (storageAny.createBucket) {
-              await storageAny.createBucket('qr-logos', { public: true })
-              const retry = await supabaseAdmin!.storage.from('qr-logos').upload(fileName, buffer, {
-                contentType: logoFile.type,
-                upsert: false,
-              })
-              uploadData = retry.data
-              uploadError = retry.error as any
+        if (initialError) {
+          uploadError = initialError
+
+          // If bucket was missing and upload failed, try to create and retry once
+          if ((uploadError as { status?: number }).status === 400) {
+            try {
+              const storageAny = (supabaseAdmin as { storage?: { createBucket?: (name: string, options: { public: boolean }) => Promise<unknown> } }).storage
+              if (storageAny?.createBucket) {
+                await storageAny.createBucket('qr-logos', { public: true })
+                const retry = await supabaseAdmin!.storage.from('qr-logos').upload(fileName, buffer, {
+                  contentType: logoFile.type,
+                  upsert: false,
+                })
+                uploadError = retry.error
+              }
+            } catch (retryErr) {
+              console.warn('Retry after bucket create failed:', retryErr)
             }
-          } catch (retryErr) {
-            console.warn('Retry after bucket create failed:', retryErr)
           }
         }
 
@@ -274,7 +279,7 @@ export async function POST(request: NextRequest) {
     }
 
     // First, try to insert with all dynamic fields
-    let insertData: any = {
+    const insertData: Record<string, unknown> = {
       id: qrCodeId,
       userId: session.user.id,
       url: originalUrl, // Store the original URL for QR code generation
@@ -376,7 +381,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Add timeout handling
     const timeoutPromise = new Promise((_, reject) =>

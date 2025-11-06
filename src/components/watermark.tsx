@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import Image from "next/image"
 
 interface WatermarkProps {
   hasWatermark: boolean
@@ -18,7 +17,6 @@ export default function Watermark({ hasWatermark, qrRef }: WatermarkProps) {
 
   useEffect(() => {
     if (isClient && qrRef.current && watermarkRef.current) {
-      const qrElement = qrRef.current
       const watermarkElement = watermarkRef.current
 
       if (hasWatermark) {

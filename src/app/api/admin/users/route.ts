@@ -4,17 +4,16 @@
  */
 
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
-import { isAdmin, getUsers, getUserById, updateUser, lockUser, unlockUser, grantCredits } from "@/lib/admin"
-import { supabaseAdmin } from "@/lib/supabase"
+import { isAdmin, getUsers } from "@/lib/admin"
 
 /**
  * GET - Get all users with pagination
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(

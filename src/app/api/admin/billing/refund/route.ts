@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
@@ -18,7 +18,7 @@ function isAdmin(email?: string | null): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { email?: string } } | null
     if (!session?.user?.email || !isAdmin(session.user.email)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
@@ -79,9 +79,10 @@ export async function POST(request: NextRequest) {
         status: refund.status
       }
     })
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
     console.error('Refund error:', e)
-    return NextResponse.json({ error: "Internal server error", details: e.message }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error", details: message }, { status: 500 })
   }
 }
 

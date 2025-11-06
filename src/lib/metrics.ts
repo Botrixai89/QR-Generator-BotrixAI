@@ -120,7 +120,7 @@ export async function getMetrics(
     if (labels && Object.keys(labels).length > 0) {
       // Note: Supabase JSONB filtering may need adjustment based on your setup
       for (const [key, value] of Object.entries(labels)) {
-        query = query.contains('labels', { [key]: value }) as any
+        query = query.contains('labels', { [key]: value }) as typeof query
       }
     }
     
@@ -137,9 +137,9 @@ export async function getMetrics(
       }
     }
     
-    const values = data.map((m: any) => ({
+    const values = data.map((m: { timestamp: string; value: string | number }) => ({
       timestamp: m.timestamp,
-      value: parseFloat(m.value),
+      value: typeof m.value === 'number' ? m.value : parseFloat(m.value),
     }))
     
     const numericValues = values.map(v => v.value)
@@ -268,7 +268,7 @@ export async function getAverageLatency(
       return 0
     }
     
-    const times = data.map((m: any) => m.responseTime)
+    const times = data.map((m: { responseTime: number }) => m.responseTime)
     return times.reduce((a, b) => a + b, 0) / times.length
   } catch (error) {
     console.error('Failed to get average latency:', error)

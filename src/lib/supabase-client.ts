@@ -4,14 +4,14 @@
  */
 
 import { supabaseAdmin } from "@/lib/supabase"
-import { retryWithTimeout, supabaseQueryWithRetry } from "./retry-with-timeout"
+import { supabaseQueryWithRetry } from "./retry-with-timeout"
 import { getCircuitBreaker } from "./circuit-breaker"
 
 /**
  * Supabase query with retry, timeout, and circuit breaker
  */
 export async function supabaseQuery<T>(
-  queryFn: () => Promise<{ data: T | null; error: any }>,
+  queryFn: () => Promise<{ data: T | null; error: { message?: string; code?: string } | null }>,
   options: {
     timeout?: number
     maxRetries?: number
@@ -46,11 +46,14 @@ export async function supabaseQuery<T>(
  */
 export async function supabaseInsert<T>(
   table: string,
-  data: any,
+  data: Record<string, unknown>,
   options: { timeout?: number; maxRetries?: number } = {}
 ): Promise<T> {
   return await supabaseQuery(
-    () => supabaseAdmin!.from(table).insert(data).select().single(),
+    async () => {
+      const result = await supabaseAdmin!.from(table).insert(data).select().single()
+      return result
+    },
     options
   )
 }
@@ -60,8 +63,8 @@ export async function supabaseInsert<T>(
  */
 export async function supabaseUpdate<T>(
   table: string,
-  data: any,
-  filter: Record<string, any>,
+  data: Record<string, unknown>,
+  filter: Record<string, unknown>,
   options: { timeout?: number; maxRetries?: number } = {}
 ): Promise<T> {
   let query = supabaseAdmin!.from(table).update(data)
@@ -71,7 +74,10 @@ export async function supabaseUpdate<T>(
   }
 
   return await supabaseQuery(
-    () => query.select().single(),
+    async () => {
+      const result = await query.select().single()
+      return result
+    },
     options
   )
 }
@@ -81,7 +87,7 @@ export async function supabaseUpdate<T>(
  */
 export async function supabaseDelete(
   table: string,
-  filter: Record<string, any>,
+  filter: Record<string, unknown>,
   options: { timeout?: number; maxRetries?: number } = {}
 ): Promise<void> {
   await supabaseQuery(

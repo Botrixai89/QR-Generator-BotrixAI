@@ -62,7 +62,7 @@ export interface WebhookLog {
 }
 
 export interface ListResponse<T> {
-  [key: string]: T[];
+  items?: T[];
   total: number;
   limit: number;
   offset: number;

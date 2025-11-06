@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { NextRequest } from "next/server"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { getActiveSubscription, isLockedOut, isInGracePeriod } from "@/lib/billing"
 
-export async function checkBillingAccess(request: NextRequest): Promise<{
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function checkBillingAccess(_: NextRequest): Promise<{
   allowed: boolean
   reason?: string
   redirect?: string

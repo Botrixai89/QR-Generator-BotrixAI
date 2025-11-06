@@ -13,8 +13,8 @@ export async function loadQRCodeStyling() {
   }
 
   try {
-    const module = await import('qr-code-styling')
-    return module.default
+    const importedModule = await import('qr-code-styling')
+    return importedModule.default
   } catch (error) {
     console.error('Failed to load QRCodeStyling:', error)
     throw error
@@ -26,8 +26,8 @@ export async function loadQRCodeStyling() {
  */
 export async function loadQRCode() {
   try {
-    const module = await import('qrcode')
-    return module.default
+    const importedModule = await import('qrcode')
+    return importedModule.default
   } catch (error) {
     console.error('Failed to load qrcode:', error)
     throw error
@@ -39,8 +39,8 @@ export async function loadQRCode() {
  */
 export async function loadAdvancedQR() {
   try {
-    const module = await import('@/lib/qr-code-advanced')
-    return module.createAdvancedQR
+    const importedModule = await import('@/lib/qr-code-advanced')
+    return importedModule.createAdvancedQR
   } catch (error) {
     console.error('Failed to load advanced QR utilities:', error)
     throw error
@@ -52,8 +52,8 @@ export async function loadAdvancedQR() {
  */
 export async function loadQRWatermark() {
   try {
-    const module = await import('@/lib/qr-watermark')
-    return module.addBotrixLogoToQR
+    const importedModule = await import('@/lib/qr-watermark')
+    return importedModule.addBotrixLogoToQR
   } catch (error) {
     console.error('Failed to load QR watermark utilities:', error)
     throw error

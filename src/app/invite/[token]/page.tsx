@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,46 +10,38 @@ import { Building2, CheckCircle, XCircle } from "lucide-react"
 export default function InviteAcceptPage() {
   const params = useParams()
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const token = params?.token as string
   
   const [loading, setLoading] = useState(true)
   const [accepting, setAccepting] = useState(false)
-  const [invitation, setInvitation] = useState<any | null>(null)
+  const [invitation, setInvitation] = useState<Record<string, unknown> | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (token) {
+      const loadInvitation = async () => {
+        setLoading(true)
+        try {
+          const res = await fetch(`/api/invitations/${token}`)
+          if (res.ok) {
+            const { invitation } = await res.json()
+            setInvitation(invitation)
+          } else {
+            const { error } = await res.json()
+            setError(error || 'Invitation not found')
+          }
+        } catch {
+          setError('Failed to load invitation')
+        } finally {
+          setLoading(false)
+        }
+      }
       void loadInvitation()
     }
   }, [token])
 
-  useEffect(() => {
-    if (status === 'authenticated' && invitation && !invitation.acceptedAt) {
-      // Auto-accept if user is logged in
-      void acceptInvitation()
-    }
-  }, [status, invitation])
-
-  async function loadInvitation() {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/invitations/${token}`)
-      if (res.ok) {
-        const { invitation } = await res.json()
-        setInvitation(invitation)
-      } else {
-        const { error } = await res.json()
-        setError(error || 'Invitation not found')
-      }
-    } catch (e) {
-      setError('Failed to load invitation')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function acceptInvitation() {
+  const acceptInvitation = useCallback(async () => {
     setAccepting(true)
     try {
       const res = await fetch(`/api/invitations/${token}`, {
@@ -63,13 +55,20 @@ export default function InviteAcceptPage() {
         toast.error(error || 'Failed to accept invitation')
         setError(error || 'Failed to accept invitation')
       }
-    } catch (e) {
+    } catch {
       toast.error('Failed to accept invitation')
       setError('Failed to accept invitation')
     } finally {
       setAccepting(false)
     }
-  }
+  }, [token, router])
+
+  useEffect(() => {
+    if (status === 'authenticated' && invitation && !invitation.acceptedAt) {
+      // Auto-accept if user is logged in
+      void acceptInvitation()
+    }
+  }, [status, invitation, acceptInvitation])
 
   if (loading) {
     return (
@@ -124,7 +123,7 @@ export default function InviteAcceptPage() {
     )
   }
 
-  const org = invitation.Organization || {}
+  const org = (invitation.Organization || {}) as Record<string, unknown>
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -135,13 +134,13 @@ export default function InviteAcceptPage() {
             Organization Invitation
           </CardTitle>
           <CardDescription>
-            You've been invited to join <strong>{org.name}</strong>
+            You&apos;ve been invited to join <strong>{String(org.name || 'the organization')}</strong>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm space-y-2">
-            <p><strong>Role:</strong> {invitation.role}</p>
-            {org.description && <p><strong>Description:</strong> {org.description}</p>}
+            <p><strong>Role:</strong> {String(invitation.role || 'member')}</p>
+            {org.description ? <p><strong>Description:</strong> {String(org.description)}</p> : null}
           </div>
           {status === 'unauthenticated' ? (
             <>

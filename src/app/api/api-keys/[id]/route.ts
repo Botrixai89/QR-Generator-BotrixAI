@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
-import { rotateApiKey } from '@/lib/api-keys'
 
 // GET - Get API key details
 export async function GET(
@@ -10,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -72,7 +71,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -132,12 +131,19 @@ export async function PATCH(
     }
 
     // Build update object
-    const updateData: any = {}
+    const updateData: {
+      name?: string
+      scopes?: string[]
+      expiresAt?: string | null
+      isActive?: boolean
+      updatedAt: string
+    } = {
+      updatedAt: new Date().toISOString(),
+    }
     if (name !== undefined) updateData.name = name
     if (scopes !== undefined) updateData.scopes = scopes
     if (expiresAt !== undefined) updateData.expiresAt = expiresAt
     if (isActive !== undefined) updateData.isActive = isActive
-    updateData.updatedAt = new Date().toISOString()
 
     const { data: updatedKey, error: updateError } = await supabaseAdmin!
       .from('ApiKey')
@@ -175,7 +181,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

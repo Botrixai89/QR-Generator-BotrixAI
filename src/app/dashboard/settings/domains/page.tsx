@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -36,19 +35,19 @@ interface CustomDomain {
   createdAt: string
   lastDnsCheck?: string
   errorMessage?: string
-  routingConfig?: any
+  routingConfig?: Record<string, unknown>
   custom404Page?: string
   customExpiryPage?: string
 }
 
 export default function DomainsSettingsPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const [domains, setDomains] = useState<CustomDomain[]>([])
   const [loading, setLoading] = useState(true)
   const [addingDomain, setAddingDomain] = useState(false)
   const [newDomain, setNewDomain] = useState("")
   const [verifying, setVerifying] = useState<string | null>(null)
-  const [verificationInstructions, setVerificationInstructions] = useState<any>(null)
+  const [verificationInstructions, setVerificationInstructions] = useState<Record<string, unknown> | null>(null)
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -61,8 +60,8 @@ export default function DomainsSettingsPage() {
     try {
       const response = await fetch('/api/custom-domains')
       if (response.ok) {
-        const data = await response.json()
-        setDomains(data || [])
+        const data = await response.json() as CustomDomain[] | CustomDomain
+        setDomains(Array.isArray(data) ? data : [data].filter(Boolean))
       } else {
         toast.error('Failed to load domains')
       }
@@ -91,12 +90,12 @@ export default function DomainsSettingsPage() {
         })
       })
 
-      const data = await response.json()
+      const data = await response.json() as { verificationInstructions?: Record<string, unknown>; error?: string }
 
       if (response.ok) {
         toast.success('Domain added successfully')
         setNewDomain("")
-        setVerificationInstructions(data.verificationInstructions)
+        setVerificationInstructions(data.verificationInstructions || null)
         await loadDomains()
       } else {
         toast.error(data.error || 'Failed to add domain')
@@ -121,7 +120,7 @@ export default function DomainsSettingsPage() {
         })
       })
 
-      const data = await response.json()
+      const data = await response.json() as { error?: string }
 
       if (response.ok) {
         toast.success('Domain verified successfully')
@@ -175,7 +174,7 @@ export default function DomainsSettingsPage() {
         })
       })
 
-      const data = await response.json()
+      const data = await response.json() as { error?: string }
 
       if (response.ok) {
         toast.success('Domain removed successfully')
@@ -242,7 +241,7 @@ export default function DomainsSettingsPage() {
             <CardHeader>
               <CardTitle>Add Custom Domain</CardTitle>
               <CardDescription>
-                Add a custom domain to use with your QR codes. You'll need to verify ownership via DNS.
+                Add a custom domain to use with your QR codes. You&apos;ll need to verify ownership via DNS.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -278,12 +277,12 @@ export default function DomainsSettingsPage() {
                         Add the following TXT record to your DNS settings:
                       </p>
                       <div className="bg-muted p-3 rounded-md text-sm font-mono">
-                        <div><strong>Type:</strong> {verificationInstructions.recordType}</div>
-                        <div><strong>Name:</strong> {verificationInstructions.recordName}</div>
-                        <div><strong>Value:</strong> {verificationInstructions.recordValue}</div>
+                        <div><strong>Type:</strong> {String(verificationInstructions.recordType || '')}</div>
+                        <div><strong>Name:</strong> {String(verificationInstructions.recordName || '')}</div>
+                        <div><strong>Value:</strong> {String(verificationInstructions.recordValue || '')}</div>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        DNS propagation can take up to 24-48 hours. Click "Verify" after adding the record.
+                        DNS propagation can take up to 24-48 hours. Click &quot;Verify&quot; after adding the record.
                       </p>
                     </div>
                   </AlertDescription>

@@ -54,7 +54,7 @@ export function generateSEOMetadata(config: SEOConfig): Metadata {
         },
       ],
       locale: 'en_US',
-      type: config.type || 'website',
+      type: config.type === 'product' ? 'website' : (config.type === 'article' ? 'article' : 'website'),
       ...(config.publishedTime && { publishedTime: config.publishedTime }),
       ...(config.modifiedTime && { modifiedTime: config.modifiedTime }),
       ...(config.author && { authors: [{ name: config.author }] }),

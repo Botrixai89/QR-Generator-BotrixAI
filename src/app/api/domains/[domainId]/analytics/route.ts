@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 
@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ domainId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -71,7 +71,7 @@ export async function GET(
       countries: {} as Record<string, number>,
       devices: {} as Record<string, number>,
       browsers: {} as Record<string, number>,
-      dailyStats: [] as any[],
+      dailyStats: [] as Array<{ date: string; scans: number; uniqueVisitors: number }>,
       dateRange: {
         start: startDate || null,
         end: endDate || null
@@ -151,7 +151,7 @@ export async function POST(
   try {
     const { domainId } = await params
     const body = await request.json()
-    const { country, device, browser, scanData } = body
+    const { country, device, browser } = body
 
     // Verify domain exists and is active
     const { data: domain, error: domainError } = await supabaseAdmin!
@@ -182,7 +182,13 @@ export async function POST(
 
     if (existingRecord) {
       // Update existing record
-      const updateData: any = {
+      const updateData: {
+        totalScans: number
+        updatedAt: string
+        countries?: Record<string, number>
+        devices?: Record<string, number>
+        browsers?: Record<string, number>
+      } = {
         totalScans: (existingRecord.totalScans || 0) + 1,
         updatedAt: new Date().toISOString()
       }
@@ -220,7 +226,15 @@ export async function POST(
         .eq('id', existingRecord.id)
     } else {
       // Create new record
-      const analyticsData: any = {
+      const analyticsData: {
+        domainId: string
+        date: string
+        totalScans: number
+        uniqueVisitors: number
+        countries: Record<string, number>
+        devices: Record<string, number>
+        browsers: Record<string, number>
+      } = {
         domainId,
         date: today,
         totalScans: 1,

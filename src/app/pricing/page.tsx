@@ -9,9 +9,39 @@ import { Badge } from "@/components/ui/badge"
 import { Check, Zap, Star } from "lucide-react"
 import { toast } from "sonner"
 
+interface RazorpayOptions {
+  key?: string
+  amount: number
+  currency: string
+  name: string
+  description: string
+  order_id: string
+  handler: (response: RazorpayPaymentResponse) => Promise<void>
+  prefill?: {
+    name?: string
+    email?: string
+  }
+  theme?: {
+    color: string
+  }
+  modal?: {
+    ondismiss: () => void
+  }
+}
+
+interface RazorpayPaymentResponse {
+  razorpay_order_id: string
+  razorpay_payment_id: string
+  razorpay_signature: string
+}
+
+interface RazorpayInstance {
+  open: () => void
+}
+
 declare global {
   interface Window {
-    Razorpay: any
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance
   }
 }
 
@@ -74,7 +104,7 @@ export default function PricingPage() {
         name: "QR Generator",
         description: "Flex Plan - 100 Credits",
         order_id: order_id,
-        handler: async function (response: any) {
+        handler: async function (response: RazorpayPaymentResponse) {
           try {
             // Verify payment
             const verifyResponse = await fetch("/api/razorpay/verify", {
@@ -118,9 +148,10 @@ export default function PricingPage() {
 
       const razorpay = new window.Razorpay(options)
       razorpay.open()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Payment error:", error)
-      toast.error(error?.message || "Failed to initiate payment. Please try again.")
+      const message = error instanceof Error ? error.message : "Failed to initiate payment. Please try again."
+      toast.error(message)
       setIsLoading(false)
     }
   }

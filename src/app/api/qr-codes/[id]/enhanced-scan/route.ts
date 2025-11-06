@@ -186,7 +186,7 @@ export async function POST(
 }
 
 // Device-based redirection logic
-function getDeviceRedirectUrl(deviceConfig: any, userAgent: string): string | null {
+function getDeviceRedirectUrl(deviceConfig: Record<string, string> | null | undefined, userAgent: string): string | null {
   if (!deviceConfig || typeof deviceConfig !== 'object') {
     return null
   }
@@ -203,7 +203,7 @@ function getDeviceRedirectUrl(deviceConfig: any, userAgent: string): string | nu
 }
 
 // Geo-targeting redirection logic
-function getGeoRedirectUrl(geoConfig: any, country: string, city?: string): string | null {
+function getGeoRedirectUrl(geoConfig: { cities?: Record<string, string>; countries?: Record<string, string> } | null | undefined, country: string, city?: string): string | null {
   if (!geoConfig || typeof geoConfig !== 'object') {
     return null
   }
@@ -222,31 +222,29 @@ function getGeoRedirectUrl(geoConfig: any, country: string, city?: string): stri
 }
 
 // A/B testing variant selection
-function getABTestVariant(abTestConfig: any): string | null {
-  if (!abTestConfig || !abTestConfig.variants) {
-    return null
-  }
+function getABTestVariant(abTestConfig: { variants?: Record<string, { weight?: number }> } | null | undefined): string | null {
+  const definedVariants = abTestConfig?.variants
+  if (!definedVariants) return null
 
-  // Simple random distribution (can be enhanced with more sophisticated algorithms)
-  const variants = Object.keys(abTestConfig.variants)
-  const weights = variants.map(v => abTestConfig.variants[v].weight || 1)
-  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0)
-  
+  const entries = Object.entries(definedVariants)
+  if (entries.length === 0) return null
+
+  // Simple random distribution with optional weights
+  const weights = entries.map(([, cfg]) => (cfg?.weight ?? 1))
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0)
+  if (totalWeight <= 0) return entries[0][0]
+
   const random = Math.random() * totalWeight
-  let currentWeight = 0
-  
-  for (let i = 0; i < variants.length; i++) {
-    currentWeight += weights[i]
-    if (random <= currentWeight) {
-      return variants[i]
-    }
+  let cumulative = 0
+  for (let i = 0; i < entries.length; i++) {
+    cumulative += weights[i]
+    if (random <= cumulative) return entries[i][0]
   }
-  
-  return variants[0] // Fallback to first variant
+  return entries[0][0]
 }
 
 // Rate limiting check
-async function checkRateLimit(qrCodeId: string, ipAddress: string, rateLimitConfig: any) {
+async function checkRateLimit(qrCodeId: string, ipAddress: string, rateLimitConfig: { windowSize?: number; maxRequests?: number } | null | undefined) {
   if (!rateLimitConfig) {
     return { allowed: true }
   }
@@ -294,7 +292,7 @@ async function checkRateLimit(qrCodeId: string, ipAddress: string, rateLimitConf
 }
 
 // Webhook trigger using outbox pattern (async)
-async function triggerWebhook(webhookUrl: string, secret: string, payload: any) {
+async function triggerWebhook(webhookUrl: string, secret: string, payload: { qrCodeId: string; [key: string]: unknown }) {
   try {
     // Use outbox pattern for guaranteed delivery
     const { addWebhookToOutbox } = await import('@/lib/webhook-outbox')
@@ -320,24 +318,4 @@ async function triggerWebhook(webhookUrl: string, secret: string, payload: any) 
   }
 }
 
-// Generate webhook signature for security
-async function generateWebhookSignature(payload: any, secret: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  )
-  
-  const signature = await crypto.subtle.sign(
-    'HMAC',
-    key,
-    encoder.encode(JSON.stringify(payload))
-  )
-  
-  return Array.from(new Uint8Array(signature))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('')
-}
+// Webhook signature helper removed as unused

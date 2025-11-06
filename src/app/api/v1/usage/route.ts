@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateApiRequest } from '@/lib/api-auth'
 import { withUsageMetering } from '@/lib/api-usage'
 import { getApiUsageStats } from '@/lib/api-keys'
 
 // GET - Get API usage statistics
 async function handleGet(
   request: NextRequest,
-  context: any,
+  context: unknown,
   authContext: { apiKeyId: string; userId: string; organizationId: string | null }
 ) {
   const { searchParams } = new URL(request.url)
@@ -45,10 +44,7 @@ async function handleGet(
   })
 }
 
-export const GET = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req).then((result) => {
-    if (!result.success) return result.response
-    return handleGet(req, ctx, result.context)
-  })
-)
+export const GET = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  return handleGet(req, ctx, authContext)
+})
 

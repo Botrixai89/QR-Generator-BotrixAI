@@ -1,5 +1,4 @@
-import NextAuth from "next-auth"
-
+// NextAuth type augmentation
 declare module "next-auth" {
   interface Session {
     user: {

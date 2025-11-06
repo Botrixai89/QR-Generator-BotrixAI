@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase"
 
 /**
  * Payment Configuration Verification Endpoint
  * Checks if all payment-related configurations are properly set up
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const checks: Record<string, { status: 'ok' | 'error' | 'warning', message: string }> = {}
 
@@ -50,16 +50,17 @@ export async function GET(request: NextRequest) {
             message: 'Payments table exists'
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
         checks.paymentsTable = {
           status: 'error',
-          message: `Error checking payments table: ${error.message}`
+          message: `Error checking payments table: ${message}`
         }
       }
 
       // 3. Check if User table has credits and plan columns
       try {
-        const { data: user, error: userError } = await supabaseAdmin
+        const { error: userError } = await supabaseAdmin
           .from('User')
           .select('credits, plan')
           .limit(1)
@@ -81,10 +82,11 @@ export async function GET(request: NextRequest) {
             message: 'User table has credits and plan columns'
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
         checks.userTableColumns = {
           status: 'warning',
-          message: `Could not verify User table columns: ${error.message}`
+          message: `Could not verify User table columns: ${message}`
         }
       }
     } else {
@@ -96,12 +98,12 @@ export async function GET(request: NextRequest) {
 
     // 4. Check Razorpay package
     try {
-      const razorpay = await import("razorpay")
+      await import("razorpay")
       checks.razorpayPackage = {
         status: 'ok',
         message: 'Razorpay package is installed'
       }
-    } catch (error) {
+    } catch {
       checks.razorpayPackage = {
         status: 'error',
         message: 'Razorpay package is not installed. Run: npm install razorpay'
@@ -128,12 +130,13 @@ export async function GET(request: NextRequest) {
         ? 'Configuration has warnings. Payments should work, but consider fixing them.'
         : 'All payment configurations are correct!'
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       {
         status: 'error',
         error: 'Failed to verify configuration',
-        message: error.message
+        message
       },
       { status: 500 }
     )

@@ -173,8 +173,9 @@ export async function validateRequest<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       // Handle both Zod v3 (errors) and Zod v4 (issues)
-      const issues = (error as any).issues || (error as any).errors || []
-      const formattedErrors = issues.map((err: any) => ({
+      const errObj = error as { issues?: Array<{ path: string[]; message: string; code?: string }>; errors?: Array<{ path: string[]; message: string; code?: string }> } | null
+      const issues = errObj?.issues || errObj?.errors || []
+      const formattedErrors = issues.map((err: { path: string[]; message: string; code?: string }) => ({
         field: (err.path || []).join('.'),
         message: err.message || 'Validation error',
         code: err.code || 'invalid_type',
@@ -213,7 +214,7 @@ export async function validateJsonBody<T>(
   try {
     const body = await request.json()
     return validateRequest(schema, body)
-  } catch (error) {
+  } catch {
     return {
       success: false,
       response: NextResponse.json(
@@ -227,15 +228,15 @@ export async function validateJsonBody<T>(
 /**
  * Validates query parameters
  */
-export function validateQuery<T>(
+export async function validateQuery<T>(
   schema: z.ZodSchema<T>,
   searchParams: URLSearchParams
-): { success: true; data: T } | { success: false; response: NextResponse } {
+): Promise<{ success: true; data: T } | { success: false; response: NextResponse }> {
   const params: Record<string, string> = {}
   searchParams.forEach((value, key) => {
     params[key] = value
   })
-  return validateRequest(schema, params)
+  return await validateRequest(schema, params)
 }
 
 /**

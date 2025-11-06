@@ -5,9 +5,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:analyze": "cross-env ANALYZE=true next build",
+    "build:fast": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "typecheck": "tsc --noEmit",
+    "typecheck:watch": "tsc --noEmit --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -17,7 +21,9 @@
     "test:all": "npm run typecheck && npm run lint && npm run test && npm run test:e2e",
     "seed": "tsx scripts/seed.ts",
     "seed:dev": "tsx scripts/seed-dev.ts",
-    "vercel-build": "next build"
+    "vercel-build": "next build",
+    "clean": "rimraf .next out dist node_modules/.cache",
+    "clean:build": "rimraf .next out"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -74,10 +80,12 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^2.1.8",
     "@vitest/ui": "^2.1.8",
+    "cross-env": "^7.0.3",
     "dotenv": "^17.2.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
     "msw": "^2.6.1",
+    "rimraf": "^6.1.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
     "tw-animate-css": "^1.3.8",

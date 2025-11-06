@@ -8,10 +8,11 @@ import { NextRequest, NextResponse } from 'next/server'
 /**
  * Adds security headers to a response
  */
-export function addSecurityHeaders(response: NextResponse, request: NextRequest): NextResponse {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function addSecurityHeaders(response: NextResponse, _: NextRequest): NextResponse {
   // Guard against unexpected undefined/invalid responses in error paths
   // If response is missing or doesn't expose headers, return it as-is
-  if (!response || !(response as any).headers) {
+  if (!response || !('headers' in response)) {
     return response
   }
   // Content Security Policy

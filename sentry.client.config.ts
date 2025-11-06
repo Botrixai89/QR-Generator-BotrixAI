@@ -15,9 +15,6 @@ if (sentryDsn) {
   // Adjust this value in production, or use tracesSampler for greater control
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
   
-  // Enable capturing of unhandled promise rejections
-  captureUnhandledRejections: true,
-  
   // Set environment
   environment: process.env.NODE_ENV || 'development',
   
@@ -53,11 +50,7 @@ if (sentryDsn) {
   
   // Integrate with logging correlation IDs
   integrations: [
-    new Sentry.BrowserTracing({
-      // Set tracing origins to track performance
-      tracePropagationTargets: ['localhost', /^\//],
-    }),
-    new Sentry.Replay({
+    Sentry.replayIntegration({
       maskAllText: true,
       blockAllMedia: true,
     }),

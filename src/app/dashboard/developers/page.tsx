@@ -2,27 +2,11 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import {
-  Key,
-  Activity,
-  Book,
-  Webhook,
-  Copy,
-  Trash2,
-  RefreshCw,
-  Plus,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-  XCircle,
-  Clock,
-} from 'lucide-react'
-import { toast } from 'sonner'
+import { Key, Activity, Book, Webhook } from 'lucide-react'
 import Link from 'next/link'
 import ApiKeysManager from '@/components/api-keys-manager'
 import ApiUsageStats from '@/components/api-usage-stats'

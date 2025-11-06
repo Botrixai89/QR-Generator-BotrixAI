@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
+import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { isAdmin, getUserById } from "@/lib/admin"
 import { supabaseAdmin } from "@/lib/supabase"
@@ -15,7 +15,7 @@ import { logAuditEvent } from "@/lib/audit-log"
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string; email?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
     
     if (!session?.user?.id) {
       return NextResponse.json(

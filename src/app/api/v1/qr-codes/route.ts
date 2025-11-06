@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateApiRequest } from '@/lib/api-auth'
 import { withUsageMetering } from '@/lib/api-usage'
 import { supabaseAdmin } from '@/lib/supabase'
+import { hasScope } from '@/lib/api-keys'
 
 // GET - List QR codes
 async function handleGet(
   request: NextRequest,
-  context: any,
+  _context: unknown,
   authContext: { apiKeyId: string; userId: string; organizationId: string | null }
 ) {
   const { searchParams } = new URL(request.url)
@@ -17,8 +17,6 @@ async function handleGet(
   let query = supabaseAdmin!
     .from('QrCode')
     .select('*', { count: 'exact' })
-    .limit(Math.min(limit, 100))
-    .offset(offset)
     .order('createdAt', { ascending: false })
 
   // Filter by user/org
@@ -46,6 +44,7 @@ async function handleGet(
   }
 
   const { data: qrCodes, error, count } = await query
+    .range(offset, offset + Math.min(limit, 100) - 1)
 
   if (error) {
     console.error('Error fetching QR codes:', error)
@@ -63,7 +62,7 @@ async function handleGet(
 // POST - Create QR code
 async function handlePost(
   request: NextRequest,
-  context: any,
+  _context: unknown,
   authContext: { apiKeyId: string; userId: string; organizationId: string | null }
 ) {
   const body = await request.json()
@@ -143,17 +142,23 @@ async function handlePost(
 }
 
 // Export with usage metering
-export const GET = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req, ['qr:read']).then((result) => {
-    if (!result.success) return result.response
-    return handleGet(req, ctx, result.context)
-  })
-)
+export const GET = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  // Check scope
+  const { data: apiKey } = await supabaseAdmin!.from('ApiKey').select('*').eq('id', authContext.apiKeyId).single()
+  if (!apiKey || !hasScope(apiKey, 'qr:read')) {
+    return NextResponse.json({ error: 'Forbidden', message: 'Missing required scope: qr:read' }, { status: 403 })
+  }
 
-export const POST = withUsageMetering((req, ctx, auth) =>
-  authenticateApiRequest(req, ['qr:write']).then((result) => {
-    if (!result.success) return result.response
-    return handlePost(req, ctx, result.context)
-  })
-)
+  return handleGet(req, ctx, authContext)
+})
+
+export const POST = withUsageMetering(async (req, ctx: unknown, authContext) => {
+  // Check scope
+  const { data: apiKey } = await supabaseAdmin!.from('ApiKey').select('*').eq('id', authContext.apiKeyId).single()
+  if (!apiKey || !hasScope(apiKey, 'qr:write')) {
+    return NextResponse.json({ error: 'Forbidden', message: 'Missing required scope: qr:write' }, { status: 403 })
+  }
+
+  return handlePost(req, ctx, authContext)
+})
 

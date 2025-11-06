@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Building2, Users, Mail, Crown, UserPlus, Trash2 } from "lucide-react"
+import { Crown, UserPlus, Trash2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -19,8 +19,8 @@ export default function OrganizationDetailPage() {
   const orgId = params?.id as string
   
   const [loading, setLoading] = useState(true)
-  const [organization, setOrganization] = useState<any | null>(null)
-  const [members, setMembers] = useState<any[]>([])
+  const [organization, setOrganization] = useState<{ name?: string; description?: string; slug?: string } | null>(null)
+  const [members, setMembers] = useState<Array<{ id: string; role: string; user?: { name?: string; email?: string } }>>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState("")
@@ -29,6 +29,30 @@ export default function OrganizationDetailPage() {
 
   useEffect(() => {
     if (status === 'authenticated' && orgId) {
+      const load = async () => {
+        setLoading(true)
+        try {
+          const [orgRes, membersRes] = await Promise.all([
+            fetch(`/api/organizations/${orgId}`),
+            fetch(`/api/organizations/${orgId}/members`)
+          ])
+          
+          if (orgRes.ok) {
+            const { organization, userRole } = await orgRes.json()
+            setOrganization(organization)
+            setUserRole(userRole)
+          }
+          if (membersRes.ok) {
+            const { members } = await membersRes.json()
+            setMembers(members || [])
+          }
+        } catch {
+          // noop
+        } finally {
+          setLoading(false)
+        }
+      }
+      
       void load()
     }
   }, [status, orgId])
@@ -49,7 +73,7 @@ export default function OrganizationDetailPage() {
         const { members } = await membersRes.json()
         setMembers(members || [])
       }
-    } catch (e) {
+    } catch {
       // noop
     } finally {
       setLoading(false)
@@ -91,7 +115,7 @@ export default function OrganizationDetailPage() {
       } else {
         toast.error('Failed to remove member')
       }
-    } catch (e) {
+    } catch {
       toast.error('Failed to remove member')
     }
   }
@@ -125,8 +149,8 @@ export default function OrganizationDetailPage() {
       <div className="container mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">{organization.name}</h1>
-            <p className="text-muted-foreground">{organization.description || `@${organization.slug}`}</p>
+            <h1 className="text-3xl font-bold">{organization.name || 'Organization'}</h1>
+            <p className="text-muted-foreground">{organization.description || `@${organization.slug || ''}`}</p>
           </div>
           <Button variant="outline" onClick={() => router.push('/dashboard/organizations')}>
             Back

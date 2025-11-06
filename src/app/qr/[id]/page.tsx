@@ -4,8 +4,8 @@ import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2, ExternalLink, BarChart3, Clock, Users, QrCode, Download } from "lucide-react"
-import QRCodeStyling from "qr-code-styling"
+import { Loader2, ExternalLink, BarChart3, Clock, Download } from "lucide-react"
+import type QRCodeStyling from "qr-code-styling"
 import { addBotrixLogoToQR } from "@/lib/qr-watermark"
 import { createAdvancedQR } from "@/lib/qr-code-advanced"
 import type { AdvancedQROptions } from "@/types/qr-code-advanced"
@@ -19,7 +19,7 @@ interface QRCodeData {
   scanCount: number
   createdAt: string
   lastScannedAt: string | null
-  dynamicContent?: any
+  dynamicContent?: Record<string, unknown>
   redirectUrl?: string
   foregroundColor?: string
   backgroundColor?: string
@@ -31,9 +31,9 @@ interface QRCodeData {
   template?: string
   shape?: string
   eyePattern?: string
-  gradient?: any
-  sticker?: any
-  effects?: any
+  gradient?: Record<string, unknown>
+  sticker?: Record<string, unknown>
+  effects?: Record<string, unknown>
 }
 
 interface Analytics {
@@ -44,7 +44,7 @@ interface Analytics {
   scansByDate: Record<string, number>
   scansByDevice: Record<string, number>
   scansByCountry: Record<string, number>
-  recentScans: any[]
+  recentScans: Array<Record<string, unknown>>
 }
 
 // Enhanced QR Code Preview Component
@@ -55,7 +55,7 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
 }) {
   const qrRef = useRef<HTMLDivElement>(null)
   const qrCodeRef = useRef<QRCodeStyling | null>(null)
-  const advancedRef = useRef<any>(null)
+  const advancedRef = useRef<{ download?: (format: 'png' | 'svg') => void } | null>(null)
   const [isClient, setIsClient] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
@@ -95,14 +95,14 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
           type: 'svg',
           foregroundColor: qrCode.foregroundColor || '#000000',
           backgroundColor: formattedBackgroundColor,
-          dotType: (qrCode.dotType as any) || 'square',
-          cornerType: (qrCode.cornerType as any) || 'square',
-          eyePattern: (qrCode.eyePattern as any) || 'square',
-          template: qrCode.template as any,
-          shape: qrCode.shape as any,
-          gradient: qrCode.gradient as any,
-          sticker: qrCode.sticker as any,
-          effects: qrCode.effects as any,
+          dotType: (qrCode.dotType as AdvancedQROptions['dotType']) || 'square',
+          cornerType: (qrCode.cornerType as AdvancedQROptions['cornerType']) || 'square',
+          eyePattern: (qrCode.eyePattern as AdvancedQROptions['eyePattern']) || 'square',
+          template: qrCode.template as AdvancedQROptions['template'],
+          shape: qrCode.shape as AdvancedQROptions['shape'],
+          gradient: qrCode.gradient as AdvancedQROptions['gradient'],
+          sticker: qrCode.sticker as AdvancedQROptions['sticker'],
+          effects: qrCode.effects as AdvancedQROptions['effects'],
           // Map stored logo URL (if any) to advanced logo config
           logo: qrCode.logoUrl ? { image: qrCode.logoUrl, size: 0.25, margin: 5, opacity: 1 } : undefined,
           // Persist watermark choice

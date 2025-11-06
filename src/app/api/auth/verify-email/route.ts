@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { validateQuery } from '@/lib/validation'
 import { z } from 'zod'
 import { addSecurityHeaders } from '@/lib/security-headers'
 import { logAuditEvent, extractRequestInfo } from '@/lib/audit-log'
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
       userAgent,
       requestMethod: 'POST',
       requestPath: '/api/auth/verify-email',
-      metadata: { email: (verificationToken.User as any)?.email },
+      metadata: { email: (verificationToken.User as { email?: string } | null)?.email },
       success: true,
     })
 

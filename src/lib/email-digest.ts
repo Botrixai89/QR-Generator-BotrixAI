@@ -5,7 +5,7 @@
 
 import { supabaseAdmin } from './supabase'
 import { getNotificationPreferences } from './notifications'
-import { sendUsageAlertEmail } from './transactional-emails'
+// import { sendUsageAlertEmail } from './transactional-emails' // Reserved for future use
 
 export interface DigestItem {
   type: 'threshold_crossed' | 'credit_low' | 'scan_threshold' | 'domain_verified'
@@ -83,8 +83,8 @@ async function sendEmailDigest(
   userId: string,
   email: string,
   name: string,
-  notifications: any[],
-  alerts: any[]
+  notifications: Array<{ type: string; title: string; message: string; createdAt: string }>,
+  alerts: Array<{ thresholdType: string; currentValue: string | number; thresholdValue: string | number; createdAt: string }>
 ): Promise<void> {
   const APP_NAME = process.env.APP_NAME || 'QR Generator'
   const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000'
@@ -95,7 +95,7 @@ async function sendEmailDigest(
   // Add notifications
   for (const notification of notifications) {
     items.push({
-      type: notification.type as any,
+      type: notification.type as DigestItem['type'],
       title: notification.title,
       message: notification.message,
       timestamp: notification.createdAt,
@@ -105,7 +105,7 @@ async function sendEmailDigest(
   // Add alerts
   for (const alert of alerts) {
     items.push({
-      type: alert.thresholdType as any,
+      type: alert.thresholdType as DigestItem['type'],
       title: `Threshold Alert: ${alert.thresholdType.replace('_', ' ')}`,
       message: `Current value: ${alert.currentValue}, Threshold: ${alert.thresholdValue}`,
       timestamp: alert.createdAt,
