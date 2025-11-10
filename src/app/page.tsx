@@ -83,14 +83,14 @@ export default function Home() {
           </div>
 
           {/* Demo QR Generator */}
-          <Card className="max-w-4xl mx-auto">
+          <Card className="max-w-7xl mx-auto">
             <CardHeader>
               <CardTitle>Try It Out</CardTitle>
               <CardDescription>
                 Configure your QR code below. To generate and save, please sign up first.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <QRGenerator />
             </CardContent>
           </Card>

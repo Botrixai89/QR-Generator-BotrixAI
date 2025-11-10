@@ -903,11 +903,11 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="basic">Basic</TabsTrigger>
-                  <TabsTrigger value="social">Social Media</TabsTrigger>
-                  <TabsTrigger value="upi">UPI Payment</TabsTrigger>
-                  <TabsTrigger value="dynamic">Dynamic</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4 gap-1.5 p-1.5">
+                  <TabsTrigger value="basic" className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none">Basic</TabsTrigger>
+                  <TabsTrigger value="social" className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none">Social Media</TabsTrigger>
+                  <TabsTrigger value="upi" className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none">UPI Payment</TabsTrigger>
+                  <TabsTrigger value="dynamic" className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none">Dynamic</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="basic" className="space-y-4 mt-4">

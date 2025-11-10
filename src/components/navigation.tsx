@@ -124,7 +124,7 @@ export default function Navigation() {
                 />
                 {/* Dark & system theme logo */}
                 <Image
-                  src="/BotrixAI_Dark.jpg"
+                  src="/BotrixAI_Dark.png"
                   alt="Botrix AI"
                   width={56}
                   height={56}
