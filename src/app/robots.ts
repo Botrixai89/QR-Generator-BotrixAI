@@ -1,12 +1,11 @@
-/**
- * Robots.txt Generator
- * Configures search engine crawler access
- */
-
 import { MetadataRoute } from 'next'
 
+/**
+ * Robots.txt configuration for search engine crawlers
+ * Defines which pages can be crawled and indexed
+ */
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'
+  const baseUrl = 'https://qr-generator-botrix-ai.vercel.app'
 
   return {
     rules: [
@@ -15,9 +14,8 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: [
           '/api/',
-          '/dashboard/',
-          '/auth/',
-          '/admin/',
+          '/dashboard/settings/',
+          '/*?*utm_*',
           '/_next/',
           '/private/',
         ],
@@ -25,15 +23,15 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: 'Googlebot',
         allow: '/',
-        disallow: [
-          '/api/',
-          '/dashboard/',
-          '/auth/',
-          '/admin/',
-        ],
+        disallow: ['/api/', '/dashboard/settings/'],
+      },
+      {
+        userAgent: 'Bingbot',
+        allow: '/',
+        disallow: ['/api/', '/dashboard/settings/'],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
+    host: baseUrl,
   }
 }
-

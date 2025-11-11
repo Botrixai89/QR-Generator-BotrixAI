@@ -19,41 +19,101 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "QR Generator - Create Beautiful QR Codes",
-  description: "Generate and customize QR codes with logos, colors, and watermarks. Track your QR code usage with analytics.",
-  keywords: ["QR code", "generator", "customize", "logo", "watermark", "analytics"],
-  authors: [{ name: "QR Generator Team" }],
-  creator: "QR Generator",
-  publisher: "QR Generator",
+  title: {
+    default: "Free QR Code Generator with Logo | BotrixAI - Create Custom QR Codes Online",
+    template: "%s | BotrixAI QR Generator"
+  },
+  description: "Create stunning, customizable QR codes instantly with BotrixAI's free QR code generator. Add logos, customize colors, track analytics, and download in multiple formats. Perfect for marketing, business cards, payments & more!",
+  keywords: [
+    "QR code generator",
+    "free QR code maker",
+    "custom QR code",
+    "QR code with logo",
+    "QR code generator online",
+    "create QR code",
+    "QR code design",
+    "dynamic QR codes",
+    "QR code analytics",
+    "business QR code",
+    "UPI QR code",
+    "payment QR code",
+    "branded QR code",
+    "QR code templates",
+    "professional QR codes",
+    "QR code tracking",
+    "marketing QR codes",
+    "customizable QR generator",
+    "BotrixAI",
+    "advanced QR code maker"
+  ],
+  authors: [{ name: "BotrixAI", url: "https://qr-generator-botrix-ai.vercel.app" }],
+  creator: "BotrixAI",
+  publisher: "BotrixAI",
+  applicationName: "BotrixAI QR Generator",
+  category: "Technology",
+  classification: "QR Code Generator",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: new URL("https://qr-generator-botrix-ai.vercel.app"),
+  alternates: {
+    canonical: "https://qr-generator-botrix-ai.vercel.app",
+  },
   openGraph: {
-    title: "QR Generator - Create Beautiful QR Codes",
-    description: "Generate and customize QR codes with logos, colors, and watermarks. Track your QR code usage with analytics.",
-    url: "http://localhost:3000",
-    siteName: "QR Generator",
-    locale: "en_US",
     type: "website",
+    locale: "en_US",
+    url: "https://qr-generator-botrix-ai.vercel.app",
+    siteName: "BotrixAI QR Generator",
+    title: "Free QR Code Generator with Logo | BotrixAI - Create Custom QR Codes",
+    description: "Create stunning, customizable QR codes instantly! Add logos, customize colors, track analytics & download in multiple formats. Perfect for business, marketing & payments.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "BotrixAI QR Code Generator - Create Beautiful Custom QR Codes",
+        type: "image/png",
+      }
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "QR Generator - Create Beautiful QR Codes",
-    description: "Generate and customize QR codes with logos, colors, and watermarks. Track your QR code usage with analytics.",
+    site: "@BotrixAI",
+    creator: "@BotrixAI",
+    title: "Free QR Code Generator with Logo | BotrixAI",
+    description: "Create stunning, customizable QR codes instantly! Add logos, customize colors & track analytics. Perfect for business & marketing.",
+    images: ["/twitter-image.png"],
   },
   robots: {
     index: true,
     follow: true,
+    nocache: false,
     googleBot: {
       index: true,
       follow: true,
+      noimageindex: false,
       "max-video-preview": -1,
       "max-image-preview": "large",
       "max-snippet": -1,
     },
+  },
+  verification: {
+    google: "google-site-verification-code-here",
+    yandex: "yandex-verification-code-here",
+    other: {
+      bing: ["bing-verification-code-here"],
+    },
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 

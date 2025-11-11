@@ -1,69 +1,46 @@
-/**
- * Sitemap Generator
- * Automatically generates sitemap.xml for SEO
- */
-
 import { MetadataRoute } from 'next'
 
+/**
+ * Dynamic sitemap generation for SEO
+ * This helps search engines discover and index all pages
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'
+  const baseUrl = 'https://qr-generator-botrix-ai.vercel.app'
   const currentDate = new Date()
 
-  return [
+  // Static routes with priorities and change frequencies
+  const routes = [
     {
       url: baseUrl,
       lastModified: currentDate,
-      changeFrequency: 'daily',
-      priority: 1,
+      changeFrequency: 'daily' as const,
+      priority: 1.0,
     },
     {
-      url: `${baseUrl}/features`,
+      url: `${baseUrl}/auth/signin`,
       lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/use-cases`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/pricing`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/blog`,
-      lastModified: currentDate,
-      changeFrequency: 'daily',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/changelog`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/docs`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
+      changeFrequency: 'monthly' as const,
       priority: 0.8,
     },
     {
       url: `${baseUrl}/auth/signup`,
       lastModified: currentDate,
-      changeFrequency: 'monthly',
+      changeFrequency: 'monthly' as const,
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/auth/signin`,
+      url: `${baseUrl}/dashboard`,
       lastModified: currentDate,
-      changeFrequency: 'monthly',
-      priority: 0.5,
+      changeFrequency: 'daily' as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/pricing`,
+      lastModified: currentDate,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
     },
   ]
-}
 
+  return routes
+}
