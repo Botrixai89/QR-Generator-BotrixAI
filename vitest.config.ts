@@ -23,6 +23,7 @@ export default defineConfig({
     },
     include: ['**/*.{test,spec}.{js,ts,tsx}'],
     exclude: ['node_modules', '.next', 'tests/e2e/**', 'tests/smoke/**'],
+    testTimeout: 10000, // 10 seconds for integration tests
   },
   resolve: {
     alias: {

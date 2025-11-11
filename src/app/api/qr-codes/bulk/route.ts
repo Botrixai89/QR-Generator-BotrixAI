@@ -146,13 +146,68 @@ async function processBulkOperation(
   let failedCount = 0
 
   try {
+    // Handle bulk create with atomic transaction
+    if (operation === 'create') {
+      try {
+        // Use atomic transaction for all QR codes at once
+        const { data: bulkResult, error: bulkError } = await supabaseAdmin!
+          .rpc('bulk_create_qr_codes_with_credits', {
+            p_qr_data_array: qrCodes,
+            p_user_id: userId
+          })
+
+        if (bulkError) {
+          throw new Error(bulkError.message)
+        }
+
+        const createdQRCodes = bulkResult as Array<Record<string, unknown>>
+        results.successful = createdQRCodes
+        processedCount = createdQRCodes.length
+        
+        // Update final status
+        await supabaseAdmin!
+          .from('QrCodeBulkGroup')
+          .update({
+            status: 'completed',
+            completedAt: new Date().toISOString(),
+            processedCount,
+            failedCount: 0,
+            results
+          })
+          .eq('id', bulkGroupId)
+        
+        return
+      } catch (error) {
+        // Handle bulk creation failure
+        results.errors.push({
+          qrCode: { operation: 'bulk_create' },
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+        failedCount = qrCodes.length
+        
+        await supabaseAdmin!
+          .from('QrCodeBulkGroup')
+          .update({
+            status: 'failed',
+            completedAt: new Date().toISOString(),
+            processedCount: 0,
+            failedCount,
+            results
+          })
+          .eq('id', bulkGroupId)
+        
+        return
+      }
+    }
+    
+    // Handle other operations one by one
     for (const qrCodeData of qrCodes) {
       try {
         let result = null
 
         switch (operation) {
           case 'create':
-            result = await createBulkQRCode(qrCodeData, userId)
+            // This case is already handled above
             break
           case 'update': {
             if (typeof qrCodeData.id !== 'string') {
@@ -231,41 +286,8 @@ async function processBulkOperation(
   }
 }
 
-// Bulk create QR codes
-async function createBulkQRCode(qrCodeData: Record<string, unknown>, userId: string) {
-  const { data: qrCode, error } = await supabaseAdmin!
-    .from('QrCode')
-    .insert({
-      userId,
-      title: qrCodeData.title,
-      url: qrCodeData.url,
-      isDynamic: qrCodeData.isDynamic || false,
-      dynamicContent: qrCodeData.dynamicContent,
-      redirectUrl: qrCodeData.redirectUrl,
-      expiresAt: qrCodeData.expiresAt,
-      maxScans: qrCodeData.maxScans,
-      foregroundColor: qrCodeData.foregroundColor || '#000000',
-      backgroundColor: qrCodeData.backgroundColor || '#FFFFFF',
-      dotType: qrCodeData.dotType || 'square',
-      cornerType: qrCodeData.cornerType || 'square',
-      hasWatermark: qrCodeData.hasWatermark !== false,
-      isBulkManaged: true,
-      deviceRedirection: qrCodeData.deviceRedirection,
-      geoRedirection: qrCodeData.geoRedirection,
-      marketingPixels: qrCodeData.marketingPixels,
-      abTestConfig: qrCodeData.abTestConfig,
-      webhookUrl: qrCodeData.webhookUrl,
-      customDomain: qrCodeData.customDomain
-    })
-    .select()
-    .single()
-
-  if (error) {
-    throw new Error(`Failed to create QR code: ${error.message}`)
-  }
-
-  return qrCode
-}
+// Note: Bulk create now uses atomic transaction function
+// See: bulk_create_qr_codes_with_credits in migrations/20250111_atomic_qr_creation.sql
 
 // Bulk update QR codes
 async function updateBulkQRCode(qrCodeData: Record<string, unknown> & { id: string }, userId: string) {

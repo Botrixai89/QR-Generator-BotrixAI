@@ -6,6 +6,8 @@ import { randomUUID } from "crypto"
 import { assertCanCreateQr, getUserPlan, hasFeature } from "@/lib/entitlements"
 import { rateLimit } from "@/lib/rate-limit"
 import { canAccessOrgResource } from "@/lib/rbac"
+import { ApiErrors, handleApiError, createdResponse } from "@/lib/api-errors"
+import { UserCreditsCache, QRCodeCache } from "@/lib/cache"
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,10 +32,7 @@ export async function POST(request: NextRequest) {
     
     if (!session?.user?.id) {
       console.log("ERROR: No valid session or user ID")
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return ApiErrors.unauthorized().toResponse()
     }
 
     // Global per-user rate limit for create
@@ -44,34 +43,11 @@ export async function POST(request: NextRequest) {
       maxRequests: 30,
     })
     if (!limit.allowed) {
-      return NextResponse.json(
-        { error: 'rate_limited', retryAfter: limit.retryAfter },
-        { status: 429 }
-      )
+      return ApiErrors.rateLimited(limit.retryAfter).toResponse()
     }
 
-    // Check user credits before creating QR code
-    const { data: user, error: userError } = await supabaseAdmin!
-      .from('User')
-      .select('credits')
-      .eq('id', session.user.id)
-      .single()
-
-    if (userError || !user) {
-      console.error("Error fetching user credits:", userError)
-      return NextResponse.json(
-        { error: "Failed to fetch user data" },
-        { status: 500 }
-      )
-    }
-
-    if ((user.credits || 0) <= 0) {
-      console.log("User has no credits:", user.credits)
-      return NextResponse.json(
-        { error: "no_credits" },
-        { status: 402 }
-      )
-    }
+    // Credit check will be done atomically in the database function
+    // This prevents race conditions and ensures data consistency
 
     // Enforce plan entitlements: QR creation limit
     try {
@@ -108,10 +84,7 @@ export async function POST(request: NextRequest) {
     const eyePattern = formData.get("eyePattern") as string
 
     if (!url) {
-      return NextResponse.json(
-        { error: "URL is required" },
-        { status: 400 }
-      )
+      return ApiErrors.missingField('url').toResponse()
     }
 
     // Use original URL directly (URL shortening disabled for now)
@@ -123,19 +96,13 @@ export async function POST(request: NextRequest) {
         // Validate file type on server side
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
         if (!allowedTypes.includes(logoFile.type)) {
-          return NextResponse.json(
-            { error: "Invalid file type. Please upload an image file (JPEG, PNG, GIF, WebP, or SVG)." },
-            { status: 400 }
-          )
+          return ApiErrors.invalidFileType(allowedTypes).toResponse()
         }
         
         // Validate file size (max 5MB)
         const maxSize = 5 * 1024 * 1024 // 5MB in bytes
         if (logoFile.size > maxSize) {
-          return NextResponse.json(
-            { error: "File too large. Please upload an image smaller than 5MB." },
-            { status: 400 }
-          )
+          return ApiErrors.fileTooLarge('5MB').toResponse()
         }
         
         // Create a unique filename
@@ -206,10 +173,7 @@ export async function POST(request: NextRequest) {
 
         if (uploadError) {
           console.error("Error uploading to Supabase Storage:", uploadError)
-          return NextResponse.json(
-            { error: "Failed to upload logo. Please try again." },
-            { status: 500 }
-          )
+          return ApiErrors.externalServiceError('Supabase Storage', uploadError).toResponse()
         }
 
         // Get public URL
@@ -332,52 +296,48 @@ export async function POST(request: NextRequest) {
       insertData.organizationId = organizationId
     }
 
-    const { data: qrCode, error } = await supabaseAdmin!
-      .from('QrCode')
-      .insert(insertData)
-      .select()
-      .single()
+    // Use atomic transaction function to create QR code and deduct credit
+    // This ensures both operations succeed or both fail - no data inconsistency
+    console.log("Calling atomic transaction function...")
+    
+    const { data: result, error } = await supabaseAdmin!
+      .rpc('create_qr_code_with_credit_deduction', {
+        p_qr_data: insertData,
+        p_user_id: session.user.id
+      })
 
     if (error) {
-      console.error("Database error details:", error)
-      console.error("Error code:", error.code)
-      console.error("Error message:", error.message)
-      console.error("Error details:", error.details)
-      return NextResponse.json(
-        { error: "Failed to create QR code", details: error.message },
-        { status: 500 }
-      )
+      console.error("Transaction error details:", error)
+      
+      // Handle specific error cases
+      if (error.message?.includes('Insufficient credits')) {
+        return ApiErrors.insufficientCredits().toResponse()
+      }
+      
+      if (error.message?.includes('User not found')) {
+        return ApiErrors.userNotFound(session.user.id).toResponse()
+      }
+      
+      return ApiErrors.databaseError('Failed to create QR code', error.message).toResponse()
     }
     
-    console.log("QR code created successfully:", qrCode)
+    const qrCode = result as Record<string, unknown>
+    console.log("QR code created successfully with atomic transaction:", qrCode)
 
-    // Deduct 1 credit from user
-    const { error: creditError } = await supabaseAdmin!
-      .from('User')
-      .update({
-        credits: (user.credits || 0) - 1
-      })
-      .eq('id', session.user.id)
+    // Invalidate caches after successful creation
+    await Promise.all([
+      UserCreditsCache.invalidate(session.user.id), // Credits changed
+      QRCodeCache.invalidateUserList(session.user.id), // QR list changed
+    ])
 
-    if (creditError) {
-      console.error("Error deducting credit:", creditError)
-      // Note: QR code was already created, so we don't fail the request
-      // This could be handled by a background job or manual reconciliation
-    } else {
-      console.log("Credit deducted successfully")
-    }
-
-    return NextResponse.json(qrCode, { status: 201 })
+    return createdResponse(qrCode)
   } catch (error) {
     console.error("=== CRITICAL ERROR in QR Code API ===")
     console.error("Error type:", typeof error)
     console.error("Error message:", error instanceof Error ? error.message : String(error))
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace")
     console.error("Full error object:", error)
-    return NextResponse.json(
-      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -392,10 +352,7 @@ export async function GET() {
     const session = await Promise.race([sessionPromise, timeoutPromise]) as { user?: { id: string } } | null
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
+      return ApiErrors.unauthorized().toResponse()
     }
 
     // Get user's organization IDs
@@ -415,18 +372,12 @@ export async function GET() {
 
     if (error) {
       console.error("Error fetching QR codes:", error)
-      return NextResponse.json(
-        { error: "Failed to fetch QR codes" },
-        { status: 500 }
-      )
+      return ApiErrors.databaseError('Failed to fetch QR codes', error).toResponse()
     }
 
     return NextResponse.json(qrCodes || [])
   } catch (error) {
     console.error("Error fetching QR codes:", error)
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

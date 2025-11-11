@@ -21,6 +21,15 @@
     "test:all": "npm run typecheck && npm run lint && npm run test && npm run test:e2e",
     "seed": "tsx scripts/seed.ts",
     "seed:dev": "tsx scripts/seed-dev.ts",
+    "apply-migrations": "tsx scripts/apply-all-migrations.ts",
+    "apply-atomic-fix": "tsx scripts/apply-atomic-transaction-fix.ts",
+    "verify-indexes": "tsx scripts/verify-indexes.ts",
+    "backup:create": "bash scripts/backup-database.sh",
+    "backup:restore": "bash scripts/restore-database.sh",
+    "backup:test": "bash scripts/test-backup-restore.sh",
+    "load-test": "k6 run k6-load-test.js",
+    "load-test:smoke": "k6 run --vus 1 --duration 1m k6-load-test.js",
+    "load-test:stress": "k6 run --vus 200 --duration 10m k6-load-test.js",
     "vercel-build": "next build",
     "clean": "rimraf .next out dist node_modules/.cache",
     "clean:build": "rimraf .next out"
@@ -67,7 +76,16 @@
     "tailwind-merge": "^3.3.1",
     "web-vitals": "^5.1.0",
     "xlsx": "^0.18.5",
-    "zod": "^4.1.5"
+    "zod": "^4.1.5",
+    "zustand": "^4.5.7"
+  },
+  "peerDependencies": {
+    "@vercel/kv": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@vercel/kv": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

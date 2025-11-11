@@ -1,0 +1,48 @@
+import {
+  Circle,
+  Square,
+  Heart,
+  Star,
+  Hexagon,
+  Diamond,
+  Cloud,
+  Gift,
+  Coffee,
+  Music,
+  Car,
+  Home,
+  Sun,
+  Moon,
+  Brain,
+  Flower,
+  Shield,
+  Cake,
+  Leaf,
+  Settings,
+} from "lucide-react"
+import type { QRShape } from "@/types/qr-code-advanced"
+
+// Shape icons mapping
+export const shapeIcons: Record<QRShape, React.ComponentType<{ className?: string }>> = {
+  square: Square,
+  circle: Circle,
+  heart: Heart,
+  hexagon: Hexagon,
+  brain: Brain,
+  star: Star,
+  diamond: Diamond,
+  cloud: Cloud,
+  flower: Flower,
+  shield: Shield,
+  gift: Gift,
+  cake: Cake,
+  coffee: Coffee,
+  music: Music,
+  car: Car,
+  house: Home,
+  tree: Leaf,
+  sun: Sun,
+  moon: Moon,
+  custom: Settings,
+}
+
