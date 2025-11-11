@@ -43,11 +43,11 @@ export default function Home() {
             {/* Hero Section - SEO Optimized */}
             <header className="text-center mb-16">
               <h1 className="text-4xl md:text-6xl font-bold mb-4">
-                Free QR Code Generator with{" "}
+                <span className="text-primary">BotrixAI</span> QR Generator - Free QR Code Generator with{" "}
                 <span className="text-primary">Logo & Analytics</span>
               </h1>
               <p className="text-xl text-muted-foreground mb-4 max-w-2xl mx-auto">
-                Create stunning, customizable QR codes instantly with BotrixAI. Add your logo, customize colors, 
+                <strong>BotrixAI QR Generator</strong> - Create stunning, customizable QR codes instantly! Add your logo, customize colors, 
                 track scans with analytics, and download in multiple formats—all for free!
               </p>
               <p className="text-lg text-muted-foreground mb-8 max-w-3xl mx-auto">
@@ -138,11 +138,12 @@ export default function Home() {
 
             {/* SEO Content Section */}
             <section className="mt-16 max-w-4xl mx-auto prose prose-lg dark:prose-invert">
-              <h2 className="text-3xl font-bold mb-4">Why Choose BotrixAI QR Code Generator?</h2>
+              <h2 className="text-3xl font-bold mb-4">Why Choose BotrixAI QR Generator?</h2>
               <p className="text-muted-foreground mb-6">
-                BotrixAI is the most advanced free QR code generator online. Whether you need QR codes for 
-                business cards, marketing campaigns, product packaging, or payment collection, our platform 
-                provides everything you need to create, customize, and track professional QR codes.
+                <strong>BotrixAI QR Generator</strong> is the most advanced free QR code generator online. Whether you need QR codes for 
+                business cards, marketing campaigns, product packaging, or payment collection, <strong>BotrixAI</strong> 
+                provides everything you need to create, customize, and track professional QR codes. Search for "QR generator BotrixAI" 
+                or "BotrixAI QR code generator" to find the best free QR code maker with logo and analytics.
               </p>
               
               <h3 className="text-2xl font-semibold mb-3">Key Features:</h3>
