@@ -268,6 +268,7 @@ describe('Entitlements', () => {
             single: vi.fn().mockResolvedValue({ data: { plan: 'FREE' }, error: null }),
           } as any
         } else if (table === 'QrCode' && callCount === 2) {
+          // First QrCode call - count QR codes
           const countBuilder = {
             eq: vi.fn().mockReturnThis(),
             then: vi.fn((onFulfilled: any) => Promise.resolve({ count: 10, data: null, error: null }).then(onFulfilled)),
@@ -285,7 +286,16 @@ describe('Entitlements', () => {
               }
             }),
           } as any
+        } else if (table === 'QrCode' && callCount > 2) {
+          // Second QrCode call - get QR code IDs
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            then: vi.fn((onFulfilled: any) => Promise.resolve({ data: [], error: null }).then(onFulfilled)),
+            catch: vi.fn(),
+          } as any
         } else if (table === 'QrCodeScan') {
+          // Count scans
           const scanBuilder = {
             gte: vi.fn().mockReturnThis(),
             in: vi.fn().mockReturnThis(),
@@ -304,8 +314,9 @@ describe('Entitlements', () => {
         return {} as any
       })
 
-      await expect(assertCanCreateQr(TEST_USER_ID)).rejects.toThrow()
-      await expect(assertCanCreateQr(TEST_USER_ID)).rejects.toMatchObject({
+      const result = assertCanCreateQr(TEST_USER_ID)
+      await expect(result).rejects.toThrow()
+      await expect(result).rejects.toMatchObject({
         status: 403,
         code: 'PLAN_LIMIT_QR_CODES',
       })
@@ -314,34 +325,44 @@ describe('Entitlements', () => {
 
   describe('assertWithinMonthlyScanQuota', () => {
     it('should allow scans when under quota', async () => {
-      let callCount = 0
+      let callSequence = 0
       vi.mocked(supabaseAdmin!.from).mockImplementation((table: string) => {
-        callCount++
+        callSequence++
         if (table === 'User') {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             single: vi.fn().mockResolvedValue({ data: { plan: 'FREE' }, error: null }),
           } as any
-        } else if (table === 'QrCode' && callCount === 2) {
-          const countBuilder = {
-            eq: vi.fn().mockReturnThis(),
-            then: vi.fn((onFulfilled: any) => Promise.resolve({ count: 5, data: null, error: null }).then(onFulfilled)),
-            catch: vi.fn(),
-          }
-          return {
-            select: vi.fn((cols: string, opts?: any) => {
-              if (opts?.count === 'exact' && opts?.head === true) {
+        } else if (table === 'QrCode') {
+          if (callSequence === 2) {
+            // First call: count QR codes - select('id', { count: 'exact', head: true }).eq('userId', userId)
+            const countBuilder = {
+              eq: vi.fn().mockReturnThis(),
+              then: vi.fn((onFulfilled: any) => Promise.resolve({ count: 5, data: null, error: null }).then(onFulfilled)),
+              catch: vi.fn(),
+            }
+            return {
+              select: vi.fn((cols: string, opts?: any) => {
+                if (opts?.count === 'exact' && opts?.head === true) {
+                  return countBuilder
+                }
                 return countBuilder
-              }
-              return {
-                eq: vi.fn().mockReturnThis(),
-                then: vi.fn((onFulfilled: any) => Promise.resolve({ data: [{ id: 'qr1' }], error: null }).then(onFulfilled)),
-                catch: vi.fn(),
-              }
-            }),
-          } as any
+              }),
+            } as any
+          } else {
+            // Second call: get QR code IDs - select('id').eq('userId', userId)
+            const dataBuilder = {
+              eq: vi.fn().mockReturnThis(),
+              then: vi.fn((onFulfilled: any) => Promise.resolve({ data: [{ id: 'qr1' }], error: null }).then(onFulfilled)),
+              catch: vi.fn(),
+            }
+            return {
+              select: vi.fn().mockReturnValue(dataBuilder),
+            } as any
+          }
         } else if (table === 'QrCodeScan') {
+          // Third call: count scans - select('id', { count: 'exact', head: true }).gte(...).in(...)
           const scanBuilder = {
             gte: vi.fn().mockReturnThis(),
             in: vi.fn().mockReturnThis(),
@@ -364,34 +385,44 @@ describe('Entitlements', () => {
     })
 
     it('should throw error when monthly scan quota exceeded', async () => {
-      let callCount = 0
+      let callSequence = 0
       vi.mocked(supabaseAdmin!.from).mockImplementation((table: string) => {
-        callCount++
+        callSequence++
         if (table === 'User') {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
             single: vi.fn().mockResolvedValue({ data: { plan: 'FREE' }, error: null }),
           } as any
-        } else if (table === 'QrCode' && callCount === 2) {
-          const countBuilder = {
-            eq: vi.fn().mockReturnThis(),
-            then: vi.fn((onFulfilled: any) => Promise.resolve({ count: 5, data: null, error: null }).then(onFulfilled)),
-            catch: vi.fn(),
-          }
-          return {
-            select: vi.fn((cols: string, opts?: any) => {
-              if (opts?.count === 'exact' && opts?.head === true) {
+        } else if (table === 'QrCode') {
+          if (callSequence === 2) {
+            // First call: count QR codes - select('id', { count: 'exact', head: true }).eq('userId', userId)
+            const countBuilder = {
+              eq: vi.fn().mockReturnThis(),
+              then: vi.fn((onFulfilled: any) => Promise.resolve({ count: 5, data: null, error: null }).then(onFulfilled)),
+              catch: vi.fn(),
+            }
+            return {
+              select: vi.fn((cols: string, opts?: any) => {
+                if (opts?.count === 'exact' && opts?.head === true) {
+                  return countBuilder
+                }
                 return countBuilder
-              }
-              return {
-                eq: vi.fn().mockReturnThis(),
-                then: vi.fn((onFulfilled: any) => Promise.resolve({ data: [{ id: 'qr1' }], error: null }).then(onFulfilled)),
-                catch: vi.fn(),
-              }
-            }),
-          } as any
+              }),
+            } as any
+          } else {
+            // Second call: get QR code IDs - select('id').eq('userId', userId)
+            const dataBuilder = {
+              eq: vi.fn().mockReturnThis(),
+              then: vi.fn((onFulfilled: any) => Promise.resolve({ data: [{ id: 'qr1' }], error: null }).then(onFulfilled)),
+              catch: vi.fn(),
+            }
+            return {
+              select: vi.fn().mockReturnValue(dataBuilder),
+            } as any
+          }
         } else if (table === 'QrCodeScan') {
+          // Third call: count scans - select('id', { count: 'exact', head: true }).gte(...).in(...)
           const scanBuilder = {
             gte: vi.fn().mockReturnThis(),
             in: vi.fn().mockReturnThis(),
