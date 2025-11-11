@@ -158,7 +158,7 @@ describe('QR Code Lifecycle Integration Tests', () => {
       expect(deleted).toBe(true)
 
       // 2. Verify scans are cascade deleted
-      const remainingScans = []
+      const remainingScans: unknown[] = []
       expect(remainingScans).toHaveLength(0)
 
       // 3. Logo should remain (other QRs might use it)
@@ -280,7 +280,7 @@ describe('QR Code Lifecycle Integration Tests', () => {
         { url: 'https://1.com', title: 'QR 1' },
         { url: 'https://2.com', title: 'QR 2' },
         { url: 'https://3.com', title: 'QR 3' }, // Would need 3 credits total
-      }
+      ]
 
       const requiredCredits = qrDataArray.length
       const hasEnough = user.credits >= requiredCredits

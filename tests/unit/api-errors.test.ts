@@ -23,7 +23,7 @@ describe('ApiError Class', () => {
     expect(error.isOperational).toBe(true)
   })
 
-  it('should convert to response with correct structure', () => {
+  it('should convert to response with correct structure', async () => {
     const error = new ApiError(
       ApiErrorCode.UNAUTHORIZED,
       'Authentication required',
@@ -31,7 +31,7 @@ describe('ApiError Class', () => {
     )
 
     const response = error.toResponse('correlation-123')
-    const json = response.json()
+    const json = await response.json()
 
     expect(response.status).toBe(HTTP_STATUS.UNAUTHORIZED)
     expect(json).toHaveProperty('error')
@@ -41,7 +41,7 @@ describe('ApiError Class', () => {
     expect(json.error).toHaveProperty('correlationId', 'correlation-123')
   })
 
-  it('should include details in response if provided', () => {
+  it('should include details in response if provided', async () => {
     const error = new ApiError(
       ApiErrorCode.VALIDATION_ERROR,
       'Validation failed',
@@ -50,7 +50,7 @@ describe('ApiError Class', () => {
     )
 
     const response = error.toResponse()
-    const json = response.json()
+    const json = await response.json()
 
     expect(json.error.details).toEqual({ fields: ['email', 'password'] })
   })
@@ -289,12 +289,12 @@ describe('handleApiError Function', () => {
     expect(response.status).toBe(HTTP_STATUS.UNAUTHORIZED)
   })
 
-  it('should handle generic Error instances', () => {
+  it('should handle generic Error instances', async () => {
     const error = new Error('Something went wrong')
     const response = handleApiError(error)
 
     expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-    const json = response.json()
+    const json = await response.json()
     expect(json.error.code).toBe(ApiErrorCode.INTERNAL_ERROR)
   })
 
@@ -305,20 +305,20 @@ describe('handleApiError Function', () => {
     expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR)
   })
 
-  it('should include correlation ID in error response', () => {
+  it('should include correlation ID in error response', async () => {
     const error = new Error('Test error')
     const response = handleApiError(error, 'correlation-456')
 
-    const json = response.json()
+    const json = await response.json()
     expect(json.error.correlationId).toBe('correlation-456')
   })
 })
 
 describe('Error Response Structure', () => {
-  it('should have consistent error response structure', () => {
+  it('should have consistent error response structure', async () => {
     const error = ApiErrors.validationError('Test', { field: 'test' })
     const response = error.toResponse('corr-789')
-    const json = response.json()
+    const json = await response.json()
 
     // Verify structure
     expect(json).toHaveProperty('error')
@@ -335,14 +335,14 @@ describe('Error Response Structure', () => {
     expect(typeof json.error.correlationId).toBe('string')
   })
 
-  it('should omit optional fields when not provided', () => {
+  it('should omit optional fields when not provided', async () => {
     const error = new ApiError(
       ApiErrorCode.UNAUTHORIZED,
       'Test',
       HTTP_STATUS.UNAUTHORIZED
     )
     const response = error.toResponse()
-    const json = response.json()
+    const json = await response.json()
 
     expect(json.error).not.toHaveProperty('details')
     expect(json.error).not.toHaveProperty('field')

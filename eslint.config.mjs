@@ -10,15 +10,26 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // Global ignores - must be first
   {
     ignores: [
-      "node_modules/**",
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/out/**",
+      "**/build/**",
+      "**/next-env.d.ts",
+      "**/setup*.js",
+      "**/test-app.js",
+      "**/run-migration.js",
+      "**/*.config.js",
+      "**/k6-load-test.js",
       ".next/**",
       "out/**",
       "build/**",
-      "next-env.d.ts",
     ],
+  },
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": "warn",

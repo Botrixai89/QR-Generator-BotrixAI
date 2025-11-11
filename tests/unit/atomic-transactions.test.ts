@@ -33,7 +33,6 @@ describe('Atomic QR Code Creation with Credit Deduction', () => {
 
       // Simulate successful transaction
       const result = {
-        id: mockQRData.id,
         userId: mockUserId,
         ...mockQRData,
         createdAt: new Date().toISOString(),
