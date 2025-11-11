@@ -5,7 +5,7 @@ import { MetadataRoute } from 'next'
  * Defines which pages can be crawled and indexed
  */
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://qr-generator-botrix-ai.vercel.app'
+  const baseUrl = 'https://qr-generator.botrixai.com'
 
   return {
     rules: [

@@ -10,7 +10,7 @@ interface StructuredDataProps {
 
 export function StructuredData({ type, data }: StructuredDataProps) {
   const getSchema = () => {
-    const baseUrl = 'https://qr-generator-botrix-ai.vercel.app'
+    const baseUrl = 'https://qr-generator.botrixai.com'
 
     switch (type) {
       case 'website':
@@ -18,9 +18,9 @@ export function StructuredData({ type, data }: StructuredDataProps) {
           '@context': 'https://schema.org',
           '@type': 'WebSite',
           name: 'BotrixAI QR Generator',
-          alternateName: 'BotrixAI QR Code Generator',
+          alternateName: ['BotrixAI QR Code Generator', 'qr generator botrix ai', 'botrix ai qr generator'],
           url: baseUrl,
-          description: 'Create stunning, customizable QR codes instantly with logos, colors, and analytics tracking',
+          description: 'BotrixAI QR Generator - Create stunning, customizable QR codes instantly with logos, colors, and analytics tracking. Free QR code generator by BotrixAI.',
           potentialAction: {
             '@type': 'SearchAction',
             target: {
@@ -41,6 +41,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
           '@context': 'https://schema.org',
           '@type': 'SoftwareApplication',
           name: 'BotrixAI QR Code Generator',
+          alternateName: ['qr generator botrix ai', 'botrix ai qr generator', 'BotrixAI QR Generator'],
           applicationCategory: 'DesignApplication',
           operatingSystem: 'Web Browser, Windows, macOS, Linux, iOS, Android',
           offers: {
@@ -216,7 +217,7 @@ export function StructuredData({ type, data }: StructuredDataProps) {
 
 // Organization Schema
 export function OrganizationSchema() {
-  const baseUrl = 'https://qr-generator-botrix-ai.vercel.app'
+  const baseUrl = 'https://qr-generator.botrixai.com'
 
   const schema = {
     '@context': 'https://schema.org',

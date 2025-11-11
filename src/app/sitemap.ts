@@ -5,7 +5,7 @@ import { MetadataRoute } from 'next'
  * This helps search engines discover and index all pages
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://qr-generator-botrix-ai.vercel.app'
+  const baseUrl = 'https://qr-generator.botrixai.com'
   const currentDate = new Date()
 
   // Static routes with priorities and change frequencies

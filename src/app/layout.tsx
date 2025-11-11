@@ -20,17 +20,21 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "BotrixAI QR Generator - Free QR Code Generator with Logo & Analytics",
+    default: "BotrixAI QR Generator - Free QR Code Generator with Logo & Analytics | qr-generator.botrixai.com",
     template: "%s | BotrixAI QR Generator"
   },
   description: "BotrixAI QR Generator - Create stunning, customizable QR codes instantly! Free QR code generator with logo, color customization, analytics tracking, and multiple export formats. Perfect for business, marketing, payments & more!",
   keywords: [
+    "qr generator botrix ai",
+    "botrix ai qr generator",
+    "botrixai qr generator",
     "BotrixAI QR Generator",
     "QR generator BotrixAI",
     "BotrixAI QR code generator",
     "BotrixAI QR code maker",
     "QR code generator BotrixAI",
     "BotrixAI free QR generator",
+    "qr-generator.botrixai.com",
     "QR code generator",
     "free QR code maker",
     "custom QR code",
@@ -52,7 +56,7 @@ export const metadata: Metadata = {
     "BotrixAI",
     "advanced QR code maker"
   ],
-  authors: [{ name: "BotrixAI", url: "https://qr-generator-botrix-ai.vercel.app" }],
+  authors: [{ name: "BotrixAI", url: "https://qr-generator.botrixai.com" }],
   creator: "BotrixAI",
   publisher: "BotrixAI",
   applicationName: "BotrixAI QR Generator",
@@ -63,14 +67,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://qr-generator-botrix-ai.vercel.app"),
+  metadataBase: new URL("https://qr-generator.botrixai.com"),
   alternates: {
-    canonical: "https://qr-generator-botrix-ai.vercel.app",
+    canonical: "https://qr-generator.botrixai.com",
   },
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://qr-generator-botrix-ai.vercel.app",
+    url: "https://qr-generator.botrixai.com",
     siteName: "BotrixAI QR Generator",
     title: "BotrixAI QR Generator - Free QR Code Generator with Logo & Analytics",
     description: "BotrixAI QR Generator - Create stunning, customizable QR codes instantly! Free QR code generator with logo, color customization, analytics tracking, and multiple export formats.",

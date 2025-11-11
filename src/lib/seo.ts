@@ -22,7 +22,7 @@ export interface SEOConfig {
  * Generate SEO metadata from config
  */
 export function generateSEOMetadata(config: SEOConfig): Metadata {
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://qr-generator.botrixai.com'
   const fullUrl = config.url ? `${baseUrl}${config.url}` : baseUrl
   const imageUrl = config.image
     ? config.image.startsWith('http')

@@ -5,7 +5,7 @@
 
 import { Metadata } from 'next'
 
-const baseUrl = 'https://qr-generator-botrix-ai.vercel.app'
+const baseUrl = 'https://qr-generator.botrixai.com'
 const siteName = 'BotrixAI QR Generator'
 
 interface PageMetadata {
