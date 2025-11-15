@@ -45,12 +45,9 @@ export async function POST(request: NextRequest) {
     const razorpay = await getRazorpay()
     let order: any
     try {
-      // Get base URL for callback - use localhost in development, production URL in production
-      const baseUrl = process.env.NODE_ENV === 'production'
-        ? (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://qr-generator.botrixai.com'))
-        : (process.env.NEXTAUTH_URL || 'http://localhost:3000')
-      
       // Prepare order data
+      // Note: callback_url is not supported by Razorpay orders.create API
+      // Payment success is handled via the frontend handler function
       const orderData: any = {
         amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
         currency: 'INR',
@@ -61,11 +58,6 @@ export async function POST(request: NextRequest) {
         },
         // Enable automatic capture (1 = true, 0 = false)
         payment_capture: 1
-      }
-
-      // Add callback URL only if baseUrl is valid (Razorpay API supports this)
-      if (baseUrl && baseUrl.startsWith('http')) {
-        orderData.callback_url = `${baseUrl}/payment/success?order_id={order_id}`
       }
       
       order = await razorpay.orders.create(orderData)
