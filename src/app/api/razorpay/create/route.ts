@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
         ? (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://qr-generator.botrixai.com'))
         : (process.env.NEXTAUTH_URL || 'http://localhost:3000')
       
-      order = await razorpay.orders.create({
+      // Prepare order data
+      const orderData: any = {
         amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
         currency: 'INR',
         receipt: `order_${Date.now()}`,
@@ -58,21 +59,45 @@ export async function POST(request: NextRequest) {
           plan: 'FLEX',
           user_id: session.user.id
         },
-        // Add callback URL for UPI payments (Razorpay will replace {order_id} with actual order ID)
-        // Note: callback_url may not be in TypeScript types but is supported by Razorpay API
-        callback_url: `${baseUrl}/payment/success?order_id={order_id}`,
         // Enable automatic capture (1 = true, 0 = false)
-        payment_capture: 1 as any // Razorpay accepts 1/0 but TypeScript expects boolean
-      } as any)
+        payment_capture: 1
+      }
+
+      // Add callback URL only if baseUrl is valid (Razorpay API supports this)
+      if (baseUrl && baseUrl.startsWith('http')) {
+        orderData.callback_url = `${baseUrl}/payment/success?order_id={order_id}`
+      }
+      
+      order = await razorpay.orders.create(orderData)
+      
+      // Validate order was created successfully
+      if (!order || !order.id) {
+        console.error('Razorpay order creation returned invalid response:', order)
+        return NextResponse.json({ error: 'Invalid order response from payment gateway' }, { status: 502 })
+      }
     } catch (e: unknown) {
       // Surface a precise error to the client while keeping secrets safe
-      const statusCode = (e as { statusCode?: number })?.statusCode || 500
+      const error = e as any
+      const statusCode = error?.statusCode || error?.status || 500
+      const errorMessage = error?.error?.description || error?.message || 'Unknown error'
+      
+      console.error('Razorpay order.create failed:', {
+        statusCode,
+        error: errorMessage,
+        // Don't log sensitive data
+        hasKeyId: !!process.env.RAZORPAY_KEY_ID,
+        hasKeySecret: !!process.env.RAZORPAY_KEY_SECRET
+      })
+      
       if (statusCode === 401) {
-        console.error('Razorpay authentication failed when creating order')
-        return NextResponse.json({ error: 'Razorpay authentication failed' }, { status: 502 })
+        return NextResponse.json({ 
+          error: 'Payment gateway authentication failed. Please contact support.' 
+        }, { status: 502 })
       }
-      console.error('Razorpay order.create failed:', e)
-      return NextResponse.json({ error: 'Failed to create payment order' }, { status: 502 })
+      
+      return NextResponse.json({ 
+        error: `Failed to create payment order: ${errorMessage}` 
+      }, { status: 502 })
     }
 
     // Insert payment record
