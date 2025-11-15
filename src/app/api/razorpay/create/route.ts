@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     // Create Razorpay order for ₹1 (100 paise) - TESTING MODE
     // TODO: Change back to 30000 (₹300) for production
     const razorpay = await getRazorpay()
-    let order
+    let order: any
     try {
       // Get base URL for callback - use localhost in development, production URL in production
       const baseUrl = process.env.NODE_ENV === 'production'
@@ -59,10 +59,11 @@ export async function POST(request: NextRequest) {
           user_id: session.user.id
         },
         // Add callback URL for UPI payments (Razorpay will replace {order_id} with actual order ID)
+        // Note: callback_url may not be in TypeScript types but is supported by Razorpay API
         callback_url: `${baseUrl}/payment/success?order_id={order_id}`,
-        // Enable automatic capture
-        payment_capture: 1
-      })
+        // Enable automatic capture (1 = true, 0 = false)
+        payment_capture: 1 as any // Razorpay accepts 1/0 but TypeScript expects boolean
+      } as any)
     } catch (e: unknown) {
       // Surface a precise error to the client while keeping secrets safe
       const statusCode = (e as { statusCode?: number })?.statusCode || 500

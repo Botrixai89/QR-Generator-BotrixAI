@@ -127,7 +127,11 @@ export async function POST(request: NextRequest) {
         })
 
         // Capture the payment
-        const capturedPayment = await razorpay.payments.capture(payment.id, payment.amount)
+        const capturedPayment = await razorpay.payments.capture(
+          payment.id, 
+          payment.amount, 
+          payment.currency || 'INR'
+        )
         console.log(`Payment captured: ${capturedPayment.id}`)
 
         // Process the payment (same as payment.captured)

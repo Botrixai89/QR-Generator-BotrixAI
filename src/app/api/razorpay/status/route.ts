@@ -75,8 +75,13 @@ export async function GET(request: NextRequest) {
         if (authorizedPayment) {
           try {
             console.log(`Attempting to capture authorized payment: ${authorizedPayment.id}`)
-            capturedPayment = await razorpay.payments.capture(authorizedPayment.id, order.amount)
-            console.log(`Payment captured successfully: ${capturedPayment.id}`)
+            const captured = await razorpay.payments.capture(
+              authorizedPayment.id, 
+              order.amount, 
+              order.currency || 'INR'
+            )
+            capturedPayment = captured
+            console.log(`Payment captured successfully: ${captured.id}`)
           } catch (captureError: any) {
             console.error("Error capturing authorized payment:", captureError)
             // Continue to check if payment was already captured
