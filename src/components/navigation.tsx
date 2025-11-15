@@ -114,23 +114,39 @@ export default function Navigation() {
               <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground ml-8">
                 <span className="text-sm font-medium mr-[2px]">powered by</span>
                 {/* Light theme logo */}
-                <Image
-                  src="/botrix-logo01.png"
-                  alt="Botrix AI"
-                  width={56}
-                  height={56}
-                  className="h-6 w-auto block dark:hidden"
-                  priority
-                />
+                <Link 
+                  href="https://www.botrixai.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block dark:hidden hover:opacity-80 transition-opacity"
+                  aria-label="Visit BotrixAI Platform"
+                >
+                  <Image
+                    src="/botrix-logo01.png"
+                    alt="Botrix AI"
+                    width={56}
+                    height={56}
+                    className="h-8 w-auto"
+                    priority
+                  />
+                </Link>
                 {/* Dark & system theme logo */}
-                <Image
-                  src="/BotrixAI_Dark.png"
-                  alt="Botrix AI"
-                  width={56}
-                  height={56}
-                  className="h-6 w-auto hidden dark:block"
-                  priority
-                />
+                <Link 
+                  href="https://www.botrixai.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hidden dark:block hover:opacity-80 transition-opacity"
+                  aria-label="Visit BotrixAI Platform"
+                >
+                  <Image
+                    src="/BotrixAI_Dark.png"
+                    alt="Botrix AI"
+                    width={56}
+                    height={56}
+                    className="h-8 w-auto"
+                    priority
+                  />
+                </Link>
               </div>
             </div>
             

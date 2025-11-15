@@ -33,7 +33,9 @@ export default function Watermark({ hasWatermark, qrRef }: WatermarkProps) {
         watermarkElement.style.gap = "4px"
         watermarkElement.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)"
         watermarkElement.innerHTML = `
-          <img src="/botrix-logo01.png" alt="Botrix Logo" style="width: 55px; height: 27px; object-fit: contain;" onerror="this.style.display='none'" />
+          <a href="https://www.botrixai.com" target="_blank" rel="noopener noreferrer" style="display: inline-block; cursor: pointer;">
+            <img src="/botrix-logo01.png" alt="Botrix Logo" style="width: 55px; height: 27px; object-fit: contain;" onerror="this.style.display='none'" />
+          </a>
         `
       } else {
         watermarkElement.style.display = "none"

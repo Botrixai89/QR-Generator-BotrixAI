@@ -1,21 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, Fira_Code } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/components/providers/session-provider";
-import { ThemeProvider } from "@/components/providers/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
-import Navigation from "@/components/navigation";
-import { ErrorBoundary } from "@/components/error-boundary";
-import { WebVitals } from "@/components/web-vitals";
+import { LayoutClientWrapper } from "@/components/layout-client-wrapper";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const firaCode = Fira_Code({
+  variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -135,26 +134,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${poppins.variable} ${firaCode.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
-        <ErrorBoundary>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <AuthProvider>
-              <WebVitals />
-              <Navigation />
-              <main className="pt-16">
-                {children}
-              </main>
-              <Toaster />
-            </AuthProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
+        <LayoutClientWrapper>
+          {children}
+        </LayoutClientWrapper>
       </body>
     </html>
   );

@@ -277,7 +277,7 @@ export default function PricingPage() {
                 disabled={isLoading}
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
-                {isLoading ? "Processing..." : "Buy now — ₹1 (Testing)"}
+                {isLoading ? "Processing..." : "Buy now"}
               </Button>
             </CardContent>
           </Card>
