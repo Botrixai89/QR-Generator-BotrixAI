@@ -183,7 +183,7 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
     
     try {
       // Function to convert image URLs to base64 data URIs with better error handling
-      const embedImages = async (svgElement: SVGElement): Promise<string> => {
+      const embedImages = async (svgElement: SVGElement, targetFormat: 'png' | 'svg'): Promise<string> => {
         const clonedSvg = svgElement.cloneNode(true) as SVGElement
         const images = clonedSvg.querySelectorAll('image')
         
@@ -191,21 +191,60 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
           const href = img.getAttribute('href') || img.getAttribute('xlink:href')
           if (href && !href.startsWith('data:')) {
             try {
-              const response = await fetch(href)
-              if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`)
+              // Handle blob URLs and object URLs
+              if (href.startsWith('blob:') || href.startsWith('data:')) {
+                // Already a data URL or blob URL, skip
+                return
+              }
               
-              const blob = await response.blob()
-              const base64 = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader()
-                reader.onload = () => resolve(reader.result as string)
-                reader.onerror = reject
-                reader.readAsDataURL(blob)
-              })
-              img.setAttribute('href', base64)
-              img.removeAttribute('xlink:href')
+              // Add timeout for image fetching
+              const controller = new AbortController()
+              const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+              
+              try {
+                const response = await fetch(href, { 
+                  signal: controller.signal,
+                  mode: 'cors',
+                  credentials: 'omit'
+                })
+                clearTimeout(timeoutId)
+                
+                if (!response.ok) {
+                  throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
+                }
+                
+                const blob = await response.blob()
+                
+                // Validate it's an image
+                if (!blob.type.startsWith('image/')) {
+                  throw new Error(`Invalid image type: ${blob.type}`)
+                }
+                
+                const base64 = await new Promise<string>((resolve, reject) => {
+                  const reader = new FileReader()
+                  reader.onload = () => resolve(reader.result as string)
+                  reader.onerror = () => reject(new Error('Failed to read image as data URL'))
+                  reader.readAsDataURL(blob)
+                })
+                
+                img.setAttribute('href', base64)
+                img.removeAttribute('xlink:href')
+              } catch (fetchError) {
+                clearTimeout(timeoutId)
+                if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+                  console.warn('Image fetch timeout:', href)
+                } else {
+                  throw fetchError
+                }
+              }
             } catch (error) {
               console.warn('Failed to embed image:', href, error)
-              // Keep original href if embedding fails
+              // Remove the image element if it fails to load (to prevent PNG conversion errors)
+              // For PNG conversion, it's better to remove problematic images
+              if (targetFormat === 'png') {
+                img.remove()
+              }
+              // For SVG, keep original href as fallback
             }
           }
         })
@@ -216,7 +255,7 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
       
       if (format === 'svg') {
         setDownloadMessage('Embedding images in SVG...')
-        const svgData = await embedImages(svg)
+        const svgData = await embedImages(svg, format)
         const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
         const svgUrl = URL.createObjectURL(svgBlob)
         
@@ -263,41 +302,205 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
         ctx.fillRect(0, 0, baseSize, baseSize)
         
         // Embed images and create SVG data
-        const svgData = await embedImages(svg)
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-        const svgUrl = URL.createObjectURL(svgBlob)
+        let svgData = await embedImages(svg, format)
+        let svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+        let svgUrl = URL.createObjectURL(svgBlob)
         
-        const img = new Image()
-        img.onload = () => {
-          setDownloadMessage(`Rendering ${settings.suffix.toLowerCase()}-quality PNG...`)
-          
-          // Draw at high resolution with quality settings
-          ctx.drawImage(img, 0, 0, baseSize, baseSize)
-          
-          // Convert canvas to PNG with maximum quality
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const url = URL.createObjectURL(blob)
-              const link = document.createElement('a')
-              link.href = url
-              link.download = `${filename}-${settings.suffix}.png`
-              document.body.appendChild(link)
-              link.click()
-              document.body.removeChild(link)
-              URL.revokeObjectURL(url)
+        // Function to attempt PNG conversion with a given SVG
+        const attemptPngConversion = async (svgBlobData: Blob, attemptNumber: number): Promise<void> => {
+          return new Promise<void>((resolve, reject) => {
+            const url = URL.createObjectURL(svgBlobData)
+            const img = new Image()
+            let timeoutId: NodeJS.Timeout | null = null
+            
+            img.onload = () => {
+              if (timeoutId) clearTimeout(timeoutId)
               
-              setDownloadMessage(`${settings.suffix}-quality PNG downloaded successfully!`)
-            } else {
-              throw new Error('Failed to create PNG blob')
+              try {
+                setDownloadMessage(`Rendering ${settings.suffix.toLowerCase()}-quality PNG...`)
+                
+                // Draw at high resolution with quality settings
+                ctx.drawImage(img, 0, 0, baseSize, baseSize)
+                
+                // Convert canvas to PNG with maximum quality
+                canvas.toBlob((blob) => {
+                  try {
+                    if (blob) {
+                      const downloadUrl = URL.createObjectURL(blob)
+                      const link = document.createElement('a')
+                      link.href = downloadUrl
+                      link.download = `${filename}-${settings.suffix}.png`
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                      URL.revokeObjectURL(downloadUrl)
+                      
+                      setDownloadMessage(`${settings.suffix}-quality PNG downloaded successfully!`)
+                      URL.revokeObjectURL(url)
+                      resolve()
+                    } else {
+                      URL.revokeObjectURL(url)
+                      reject(new Error('Failed to create PNG blob'))
+                    }
+                  } catch (error) {
+                    URL.revokeObjectURL(url)
+                    reject(error)
+                  }
+                }, 'image/png', 1.0) // Maximum quality (no compression)
+              } catch (error) {
+                URL.revokeObjectURL(url)
+                reject(error)
+              }
             }
-          }, 'image/png', 1.0) // Maximum quality (no compression)
-          
+            
+            img.onerror = () => {
+              if (timeoutId) clearTimeout(timeoutId)
+              URL.revokeObjectURL(url)
+              reject(new Error('SVG_LOAD_FAILED'))
+            }
+            
+            // Add timeout to prevent hanging
+            timeoutId = setTimeout(() => {
+              URL.revokeObjectURL(url)
+              reject(new Error('SVG_LOAD_TIMEOUT'))
+            }, 10000) // 10 second timeout
+            
+            // Set image source after setting up handlers
+            img.src = url
+          })
+        }
+        
+        // Try conversion with embedded images first
+        try {
+          await attemptPngConversion(svgBlob, 1)
           URL.revokeObjectURL(svgUrl)
+        } catch (error) {
+          URL.revokeObjectURL(svgUrl)
+          
+          // If first attempt failed, try with all external images removed
+          if (error instanceof Error && (error.message === 'SVG_LOAD_FAILED' || error.message === 'SVG_LOAD_TIMEOUT')) {
+            setDownloadMessage('Retrying without external images...')
+            
+            try {
+              // Create a clean SVG without any problematic elements
+              // IMPORTANT: Preserve all QR code pattern elements (rect, path, circle, g)
+              const cleanSvg = svg.cloneNode(true) as SVGElement
+              
+              // Remove watermark layers (entire groups containing watermarks)
+              const watermarkLayers = cleanSvg.querySelectorAll('g[id*="watermark"], g[data-role="botrix-watermark"], g[id*="botrix"]')
+              watermarkLayers.forEach((layer) => layer.remove())
+              
+              // Remove only external image elements (watermarks, logos) - not QR code pattern
+              const images = cleanSvg.querySelectorAll('image')
+              images.forEach((img) => {
+                const href = img.getAttribute('href') || img.getAttribute('xlink:href')
+                // Only remove images with external references (not data URIs)
+                // These are typically watermarks/logos, not QR code pattern
+                if (href && !href.startsWith('data:')) {
+                  // Remove clip-path from image before removing it
+                  img.removeAttribute('clip-path')
+                  img.remove()
+                }
+              })
+              
+              // Remove only watermark-specific filters (identified by ID or parent)
+              // Don't remove filters that might be used by QR code pattern
+              const watermarkFilters = cleanSvg.querySelectorAll('filter[id*="botrix"], filter[id*="watermark"], filter[id*="shadow"]')
+              watermarkFilters.forEach((filter) => {
+                // Remove filter references from elements before removing filter
+                const filterId = filter.getAttribute('id')
+                if (filterId) {
+                  const elementsUsingFilter = cleanSvg.querySelectorAll(`[filter*="${filterId}"]`)
+                  elementsUsingFilter.forEach((el) => el.removeAttribute('filter'))
+                }
+                filter.remove()
+              })
+              
+              // Remove foreign objects and scripts (these are never part of QR code)
+              const foreignObjects = cleanSvg.querySelectorAll('foreignObject, script')
+              foreignObjects.forEach((obj) => obj.remove())
+              
+              // Only remove clip-path from image elements (already handled above)
+              // Don't remove clip-path from QR code pattern elements
+              
+              // Ensure SVG has proper dimensions
+              if (!cleanSvg.getAttribute('width')) {
+                cleanSvg.setAttribute('width', '300')
+              }
+              if (!cleanSvg.getAttribute('height')) {
+                cleanSvg.setAttribute('height', '300')
+              }
+              if (!cleanSvg.getAttribute('viewBox')) {
+                cleanSvg.setAttribute('viewBox', '0 0 300 300')
+              }
+              
+              // Ensure proper namespace
+              if (!cleanSvg.getAttribute('xmlns')) {
+                cleanSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+              }
+              
+              const cleanSvgData = new XMLSerializer().serializeToString(cleanSvg)
+              
+              // Try using data URL instead of blob URL (sometimes more reliable)
+              const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(cleanSvgData)
+              
+              // Try alternative conversion method using data URL
+              await new Promise<void>((resolve, reject) => {
+                const img = new Image()
+                let timeoutId: NodeJS.Timeout | null = null
+                
+                img.onload = () => {
+                  if (timeoutId) clearTimeout(timeoutId)
+                  
+                  try {
+                    setDownloadMessage(`Rendering ${settings.suffix.toLowerCase()}-quality PNG...`)
+                    ctx.drawImage(img, 0, 0, baseSize, baseSize)
+                    
+                    canvas.toBlob((blob) => {
+                      try {
+                        if (blob) {
+                          const downloadUrl = URL.createObjectURL(blob)
+                          const link = document.createElement('a')
+                          link.href = downloadUrl
+                          link.download = `${filename}-${settings.suffix}.png`
+                          document.body.appendChild(link)
+                          link.click()
+                          document.body.removeChild(link)
+                          URL.revokeObjectURL(downloadUrl)
+                          
+                          setDownloadMessage(`${settings.suffix}-quality PNG downloaded successfully!`)
+                          resolve()
+                        } else {
+                          reject(new Error('Failed to create PNG blob'))
+                        }
+                      } catch (error) {
+                        reject(error)
+                      }
+                    }, 'image/png', 1.0)
+                  } catch (error) {
+                    reject(error)
+                  }
+                }
+                
+                img.onerror = () => {
+                  if (timeoutId) clearTimeout(timeoutId)
+                  reject(new Error('SVG_LOAD_FAILED'))
+                }
+                
+                timeoutId = setTimeout(() => {
+                  reject(new Error('SVG_LOAD_TIMEOUT'))
+                }, 10000)
+                
+                img.src = svgDataUrl
+              })
+            } catch (retryError) {
+              console.error('PNG conversion failed after all attempts:', retryError)
+              throw new Error('Failed to convert QR code to PNG. The QR code may contain elements that cannot be converted. Please try downloading as SVG instead.')
+            }
+          } else {
+            throw error
+          }
         }
-        img.onerror = () => {
-          throw new Error('Failed to load SVG for PNG conversion')
-        }
-        img.src = svgUrl
       }
       
       onDownload(format)
