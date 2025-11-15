@@ -608,11 +608,20 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       router.push("/auth/signup")
       return
     }
+    
     // Validate input based on mode
     if (isUpiPayment) {
-      if (!upiId.trim()) return
+      if (!upiId.trim()) {
+        const { toast } = await import("sonner")
+        toast.error("Please enter a UPI ID to generate QR code")
+        return
+      }
     } else {
-      if (!url.trim()) return
+      if (!url.trim()) {
+        const { toast } = await import("sonner")
+        toast.error("Please enter a URL or text to generate QR code")
+        return
+      }
     }
     
     setIsGenerating(true)
@@ -696,21 +705,65 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
           // Redirect to dashboard
           router.push("/dashboard")
         } else {
-          const errorData = await response.json()
-          const { toast } = await import("sonner")
-          
-          if (response.status === 402 && errorData.error === 'no_credits') {
-            toast.error("You have no credits left. Please purchase more credits to continue.")
-            router.push("/pricing")
-          } else {
-            toast.error(errorData.error || "Failed to save QR code")
+          // Safely parse error response
+          let errorMessage = "Failed to save QR code"
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorData.message || errorMessage
+            
+            // Handle specific error cases
+            if (response.status === 402 && (errorData.error === 'no_credits' || errorData.code === 'no_credits')) {
+              const { toast } = await import("sonner")
+              toast.error("You have no credits left. Please purchase more credits to continue.")
+              router.push("/pricing")
+              return
+            }
+            
+            if (response.status === 401 || response.status === 403) {
+              errorMessage = errorData.message || "Authentication required. Please sign in."
+              const { toast } = await import("sonner")
+              toast.error(errorMessage)
+              router.push("/auth/signin")
+              return
+            }
+            
+            if (response.status === 429) {
+              errorMessage = "Too many requests. Please try again later."
+            }
+          } catch (parseError) {
+            // If response is not JSON, try to get text
+            try {
+              const errorText = await response.text()
+              if (errorText) {
+                errorMessage = errorText.substring(0, 200) // Limit length
+              }
+            } catch (textError) {
+              // Fallback to status-based message
+              errorMessage = `Request failed with status ${response.status}`
+            }
           }
+          
+          const { toast } = await import("sonner")
+          toast.error(errorMessage)
+          console.error("QR code creation failed:", {
+            status: response.status,
+            statusText: response.statusText,
+            message: errorMessage
+          })
         }
       }
     } catch (error) {
       console.error("Error saving QR code:", error)
       const { toast } = await import("sonner")
-      toast.error("Failed to save QR code")
+      
+      // Provide more specific error messages
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        toast.error("Network error. Please check your internet connection and try again.")
+      } else if (error instanceof Error) {
+        toast.error(`Failed to save QR code: ${error.message}`)
+      } else {
+        toast.error("Failed to save QR code. Please try again.")
+      }
     } finally {
       setIsGenerating(false)
     }
