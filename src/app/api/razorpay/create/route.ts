@@ -40,12 +40,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create Razorpay order for ₹300 (30000 paise)
+    // Create Razorpay order for ₹1 (100 paise) - TESTING MODE
+    // TODO: Change back to 30000 (₹300) for production
     const razorpay = await getRazorpay()
     let order
     try {
       order = await razorpay.orders.create({
-        amount: 30000, // ₹300 in paise
+        amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
         currency: 'INR',
         receipt: `order_${Date.now()}`,
         notes: {
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: session.user.id,
         razorpay_order_id: order.id,
-        amount: 30000,
+        amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
         currency: 'INR',
         status: 'created',
         metadata: {

@@ -24,6 +24,9 @@ import DynamicQRManager from "@/components/dynamic-qr-manager"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { addBotrixLogoToQR } from "@/lib/qr-watermark"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import FolderManager from "@/components/folder-manager"
+import FileManager from "@/components/file-manager"
 
 interface QRCodeData {
   id: string
@@ -47,6 +50,8 @@ interface QRCodeData {
   redirectUrl?: string
   expiresAt?: string
   maxScans?: number
+  folderId?: string | null
+  fileId?: string | null
   // Advanced features
   shape?: string
   template?: string
@@ -163,6 +168,7 @@ export default function DashboardPage() {
   })
   const [userCredits, setUserCredits] = useState<number | null>(null)
   const [userPlan, setUserPlan] = useState<string | null>(null)
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean
     qrCode: QRCodeData | null
@@ -450,32 +456,75 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* QR Codes List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your QR Codes</CardTitle>
-            <CardDescription>
-              Manage and track all your generated QR codes
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {qrCodes.length === 0 ? (
-              <div className="text-center py-12">
-                <QrCode className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No QR codes yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create your first QR code to get started
-                </p>
-                <Button asChild>
-                  <Link href="/">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create QR Code
-                  </Link>
-                </Button>
+        {/* Main Content with Tabs */}
+        <Tabs defaultValue="qr-codes" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="qr-codes">QR Codes</TabsTrigger>
+            <TabsTrigger value="folders">Folders</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
+          </TabsList>
+
+          {/* QR Codes Tab */}
+          <TabsContent value="qr-codes" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              {/* Folder Manager Sidebar */}
+              <div className="lg:col-span-1">
+                <FolderManager
+                  onFolderSelect={setSelectedFolderId}
+                  selectedFolderId={selectedFolderId}
+                />
               </div>
-            ) : (
-              <div className="space-y-4">
-                {qrCodes.map((qrCode) => (
+
+              {/* QR Codes List */}
+              <div className="lg:col-span-3">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Your QR Codes</CardTitle>
+                        <CardDescription>
+                          {selectedFolderId 
+                            ? "QR codes in selected folder"
+                            : "Manage and track all your generated QR codes"
+                          }
+                        </CardDescription>
+                      </div>
+                      <Button asChild>
+                        <Link href="/">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create QR Code
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const filteredCodes = selectedFolderId
+                        ? qrCodes.filter(code => code.folderId === selectedFolderId)
+                        : qrCodes
+
+                      return filteredCodes.length === 0 ? (
+                        <div className="text-center py-12">
+                          <QrCode className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <h3 className="text-lg font-medium mb-2">
+                            {selectedFolderId ? "No QR codes in this folder" : "No QR codes yet"}
+                          </h3>
+                          <p className="text-muted-foreground mb-4">
+                            {selectedFolderId 
+                              ? "Move QR codes to this folder or create new ones"
+                              : "Create your first QR code to get started"
+                            }
+                          </p>
+                          <Button asChild>
+                            <Link href="/">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Create QR Code
+                            </Link>
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {filteredCodes.map((qrCode) => (
                   qrCode.isDynamic ? (
                     <DynamicQRManager 
                       key={qrCode.id} 
@@ -557,12 +606,27 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-                  )
-                ))}
+                          )
+                        ))}
+                        </div>
+                      )
+                    })()}
+                  </CardContent>
+                </Card>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </TabsContent>
+
+          {/* Folders Tab */}
+          <TabsContent value="folders">
+            <FolderManager />
+          </TabsContent>
+
+          {/* Files Tab */}
+          <TabsContent value="files">
+            <FileManager />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Delete Confirmation Dialog */}

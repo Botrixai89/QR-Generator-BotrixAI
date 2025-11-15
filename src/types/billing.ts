@@ -10,7 +10,9 @@ export interface PlanEntitlements {
   customDomainsAllowed: boolean
   webhooksAllowed: boolean
   removeWatermarkAllowed: boolean
+  removeAdsAllowed: boolean
   logoUploadsAllowed: boolean
+  fileStorageMB: number
 }
 
 export interface UsageSnapshot {
@@ -25,6 +27,7 @@ export type EntitlementKey = keyof Pick<
   | 'customDomainsAllowed'
   | 'webhooksAllowed'
   | 'removeWatermarkAllowed'
+  | 'removeAdsAllowed'
   | 'logoUploadsAllowed'
 >
 

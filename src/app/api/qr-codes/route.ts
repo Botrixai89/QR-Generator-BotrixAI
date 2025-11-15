@@ -74,6 +74,8 @@ export async function POST(request: NextRequest) {
     const maxScans = formData.get("maxScans") as string
     const redirectUrl = formData.get("redirectUrl") as string
     const organizationId = formData.get("organizationId") as string | null
+    const folderId = formData.get("folderId") as string | null
+    const fileId = formData.get("fileId") as string | null
     
     // Advanced QR code features
     const shape = formData.get("shape") as string
@@ -294,6 +296,46 @@ export async function POST(request: NextRequest) {
         )
       }
       insertData.organizationId = organizationId
+    }
+
+    // Validate folder access if folderId provided
+    if (folderId) {
+      const { data: folder } = await supabaseAdmin!
+        .from('QrCodeFolder')
+        .select('id')
+        .eq('id', folderId)
+        .eq('userId', session.user.id)
+        .single()
+
+      if (!folder) {
+        return NextResponse.json(
+          { error: 'Folder not found or access denied' },
+          { status: 404 }
+        )
+      }
+      insertData.folderId = folderId
+    }
+
+    // Validate file access if fileId provided
+    if (fileId) {
+      const { data: file } = await supabaseAdmin!
+        .from('QrCodeFile')
+        .select('id, publicUrl')
+        .eq('id', fileId)
+        .eq('userId', session.user.id)
+        .single()
+
+      if (!file) {
+        return NextResponse.json(
+          { error: 'File not found or access denied' },
+          { status: 404 }
+        )
+      }
+      insertData.fileId = fileId
+      // If URL is not provided and file is provided, use file URL
+      if (!originalUrl || originalUrl.trim() === '') {
+        insertData.url = file.publicUrl
+      }
     }
 
     // Use atomic transaction function to create QR code and deduct credit

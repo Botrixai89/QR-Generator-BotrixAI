@@ -12,7 +12,9 @@ export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
     customDomainsAllowed: false,
     webhooksAllowed: false,
     removeWatermarkAllowed: false,
+    removeAdsAllowed: false,
     logoUploadsAllowed: true,
+    fileStorageMB: 100,
   },
   FLEX: {
     name: 'FLEX',
@@ -24,7 +26,9 @@ export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
     customDomainsAllowed: false,
     webhooksAllowed: false,
     removeWatermarkAllowed: true,
+    removeAdsAllowed: true,
     logoUploadsAllowed: true,
+    fileStorageMB: 250,
   },
   PRO: {
     name: 'PRO',
@@ -36,7 +40,9 @@ export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
     customDomainsAllowed: true,
     webhooksAllowed: true,
     removeWatermarkAllowed: true,
+    removeAdsAllowed: true,
     logoUploadsAllowed: true,
+    fileStorageMB: 500,
   },
   BUSINESS: {
     name: 'BUSINESS',
@@ -48,7 +54,9 @@ export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
     customDomainsAllowed: true,
     webhooksAllowed: true,
     removeWatermarkAllowed: true,
+    removeAdsAllowed: true,
     logoUploadsAllowed: true,
+    fileStorageMB: 2000,
   },
 }
 
