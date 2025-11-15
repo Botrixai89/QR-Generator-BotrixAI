@@ -4,7 +4,21 @@ import bcrypt from "bcryptjs"
 
 const jwtStrategy = "jwt" as const
 
+// Automatically detect the correct NEXTAUTH_URL based on environment
+function getNextAuthUrl(): string {
+  // In production (Vercel), use NEXTAUTH_URL if set, otherwise use VERCEL_URL
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.NEXTAUTH_URL || 
+           (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://qr-generator.botrixai.com')
+  }
+  
+  // In development, always use localhost
+  return process.env.NEXTAUTH_URL || 'http://localhost:3000'
+}
+
 export const authOptions = {
+  // Set the base URL for NextAuth
+  ...(process.env.NEXTAUTH_URL ? {} : { url: getNextAuthUrl() }),
   providers: [
     CredentialsProvider({
       name: "credentials",

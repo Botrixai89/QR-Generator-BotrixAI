@@ -45,6 +45,11 @@ export async function POST(request: NextRequest) {
     const razorpay = await getRazorpay()
     let order
     try {
+      // Get base URL for callback - use localhost in development, production URL in production
+      const baseUrl = process.env.NODE_ENV === 'production'
+        ? (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://qr-generator.botrixai.com'))
+        : (process.env.NEXTAUTH_URL || 'http://localhost:3000')
+      
       order = await razorpay.orders.create({
         amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
         currency: 'INR',
@@ -52,7 +57,11 @@ export async function POST(request: NextRequest) {
         notes: {
           plan: 'FLEX',
           user_id: session.user.id
-        }
+        },
+        // Add callback URL for UPI payments (Razorpay will replace {order_id} with actual order ID)
+        callback_url: `${baseUrl}/payment/success?order_id={order_id}`,
+        // Enable automatic capture
+        payment_capture: 1
       })
     } catch (e: unknown) {
       // Surface a precise error to the client while keeping secrets safe

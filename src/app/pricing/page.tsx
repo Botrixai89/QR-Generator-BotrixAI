@@ -148,7 +148,69 @@ export default function PricingPage() {
         }
       }
 
+      // Store polling interval reference
+      let pollInterval: NodeJS.Timeout | null = null
+      let pollCount = 0
+      const maxPolls = 40 // Poll for 2 minutes (40 * 3 seconds)
+      
+      const pollPaymentStatus = async () => {
+        try {
+          const statusResponse = await fetch(`/api/razorpay/status?order_id=${order_id}`)
+          const statusData = await statusResponse.json()
+          
+          if (statusData.paid) {
+            // Payment completed
+            if (pollInterval) {
+              clearInterval(pollInterval)
+              pollInterval = null
+            }
+            toast.success(`Payment successful! ${statusData.credits} credits added to your account`)
+            setIsLoading(false)
+            router.push("/dashboard")
+            return
+          }
+          
+          pollCount++
+          if (pollCount >= maxPolls) {
+            // Stop polling after max attempts
+            if (pollInterval) {
+              clearInterval(pollInterval)
+              pollInterval = null
+            }
+            // Redirect to success page for manual check
+            setIsLoading(false)
+            router.push(`/payment/success?order_id=${order_id}`)
+          }
+        } catch (error) {
+          console.error("Error polling payment status:", error)
+        }
+      }
+      
+      // Update modal onDismiss to clean up polling
+      const originalOndismiss = options.modal?.ondismiss
+      options.modal = {
+        ...options.modal,
+        ondismiss: function() {
+          if (pollInterval) {
+            clearInterval(pollInterval)
+            pollInterval = null
+          }
+          setIsLoading(false)
+          if (originalOndismiss) {
+            originalOndismiss()
+          }
+        }
+      }
+      
       const razorpay = new window.Razorpay(options)
+      
+      // Start polling after modal opens (for UPI QR payments that complete outside modal)
+      setTimeout(() => {
+        if (!pollInterval) {
+          pollInterval = setInterval(pollPaymentStatus, 3000) // Poll every 3 seconds
+        }
+      }, 2000)
+      
       razorpay.open()
     } catch (error: unknown) {
       console.error("Payment error:", error)
