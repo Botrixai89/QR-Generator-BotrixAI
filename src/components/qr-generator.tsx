@@ -1036,7 +1036,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           {/* Configuration Panel */}
           <div className="lg:w-1/2 qr-config-scroll">
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -1111,17 +1111,17 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                   </div>
 
                   {/* Watermark Toggle */}
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>BotrixAI Watermark</Label>
-                      <p className="text-sm text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2">
+                    <div className="space-y-0.5 flex-1">
+                      <Label className="text-sm sm:text-base">BotrixAI Watermark</Label>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {userPlan === 'FREE' 
                           ? "Watermark is required for free plan. Upgrade to remove it."
                           : "Add our watermark to your QR code"
                         }
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {userPlan === 'FREE' && (
                         <Button
                           variant="outline"
@@ -1130,7 +1130,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             toast.info("Remove watermark is available in paid plans. Upgrade to unlock this feature.")
                             router.push('/pricing')
                           }}
-                          className="text-xs"
+                          className="text-xs whitespace-nowrap"
                         >
                           Upgrade
                         </Button>
@@ -1153,10 +1153,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                   <Separator />
 
                   {/* Advanced Customization Section */}
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4" />
-                      <Label className="text-base font-medium">Advanced Customization</Label>
+                      <Label className="text-sm sm:text-base font-medium">Advanced Customization</Label>
                     </div>
 
                     {/* Templates */}
@@ -1177,7 +1177,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     {/* Shapes */}
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Shapes</Label>
-                      <div className="grid grid-cols-6 gap-2">
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                         {Object.keys(shapeIcons).slice(0, 12).map((shape) => (
                           <ShapePreview
                             key={shape}
@@ -1231,7 +1231,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     {/* Styles */}
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Styles</Label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div className="space-y-1">
                           <Label className="text-xs">Dot Style</Label>
                           <Select 
@@ -1340,7 +1340,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     {/* Stickers */}
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Stickers</Label>
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {Object.entries(QR_STICKERS).slice(0, 8).map(([id, sticker]) => (
                           <StickerPreview
                             key={id}
@@ -1383,115 +1383,115 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                   {/* Social Media Platform Selection */}
                   <div className="space-y-3">
                     <Label className="text-sm font-medium">Choose Social Media Platform</Label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-3">
                       <Button
                         variant={qrOptions.template === 'instagram' ? 'default' : 'outline'}
                         onClick={() => handleTemplateSelect('instagram')}
-                        className="h-auto p-4 flex flex-col items-center gap-2"
+                        className="h-auto p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <socialMediaIcons.instagram size={20} />
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.instagram size={16} />
                         </div>
-                        <span className="text-sm">Instagram</span>
+                        <span className="text-xs sm:text-sm">Instagram</span>
                       </Button>
                       
                       <Button
                         variant={qrOptions.template === 'facebook' ? 'default' : 'outline'}
                         onClick={() => handleTemplateSelect('facebook')}
-                        className="h-auto p-4 flex flex-col items-center gap-2"
+                        className="h-auto p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <socialMediaIcons.facebook size={20} />
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.facebook size={16} />
                         </div>
-                        <span className="text-sm">Facebook</span>
+                        <span className="text-xs sm:text-sm">Facebook</span>
                       </Button>
                       
                       <Button
                         variant={qrOptions.template === 'snapchat' ? 'default' : 'outline'}
                         onClick={() => handleTemplateSelect('snapchat')}
-                        className="h-auto p-4 flex flex-col items-center gap-2"
+                        className="h-auto p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <socialMediaIcons.snapchat size={20} />
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.snapchat size={16} />
                         </div>
-                        <span className="text-sm">Snapchat</span>
+                        <span className="text-xs sm:text-sm">Snapchat</span>
                       </Button>
                       
                       <Button
                         variant={qrOptions.template === 'twitter' ? 'default' : 'outline'}
                         onClick={() => handleTemplateSelect('twitter')}
-                        className="h-auto p-4 flex flex-col items-center gap-2"
+                        className="h-auto p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <socialMediaIcons.twitter size={20} />
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.twitter size={16} />
                         </div>
-                        <span className="text-sm">X (Twitter)</span>
+                        <span className="text-xs sm:text-sm">X (Twitter)</span>
                       </Button>
                       
                       <Button
                         variant={qrOptions.template === 'linkedin' ? 'default' : 'outline'}
                         onClick={() => handleTemplateSelect('linkedin')}
-                        className="h-auto p-4 flex flex-col items-center gap-2"
+                        className="h-auto p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <socialMediaIcons.linkedin size={20} />
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.linkedin size={16} />
                         </div>
-                        <span className="text-sm">LinkedIn</span>
+                        <span className="text-xs sm:text-sm">LinkedIn</span>
                       </Button>
                       
                       <Button
                         variant={qrOptions.template === 'youtube' ? 'default' : 'outline'}
                         onClick={() => handleTemplateSelect('youtube')}
-                        className="h-auto p-4 flex flex-col items-center gap-2"
+                        className="h-auto p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <socialMediaIcons.youtube size={20} />
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.youtube size={16} />
                         </div>
-                        <span className="text-sm">YouTube</span>
+                        <span className="text-xs sm:text-sm">YouTube</span>
                       </Button>
                       
                       <Button
                         variant={qrOptions.template === 'tiktok' ? 'default' : 'outline'}
                         onClick={() => handleTemplateSelect('tiktok')}
-                        className="h-auto p-4 flex flex-col items-center gap-2"
+                        className="h-auto p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <socialMediaIcons.tiktok size={20} />
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.tiktok size={16} />
                         </div>
-                        <span className="text-sm">TikTok</span>
+                        <span className="text-xs sm:text-sm">TikTok</span>
                       </Button>
                       
                       <Button
                         variant={qrOptions.template === 'whatsapp' ? 'default' : 'outline'}
                         onClick={() => handleTemplateSelect('whatsapp')}
-                        className="h-auto p-4 flex flex-col items-center gap-2"
+                        className="h-auto p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <socialMediaIcons.whatsapp size={20} />
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.whatsapp size={16} />
                         </div>
-                        <span className="text-sm">WhatsApp</span>
+                        <span className="text-xs sm:text-sm">WhatsApp</span>
                       </Button>
                       
                       <Button
                         variant={qrOptions.template === 'telegram' ? 'default' : 'outline'}
                         onClick={() => handleTemplateSelect('telegram')}
-                        className="h-auto p-4 flex flex-col items-center gap-2"
+                        className="h-auto p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <socialMediaIcons.telegram size={20} />
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.telegram size={16} />
                         </div>
-                        <span className="text-sm">Telegram</span>
+                        <span className="text-xs sm:text-sm">Telegram</span>
                       </Button>
                       
                       <Button
                         variant={qrOptions.template === 'discord' ? 'default' : 'outline'}
                         onClick={() => handleTemplateSelect('discord')}
-                        className="h-auto p-4 flex flex-col items-center gap-2"
+                        className="h-auto p-3 sm:p-4 flex flex-col items-center gap-1.5 sm:gap-2"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                          <socialMediaIcons.discord size={20} />
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                          <socialMediaIcons.discord size={16} />
                         </div>
-                        <span className="text-sm">Discord</span>
+                        <span className="text-xs sm:text-sm">Discord</span>
                       </Button>
                     </div>
                   </div>
