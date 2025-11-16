@@ -1049,25 +1049,30 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="basic" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5">
-                  <TabsTrigger value="basic" className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none">Basic</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4 gap-2 p-2 sm:gap-1.5 sm:p-1.5">
+                  <TabsTrigger 
+                    value="basic" 
+                    className="px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm font-medium whitespace-nowrap"
+                  >
+                    Basic
+                  </TabsTrigger>
                   <TabsTrigger 
                     value="social" 
-                    className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none relative"
+                    className="px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm font-medium whitespace-nowrap"
                   >
                     <span className="hidden sm:inline">Social Media</span>
                     <span className="sm:hidden">Social</span>
                   </TabsTrigger>
                   <TabsTrigger 
                     value="upi" 
-                    className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none relative"
+                    className="px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm font-medium whitespace-nowrap"
                   >
                     <span className="hidden sm:inline">UPI Payment</span>
                     <span className="sm:hidden">UPI</span>
                   </TabsTrigger>
                   <TabsTrigger 
                     value="dynamic" 
-                    className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none relative"
+                    className="px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm font-medium whitespace-nowrap"
                   >
                     Dynamic
                   </TabsTrigger>
