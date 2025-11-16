@@ -9,7 +9,6 @@ import type QRCodeStyling from "qr-code-styling"
 import { addBotrixLogoToQR } from "@/lib/qr-watermark"
 import { createAdvancedQR } from "@/lib/qr-code-advanced"
 import type { AdvancedQROptions } from "@/types/qr-code-advanced"
-import QRAdDisplay from "@/components/qr-ad-display"
 
 interface QRCodeData {
   id: string
@@ -628,7 +627,6 @@ export default function QRCodeRedirectPage() {
   const [redirecting, setRedirecting] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [downloadMessage, setDownloadMessage] = useState<string | null>(null)
-  const [showAd, setShowAd] = useState(false)
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
 
   useEffect(() => {
@@ -709,20 +707,14 @@ export default function QRCodeRedirectPage() {
             setAnalytics(analyticsData.analytics)
           }
 
-          // Save redirect URL
+          // Save redirect URL and auto-redirect
           setRedirectUrl(scanData.redirectUrl)
-
-          // Check if ads should be shown (ME-QR-like functionality)
-          if (scanData.showAds) {
-            // Show ad before redirecting
-            setShowAd(true)
-          } else {
-            // Auto-redirect after a short delay if no ads
-            setTimeout(() => {
-              setRedirecting(true)
-              window.location.href = scanData.redirectUrl
-            }, 2000)
-          }
+          
+          // Auto-redirect after a short delay
+          setTimeout(() => {
+            setRedirecting(true)
+            window.location.href = scanData.redirectUrl
+          }, 2000)
         }
 
       } catch (error) {
@@ -743,22 +735,6 @@ export default function QRCodeRedirectPage() {
     } else if (qrCode) {
       setRedirecting(true)
       window.location.href = qrCode.redirectUrl || qrCode.url
-    }
-  }
-
-  const handleAdContinue = () => {
-    setShowAd(false)
-    if (redirectUrl) {
-      setRedirecting(true)
-      window.location.href = redirectUrl
-    }
-  }
-
-  const handleAdClose = () => {
-    setShowAd(false)
-    if (redirectUrl) {
-      setRedirecting(true)
-      window.location.href = redirectUrl
     }
   }
 
@@ -819,16 +795,6 @@ export default function QRCodeRedirectPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      {/* Ad Display Component (ME-QR-like functionality) */}
-      {showAd && qrCode && (
-        <QRAdDisplay
-          qrCodeId={qrCode.id}
-          onClose={handleAdClose}
-          onContinue={handleAdContinue}
-          adType="interstitial"
-        />
-      )}
-      
       <div className="w-full max-w-2xl space-y-6">
         {/* Main Redirect Card */}
         <Card>

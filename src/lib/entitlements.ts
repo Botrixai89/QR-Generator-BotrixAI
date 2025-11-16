@@ -12,7 +12,7 @@ export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
     customDomainsAllowed: false,
     webhooksAllowed: false,
     removeWatermarkAllowed: false,
-    removeAdsAllowed: false,
+    removeAdsAllowed: true, // Ads feature removed - all plans have no ads
     logoUploadsAllowed: true,
     fileStorageMB: 100,
   },
@@ -26,7 +26,7 @@ export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
     customDomainsAllowed: false,
     webhooksAllowed: false,
     removeWatermarkAllowed: true,
-    removeAdsAllowed: true,
+    removeAdsAllowed: true, // Ads feature removed - all plans have no ads
     logoUploadsAllowed: true,
     fileStorageMB: 250,
   },
@@ -40,7 +40,7 @@ export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
     customDomainsAllowed: true,
     webhooksAllowed: true,
     removeWatermarkAllowed: true,
-    removeAdsAllowed: true,
+    removeAdsAllowed: true, // Ads feature removed - all plans have no ads
     logoUploadsAllowed: true,
     fileStorageMB: 500,
   },
@@ -54,7 +54,7 @@ export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
     customDomainsAllowed: true,
     webhooksAllowed: true,
     removeWatermarkAllowed: true,
-    removeAdsAllowed: true,
+    removeAdsAllowed: true, // Ads feature removed - all plans have no ads
     logoUploadsAllowed: true,
     fileStorageMB: 2000,
   },

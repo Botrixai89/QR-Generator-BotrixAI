@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase"
 import { rateLimit } from "@/lib/rate-limit"
-import { assertWithinMonthlyScanQuota, getUserPlan, hasFeature } from "@/lib/entitlements"
+import { assertWithinMonthlyScanQuota } from "@/lib/entitlements"
 import { getErrorPage } from "@/lib/error-pages"
 
 // Edge caching configuration for public scan endpoints
@@ -155,11 +155,6 @@ export async function POST(
       console.error('Error checking scan threshold:', error)
     }
 
-    // Check if ads should be shown (for free plan users)
-    const ownerPlan = await getUserPlan(qrCode.userId)
-    const shouldShowAds = !hasFeature(ownerPlan, 'removeAdsAllowed') && 
-                         (qrCode.showAds !== false) // Default to true unless explicitly disabled
-
     // Return the redirect URL or original URL
     const redirectUrl = qrCode.redirectUrl || qrCode.url
 
@@ -167,8 +162,7 @@ export async function POST(
     const response = NextResponse.json({
       success: true,
       redirectUrl,
-      scanId: scan.id,
-      showAds: shouldShowAds
+      scanId: scan.id
     })
 
     // Add cache headers for edge caching
