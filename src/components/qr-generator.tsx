@@ -1025,43 +1025,45 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="text-center space-y-2 mb-6">
-          <h1 className="text-3xl font-bold">QR Code Generator</h1>
-          <p className="text-muted-foreground">
+      <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
+        <div className="text-center space-y-2 mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold">QR Code Generator</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Create beautiful, customizable QR codes with advanced features
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
           {/* Configuration Panel */}
           <div className="lg:w-1/2 qr-config-scroll">
             <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
                 QR Code Configuration
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Set up your QR code content and customize its appearance
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="basic" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 gap-1.5 p-1.5">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5">
                   <TabsTrigger value="basic" className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none">Basic</TabsTrigger>
                   <TabsTrigger 
                     value="social" 
                     className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none relative"
                   >
-                    Social Media
+                    <span className="hidden sm:inline">Social Media</span>
+                    <span className="sm:hidden">Social</span>
                   </TabsTrigger>
                   <TabsTrigger 
                     value="upi" 
                     className="px-2 py-1.5 text-xs sm:text-sm truncate min-w-0 flex-none relative"
                   >
-                    UPI Payment
+                    <span className="hidden sm:inline">UPI Payment</span>
+                    <span className="sm:hidden">UPI</span>
                   </TabsTrigger>
                   <TabsTrigger 
                     value="dynamic" 
@@ -1354,22 +1356,22 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
 
                 <TabsContent value="social" className="space-y-4 mt-4">
                   {userPlan === 'FREE' && (
-                    <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                          <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <div className="mb-4 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <div className="flex-1">
-                          <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs sm:text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
                             Pro Feature Available
                           </h4>
-                          <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
+                          <p className="text-xs text-blue-700 dark:text-blue-300 mb-2 sm:mb-3">
                             Social Media QR codes are available in paid plans. You can explore all features, but upgrading is required to generate and download.
                           </p>
                           <Button 
                             onClick={() => router.push('/pricing')} 
                             size="sm"
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm w-full sm:w-auto"
                           >
                             Upgrade to Pro
                           </Button>
@@ -1544,22 +1546,22 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
 
                 <TabsContent value="upi" className="space-y-4 mt-4">
                   {userPlan === 'FREE' && (
-                    <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                          <CreditCard className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <div className="mb-4 p-3 sm:p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                          <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 dark:text-green-400" />
                         </div>
-                        <div className="flex-1">
-                          <h4 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs sm:text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
                             Pro Feature Available
                           </h4>
-                          <p className="text-xs text-green-700 dark:text-green-300 mb-3">
+                          <p className="text-xs text-green-700 dark:text-green-300 mb-2 sm:mb-3">
                             UPI Payment QR codes are available in paid plans. You can explore all features, but upgrading is required to generate and download.
                           </p>
                           <Button 
                             onClick={() => router.push('/pricing')} 
                             size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white"
+                            className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm w-full sm:w-auto"
                           >
                             Upgrade to Pro
                           </Button>
@@ -1770,22 +1772,22 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
 
                 <TabsContent value="dynamic" className="space-y-4 mt-4">
                   {userPlan === 'FREE' && (
-                    <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                          <Zap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <div className="mb-4 p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border border-purple-200 dark:border-purple-800 rounded-lg">
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                          <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600 dark:text-purple-400" />
                         </div>
-                        <div className="flex-1">
-                          <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs sm:text-sm font-semibold text-purple-900 dark:text-purple-100 mb-1">
                             Pro Feature Available
                           </h4>
-                          <p className="text-xs text-purple-700 dark:text-purple-300 mb-3">
+                          <p className="text-xs text-purple-700 dark:text-purple-300 mb-2 sm:mb-3">
                             Dynamic QR codes are available in paid plans. You can explore all features, but upgrading is required to generate and download.
                           </p>
                           <Button 
                             onClick={() => router.push('/pricing')} 
                             size="sm"
-                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                            className="bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm w-full sm:w-auto"
                           >
                             Upgrade to Pro
                           </Button>
@@ -1916,19 +1918,21 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                   </Button>
                   <Button 
                     onClick={() => handleDownload('png')}
-                    className="flex-1"
+                    className="flex-1 text-xs sm:text-sm"
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PNG
+                    <Download className="h-4 w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Download PNG</span>
+                    <span className="sm:hidden">PNG</span>
                   </Button>
                 </div>
                 <Button 
                   variant="outline" 
                   onClick={() => handleDownload('svg')}
-                  className="w-full"
+                  className="w-full text-xs sm:text-sm"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download SVG
+                  <Download className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Download SVG</span>
+                  <span className="sm:hidden">SVG</span>
                 </Button>
               </div>
             </CardContent>
@@ -1941,33 +1945,35 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
           <div className="lg:w-1/2 qr-preview-sticky">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
                   Live Preview
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   Your QR code will appear here with real-time updates
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col items-center justify-center space-y-4 min-h-[500px]">
+                <div className="flex flex-col items-center justify-center space-y-4 min-h-[300px] sm:min-h-[500px]">
                   <div className="relative flex items-center justify-center w-full">
                     {isClient ? (
                       <div 
                         ref={qrRef}
-                        className="border rounded-lg p-4 bg-white qr-code-container"
+                        className="border rounded-lg p-2 sm:p-4 bg-white qr-code-container w-full max-w-full"
                         style={{ 
-                          minHeight: "400px", 
-                          minWidth: "400px",
+                          minHeight: "250px",
+                          maxHeight: "400px",
+                          width: "100%",
+                          maxWidth: "100%",
                           backgroundColor: "#ffffff"
                         }}
                       />
                     ) : (
                       <div 
-                        className="border rounded-lg p-4 bg-white flex items-center justify-center"
-                        style={{ minHeight: "400px", minWidth: "400px" }}
+                        className="border rounded-lg p-2 sm:p-4 bg-white flex items-center justify-center w-full"
+                        style={{ minHeight: "250px", maxHeight: "400px", width: "100%", maxWidth: "100%" }}
                       >
-                        <p className="text-muted-foreground">Loading QR code preview...</p>
+                        <p className="text-sm sm:text-base text-muted-foreground">Loading QR code preview...</p>
                       </div>
                     )}
                   </div>
@@ -1975,20 +1981,35 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                   {url && (
                     <div className="space-y-3">
                       {/* Quality Selector */}
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">Download Quality:</label>
-                        <div className="flex gap-2">
+                      <div className="flex flex-col gap-2 w-full">
+                        <label className="text-xs sm:text-sm font-medium text-gray-700">Download Quality:</label>
+                        <div className="flex gap-1 sm:gap-2 flex-wrap">
                           {(['web', 'print', 'ultra-hd'] as const).map((quality) => (
                             <Button
                               key={quality}
                               onClick={() => setDownloadQuality(quality)}
                               variant={downloadQuality === quality ? "default" : "outline"}
                               size="sm"
-                              className="text-xs"
+                              className="text-xs flex-1 sm:flex-none min-w-0"
                             >
-                              {quality === 'web' && 'Web (2x)'}
-                              {quality === 'print' && 'Print (4x)'}
-                              {quality === 'ultra-hd' && 'Ultra-HD (8x)'}
+                              {quality === 'web' && (
+                                <>
+                                  <span className="hidden sm:inline">Web (2x)</span>
+                                  <span className="sm:hidden">2x</span>
+                                </>
+                              )}
+                              {quality === 'print' && (
+                                <>
+                                  <span className="hidden sm:inline">Print (4x)</span>
+                                  <span className="sm:hidden">4x</span>
+                                </>
+                              )}
+                              {quality === 'ultra-hd' && (
+                                <>
+                                  <span className="hidden sm:inline">Ultra-HD (8x)</span>
+                                  <span className="sm:hidden">8x</span>
+                                </>
+                              )}
                             </Button>
                           ))}
                         </div>

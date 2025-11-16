@@ -122,11 +122,17 @@
 @layer components {
   /* Sticky QR Preview Panel */
   .qr-preview-sticky {
-    position: sticky;
-    top: 1.5rem;
+    position: relative;
     align-self: flex-start;
-    max-height: calc(100vh - 3rem);
-    overflow-y: auto;
+  }
+  
+  @media (min-width: 1024px) {
+    .qr-preview-sticky {
+      position: sticky;
+      top: 1.5rem;
+      max-height: calc(100vh - 3rem);
+      overflow-y: auto;
+    }
   }
   
   /* QR Code Container Centering */
@@ -140,13 +146,23 @@
   .qr-code-container svg {
     display: block;
     margin: 0 auto;
+    max-width: 100%;
+    height: auto;
   }
   
   /* Configuration Panel Scroll */
   .qr-config-scroll {
-    max-height: calc(100vh - 2rem);
-    overflow-y: auto;
-    padding-right: 1rem;
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+  
+  @media (min-width: 1024px) {
+    .qr-config-scroll {
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+      padding-right: 1rem;
+    }
   }
   
   /* Custom scrollbar for better UX */
