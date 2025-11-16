@@ -1049,30 +1049,31 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="basic" value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 gap-2 p-2 sm:gap-1.5 sm:p-1.5">
+                {/* Mobile: Better spaced grid, Desktop: Standard grid */}
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2.5 p-2.5 sm:gap-1.5 sm:p-1.5 bg-muted/50 sm:bg-muted">
                   <TabsTrigger 
                     value="basic" 
-                    className="px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm font-medium whitespace-nowrap"
+                    className="px-4 py-3.5 sm:px-2 sm:py-1.5 text-sm font-semibold whitespace-nowrap rounded-lg data-[state=active]:shadow-md transition-all"
                   >
                     Basic
                   </TabsTrigger>
                   <TabsTrigger 
                     value="social" 
-                    className="px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm font-medium whitespace-nowrap"
+                    className="px-4 py-3.5 sm:px-2 sm:py-1.5 text-sm font-semibold whitespace-nowrap rounded-lg data-[state=active]:shadow-md transition-all"
                   >
                     <span className="hidden sm:inline">Social Media</span>
                     <span className="sm:hidden">Social</span>
                   </TabsTrigger>
                   <TabsTrigger 
                     value="upi" 
-                    className="px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm font-medium whitespace-nowrap"
+                    className="px-4 py-3.5 sm:px-2 sm:py-1.5 text-sm font-semibold whitespace-nowrap rounded-lg data-[state=active]:shadow-md transition-all"
                   >
                     <span className="hidden sm:inline">UPI Payment</span>
                     <span className="sm:hidden">UPI</span>
                   </TabsTrigger>
                   <TabsTrigger 
                     value="dynamic" 
-                    className="px-3 py-2.5 sm:px-2 sm:py-1.5 text-sm font-medium whitespace-nowrap"
+                    className="px-4 py-3.5 sm:px-2 sm:py-1.5 text-sm font-semibold whitespace-nowrap rounded-lg data-[state=active]:shadow-md transition-all"
                   >
                     Dynamic
                   </TabsTrigger>

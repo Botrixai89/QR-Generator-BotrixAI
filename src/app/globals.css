@@ -182,6 +182,16 @@
   .qr-config-scroll::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
   }
+  
+  /* Hide scrollbar for horizontal tabs on mobile */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 
   /* Accessibility: Screen reader only */
   .sr-only {
