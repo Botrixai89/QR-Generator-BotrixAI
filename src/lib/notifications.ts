@@ -271,6 +271,7 @@ export async function getNotificationPreferences(userId: string): Promise<{
         .single()
 
       if (error || !newPreferences) {
+        // If table doesn't exist or creation fails, return default preferences
         if ((error as { code?: string })?.code === 'PGRST205' || (prefError as { code?: string })?.code === 'PGRST205') {
           return {
             userId,
@@ -281,7 +282,16 @@ export async function getNotificationPreferences(userId: string): Promise<{
             thresholds: {},
           }
         }
-        throw new Error('Failed to create notification preferences')
+        // Log the error but return default preferences instead of throwing
+        console.warn('Failed to create notification preferences, using defaults:', error)
+        return {
+          userId,
+          emailEnabled: true,
+          inAppEnabled: true,
+          emailFrequency: 'immediate',
+          notificationTypes: {},
+          thresholds: {},
+        }
       }
 
       preferences = newPreferences
