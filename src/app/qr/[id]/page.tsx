@@ -587,7 +587,7 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
 
   const mapDotTypeForFallback = (
     type?: string | null,
-  ): QRCodeStyling['options']['dotsOptions']['type'] => {
+  ): 'square' | 'rounded' | 'extra-rounded' | 'classy' | 'classy-rounded' | 'dots' => {
     switch (type) {
       case 'rounded':
       case 'extra-rounded':

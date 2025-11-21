@@ -200,8 +200,7 @@ describe('QR Code Lifecycle Integration Tests', () => {
       const createdQR = await createResponse.json()
 
       // Now retrieve all QR codes
-      const getRequest = new NextRequest('http://localhost:3000/api/qr-codes')
-      const getResponse = await getQRCodes(getRequest)
+      const getResponse = await getQRCodes()
       expect(getResponse.status).toBe(200)
 
       const qrCodes = await getResponse.json()
