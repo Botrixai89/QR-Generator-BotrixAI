@@ -135,9 +135,8 @@ export async function createTestUser(overrides: {
       name,
       plan,
       credits,
-      emailVerified: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      emailVerified: new Date().toISOString(), // emailVerified is a timestamp, not boolean
+      // createdAt and updatedAt have DEFAULT NOW() in the schema, so we don't need to set them
     })
     .select()
     .single()
