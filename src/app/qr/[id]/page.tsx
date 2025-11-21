@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Loader2, ExternalLink, BarChart3, Clock, Download } from "lucide-react"
 import type QRCodeStyling from "qr-code-styling"
 import { addBotrixLogoToQR } from "@/lib/qr-watermark"
-import { createAdvancedQR } from "@/lib/qr-code-advanced"
+import { loadAdvancedQR, loadQRCodeStyling } from "@/lib/qr-loader"
+import { getSocialMediaLogoDataUrl, isSocialMediaTemplate } from "@/lib/social-media-logos"
 import type { AdvancedQROptions } from "@/types/qr-code-advanced"
 
 interface QRCodeData {
@@ -61,12 +62,36 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [downloadQuality, setDownloadQuality] = useState<'web' | 'print' | 'ultra-hd'>('ultra-hd')
 
+  const fetchLogoDataUri = useCallback(async (logoUrl: string): Promise<string | null> => {
+    try {
+      if (!logoUrl) return null
+      const response = await fetch(logoUrl, {
+        mode: 'cors',
+        credentials: 'omit',
+      })
+      if (!response.ok) {
+        throw new Error(`Logo fetch failed: ${response.status}`)
+      }
+      const blob = await response.blob()
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+    } catch (error) {
+      console.warn('Unable to load persisted logo for QR preview:', error)
+      return null
+    }
+  }, [])
+
   useEffect(() => {
     setIsClient(true)
   }, [])
 
   useEffect(() => {
     if (isClient && qrRef.current && qrCode) {
+      let cancelled = false
       setIsGenerating(true)
       setGenerationError(null)
       
@@ -81,64 +106,100 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
       
       qrRef.current.innerHTML = ""
       
-      try {
-        // For dynamic QR codes, use the redirect URL if available, otherwise link to hosted QR route
-        const qrData = qrCode.isDynamic 
-          ? (qrCode.redirectUrl || `${window.location.origin}/qr/${qrCode.id}`)
-          : qrCode.url
+      const generateQr = async () => {
+        try {
+          const qrData = qrCode.isDynamic 
+            ? (qrCode.redirectUrl || `${window.location.origin}/qr/${qrCode.id}`)
+            : qrCode.url
 
-        // Use the same advanced generator as the live preview to keep rendering consistent
-        const advancedOptions: AdvancedQROptions = {
-          data: qrData,
-          width: 300,
-          height: 300,
-          type: 'svg',
-          foregroundColor: qrCode.foregroundColor || '#000000',
-          backgroundColor: formattedBackgroundColor,
-          dotType: (qrCode.dotType as AdvancedQROptions['dotType']) || 'square',
-          cornerType: (qrCode.cornerType as AdvancedQROptions['cornerType']) || 'square',
-          eyePattern: (qrCode.eyePattern as AdvancedQROptions['eyePattern']) || 'square',
-          template: qrCode.template as AdvancedQROptions['template'],
-          shape: qrCode.shape as AdvancedQROptions['shape'],
-          gradient: qrCode.gradient as AdvancedQROptions['gradient'],
-          sticker: qrCode.sticker as AdvancedQROptions['sticker'],
-          effects: qrCode.effects as AdvancedQROptions['effects'],
-          // Map stored logo URL (if any) to advanced logo config
-          logo: qrCode.logoUrl ? { image: qrCode.logoUrl, size: 0.25, margin: 5, opacity: 1 } : undefined,
-          // Persist watermark choice
-          watermark: !!qrCode.hasWatermark,
-        }
+          let logoDataUri: string | null = null
+          if (isSocialMediaTemplate(qrCode.template)) {
+            logoDataUri = getSocialMediaLogoDataUrl(qrCode.template)
+          }
+          if (!logoDataUri && qrCode.logoUrl) {
+            logoDataUri = await fetchLogoDataUri(qrCode.logoUrl)
+          }
+          if (cancelled) return
 
-        const generator = createAdvancedQR(advancedOptions)
-        advancedRef.current = generator
-        void generator.generate(qrRef.current)
-          .then(() => {
-            try {
-              // Ensure watermark is present even if advanced pipeline skips it
-              if (qrRef.current && qrCode.hasWatermark) {
-                // Use a small delay to ensure SVG is fully rendered
-                setTimeout(() => {
-                  const svg = qrRef.current?.querySelector('svg')
-                  if (svg) {
-                    addBotrixLogoToQR(svg)
-                  }
-                }, 100)
+          const container = qrRef.current
+          if (!container) {
+            throw new Error('QR container not available')
+          }
+
+          const advancedOptions: AdvancedQROptions = {
+            data: qrData,
+            width: 300,
+            height: 300,
+            type: 'svg',
+            foregroundColor: qrCode.foregroundColor || '#000000',
+            backgroundColor: formattedBackgroundColor,
+            dotType: (qrCode.dotType as AdvancedQROptions['dotType']) || 'square',
+            cornerType: (qrCode.cornerType as AdvancedQROptions['cornerType']) || 'square',
+            eyePattern: (qrCode.eyePattern as AdvancedQROptions['eyePattern']) || 'square',
+            template: qrCode.template as AdvancedQROptions['template'],
+            shape: qrCode.shape as AdvancedQROptions['shape'],
+            gradient: qrCode.gradient as AdvancedQROptions['gradient'],
+            sticker: qrCode.sticker as AdvancedQROptions['sticker'],
+            effects: qrCode.effects as AdvancedQROptions['effects'],
+            logo: logoDataUri ? { image: logoDataUri, size: 0.25, margin: 5, opacity: 1 } : undefined,
+            watermark: !!qrCode.hasWatermark,
+          }
+
+          const getCreator = await loadAdvancedQR()
+          if (!getCreator) {
+            throw new Error('Failed to load QR generator')
+          }
+          const generator = getCreator(advancedOptions)
+          advancedRef.current = generator
+          await generator.generate(container)
+          if (cancelled) return
+          if (qrRef.current && qrCode.hasWatermark) {
+            setTimeout(() => {
+              if (qrRef.current && !cancelled) {
+                const svg = qrRef.current.querySelector('svg')
+                if (svg) {
+                  addBotrixLogoToQR(svg)
+                }
               }
-            } finally {
-              setIsGenerating(false)
+            }, 100)
+          }
+
+          const svg = container.querySelector('svg')
+          if (!hasQrModules(svg)) {
+            console.warn('Advanced QR generation produced no modules; using fallback renderer.')
+            await renderFallbackQr({
+              container,
+              data: qrData,
+              backgroundColor: formattedBackgroundColor,
+              logo: logoDataUri,
+              foregroundColor: qrCode.foregroundColor || '#000000',
+              dotType: qrCode.dotType,
+              cornerType: qrCode.cornerType,
+              applyWatermark: qrCode.hasWatermark || false,
+            })
+          }
+        } catch (error) {
+          console.error("Error creating QR code preview:", error)
+          if (!cancelled) {
+            setGenerationError(error instanceof Error ? error.message : 'Failed to generate QR code')
+            if (qrRef.current) {
+              qrRef.current.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #666; font-size: 12px;">Error generating QR code</div>`
             }
-          })
-          .catch(() => setIsGenerating(false))
-      } catch (error) {
-        console.error("Error creating QR code preview:", error)
-        setGenerationError(error instanceof Error ? error.message : 'Failed to generate QR code')
-        setIsGenerating(false)
-        if (qrRef.current) {
-          qrRef.current.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #666; font-size: 12px;">Error generating QR code</div>`
+          }
+        } finally {
+          if (!cancelled) {
+            setIsGenerating(false)
+          }
         }
       }
+
+      void generateQr()
+
+      return () => {
+        cancelled = true
+      }
     }
-  }, [isClient, qrCode])
+  }, [isClient, qrCode, fetchLogoDataUri])
 
   // Ensure watermark persists after any render or update
   useEffect(() => {
@@ -515,6 +576,120 @@ function QRCodePreview({ qrCode, onDownload, setDownloadMessage }: {
       setTimeout(() => {
         setDownloadMessage(null)
       }, 5000)
+    }
+  }
+
+  const hasQrModules = (svg: SVGElement | null): boolean => {
+    if (!svg) return false
+    const elements = svg.querySelectorAll('path, rect, circle')
+    return Array.from(elements).some((element) => !element.closest('#botrix-watermark-layer'))
+  }
+
+  const mapDotTypeForFallback = (
+    type?: string | null,
+  ): QRCodeStyling['options']['dotsOptions']['type'] => {
+    switch (type) {
+      case 'rounded':
+      case 'extra-rounded':
+      case 'classy':
+      case 'classy-rounded':
+      case 'dots':
+        return type
+      case 'circles':
+      case 'diamonds':
+      case 'stars':
+        return 'dots'
+      default:
+        return 'square'
+    }
+  }
+
+  const mapCornerTypeForFallback = (type?: string | null): 'square' | 'dot' | 'extra-rounded' => {
+    switch (type) {
+      case 'extra-rounded':
+      case 'classy-rounded':
+        return 'extra-rounded'
+      case 'rounded':
+      case 'circle':
+      case 'classy':
+        return 'dot'
+      default:
+        return 'square'
+    }
+  }
+
+  const mapCornerDotTypeForFallback = (type?: string | null): 'square' | 'dot' => {
+    switch (type) {
+      case 'rounded':
+      case 'circle':
+      case 'classy':
+      case 'dot':
+      case 'classy-rounded':
+        return 'dot'
+      default:
+        return 'square'
+    }
+  }
+
+  const renderFallbackQr = async ({
+    container,
+    data,
+    backgroundColor,
+    logo,
+    foregroundColor,
+    dotType,
+    cornerType,
+    applyWatermark,
+  }: {
+    container: HTMLElement
+    data: string
+    backgroundColor: string
+    logo: string | null
+    foregroundColor: string
+    dotType?: string | null
+    cornerType?: string | null
+    applyWatermark: boolean
+  }) => {
+    try {
+      const QRCodeStylingClass = await loadQRCodeStyling()
+      if (!QRCodeStylingClass) {
+        throw new Error('Fallback QR library unavailable')
+      }
+      container.innerHTML = ""
+      const fallback = new QRCodeStylingClass({
+        width: 300,
+        height: 300,
+        type: "svg",
+        data,
+        image: logo || undefined,
+        dotsOptions: {
+          color: foregroundColor,
+          type: mapDotTypeForFallback(dotType),
+        },
+        backgroundOptions: {
+          color: backgroundColor,
+        },
+        cornersSquareOptions: {
+          color: foregroundColor,
+          type: mapCornerTypeForFallback(cornerType),
+        },
+        cornersDotOptions: {
+          color: foregroundColor,
+          type: mapCornerDotTypeForFallback(dotType),
+        },
+      })
+      fallback.append(container)
+
+      if (applyWatermark) {
+        setTimeout(() => {
+          const svg = container.querySelector('svg')
+          if (svg) {
+            addBotrixLogoToQR(svg)
+          }
+        }, 100)
+      }
+    } catch (fallbackError) {
+      console.error('Fallback QR generation failed:', fallbackError)
     }
   }
 

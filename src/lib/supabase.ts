@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
-const rawSupabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim()
+const rawPublicSupabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim()
 const rawSupabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim()
+
+const rawServerSupabaseUrl = (process.env.SUPABASE_URL || '').trim()
 
 function isValidUrl(url: string): boolean {
   try {
@@ -12,25 +14,42 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-const hasValidPublicConfig = Boolean(rawSupabaseUrl && rawSupabaseAnonKey && isValidUrl(rawSupabaseUrl))
+const publicSupabaseUrl = rawPublicSupabaseUrl && isValidUrl(rawPublicSupabaseUrl) ? rawPublicSupabaseUrl : ''
+const adminSupabaseUrl = (() => {
+  if (rawServerSupabaseUrl && isValidUrl(rawServerSupabaseUrl)) {
+    return rawServerSupabaseUrl
+  }
+  if (publicSupabaseUrl) {
+    return publicSupabaseUrl
+  }
+  return ''
+})()
 
-if ((!rawSupabaseUrl || !rawSupabaseAnonKey) && process.env.NODE_ENV === 'development') {
+const hasValidPublicConfig = Boolean(publicSupabaseUrl && rawSupabaseAnonKey)
+
+if ((!publicSupabaseUrl || !rawSupabaseAnonKey) && process.env.NODE_ENV === 'development') {
   console.warn('⚠️  Missing Supabase env vars. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local')
 }
-if (rawSupabaseUrl && !isValidUrl(rawSupabaseUrl)) {
+if (rawPublicSupabaseUrl && !isValidUrl(rawPublicSupabaseUrl)) {
   console.error('❌ Invalid NEXT_PUBLIC_SUPABASE_URL. Ensure it is a full https URL like https://xxx.supabase.co')
+}
+if (rawServerSupabaseUrl && !isValidUrl(rawServerSupabaseUrl)) {
+  console.error('❌ Invalid SUPABASE_URL. Ensure it is a full https URL like https://xxx.supabase.co')
+}
+if (!adminSupabaseUrl && process.env.NODE_ENV === 'development') {
+  console.warn('⚠️  No valid Supabase URL found for server-side admin client. Set SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL.')
 }
 
 // Client for client-side operations (with RLS). Guard creation to avoid throwing on malformed URL during import.
 export const supabase = hasValidPublicConfig
-  ? createClient(rawSupabaseUrl, rawSupabaseAnonKey)
+  ? createClient(publicSupabaseUrl, rawSupabaseAnonKey)
   : null
 
 // Admin client for server-side operations (bypasses RLS)
 // Only create this on the server side to avoid exposing the service role key
 export const supabaseAdmin = typeof window === 'undefined'
   ? (() => {
-      if (!hasValidPublicConfig) return null
+      if (!adminSupabaseUrl) return null
       const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
       if (!serviceKey) {
         if (process.env.NODE_ENV === 'development') {
@@ -38,7 +57,7 @@ export const supabaseAdmin = typeof window === 'undefined'
         }
         return null
       }
-      return createClient(rawSupabaseUrl, serviceKey, {
+      return createClient(adminSupabaseUrl, serviceKey, {
         auth: {
           autoRefreshToken: false,
           persistSession: false
@@ -52,15 +71,15 @@ export function getSupabaseClient() {
   if (!hasValidPublicConfig) {
     throw new Error('Supabase client not configured. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
   }
-  return supabase ?? createClient(rawSupabaseUrl, rawSupabaseAnonKey)
+  return supabase ?? createClient(publicSupabaseUrl, rawSupabaseAnonKey)
 }
 
 export function getSupabaseAdmin() {
   if (typeof window !== 'undefined') return null
-  if (!hasValidPublicConfig) return null
+  if (!adminSupabaseUrl) return null
   const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
   if (!serviceKey) return null
-  return supabaseAdmin ?? createClient(rawSupabaseUrl, serviceKey, {
+  return supabaseAdmin ?? createClient(adminSupabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false }
   })
 }

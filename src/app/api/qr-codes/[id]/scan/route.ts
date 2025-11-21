@@ -243,6 +243,11 @@ export async function GET(
       return acc
     }, {} as Record<string, number>)
 
+    const normalizeColor = (color: string | null, fallback: string) => {
+      if (!color) return fallback
+      return color.startsWith('#') ? color : `#${color.replace(/^#/, '')}`
+    }
+
     return NextResponse.json({
       qrCode: {
         id: qrCode.id,
@@ -255,10 +260,16 @@ export async function GET(
         lastScannedAt: qrCode.lastScannedAt,
         dynamicContent: qrCode.dynamicContent,
         redirectUrl: qrCode.redirectUrl,
-        foregroundColor: qrCode.foregroundColor,
-        backgroundColor: qrCode.backgroundColor,
+        foregroundColor: normalizeColor(qrCode.foregroundColor, '#000000'),
+        backgroundColor: normalizeColor(qrCode.backgroundColor, '#ffffff'),
         dotType: qrCode.dotType,
         cornerType: qrCode.cornerType,
+        eyePattern: qrCode.eyePattern,
+        template: qrCode.template,
+        shape: qrCode.shape,
+        gradient: qrCode.gradient,
+        sticker: qrCode.sticker,
+        effects: qrCode.effects,
         hasWatermark: qrCode.hasWatermark,
         logoUrl: qrCode.logoUrl
       },

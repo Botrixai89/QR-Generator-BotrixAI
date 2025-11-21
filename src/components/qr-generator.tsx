@@ -1,8 +1,8 @@
 "use client"
-
 import React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
 import type { QRTemplateConfig, QRStickerConfig } from "@/types/qr-code-advanced"
+import type { PlanName } from "@/types/billing"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { 
   Download, 
   Upload, 
@@ -51,6 +52,7 @@ import {
 } from "lucide-react"
 import { socialMediaIcons, SocialMediaPlatform } from "@/components/social-media-icons"
 import { loadAdvancedQR } from "@/lib/qr-loader"
+import { getSocialMediaLogoDataUrl, isSocialMediaTemplate, SOCIAL_MEDIA_PLATFORMS } from "@/lib/social-media-logos"
 import { 
   AdvancedQROptions, 
   QRShape, 
@@ -63,6 +65,8 @@ import {
 interface QRGeneratorProps {
   userId?: string
 }
+
+type PlanState = PlanName | 'GUEST' | 'LOADING'
 
 // Shape icons mapping
 const shapeIcons: Record<QRShape, React.ComponentType<{ className?: string }>> = {
@@ -88,6 +92,28 @@ const shapeIcons: Record<QRShape, React.ComponentType<{ className?: string }>> =
   custom: Settings,
 }
 
+const dataUriToFile = (dataUri: string, fileName: string): File | null => {
+  if (typeof window === 'undefined') return null
+  const commaIndex = dataUri.indexOf(',')
+  if (commaIndex === -1) return null
+  const header = dataUri.substring(0, commaIndex)
+  const base64 = dataUri.substring(commaIndex + 1)
+  const mimeMatch = header.match(/data:(.*?);/)
+  const mime = mimeMatch?.[1] || 'image/png'
+  try {
+    const byteString = window.atob(base64)
+    const arrayBuffer = new ArrayBuffer(byteString.length)
+    const uintArray = new Uint8Array(arrayBuffer)
+    for (let i = 0; i < byteString.length; i++) {
+      uintArray[i] = byteString.charCodeAt(i)
+    }
+    return new File([uintArray], fileName, { type: mime })
+  } catch (error) {
+    console.warn('Failed to convert data URI to file:', error)
+    return null
+  }
+}
+
 // Template preview component
 function TemplatePreview({ template, isSelected, onClick }: { 
   template: QRTemplateConfig, 
@@ -96,13 +122,10 @@ function TemplatePreview({ template, isSelected, onClick }: {
 }) {
   const [previewRef, setPreviewRef] = useState<HTMLDivElement | null>(null)
   
-  // Generate a preview QR code for this template
   useEffect(() => {
     if (previewRef && template) {
-      // Add timeout to prevent rapid re-renders
       const timeoutId = setTimeout(() => {
         try {
-          // Create a simple preview using basic QR styling
           const previewOptions = {
             data: "Preview",
             width: 80,
@@ -118,7 +141,6 @@ function TemplatePreview({ template, isSelected, onClick }: {
             gradient: template.colors?.gradient,
             shape: template.shape || 'square'
           }
-          
           ;(async () => {
             const getCreator = await loadAdvancedQR()
             const qrGenerator = getCreator(previewOptions)
@@ -126,19 +148,17 @@ function TemplatePreview({ template, isSelected, onClick }: {
           })()
         } catch (error) {
           console.error('Error generating template preview:', error)
-          // Fallback: show a simple colored square
           if (previewRef) {
             previewRef.innerHTML = `
               <div style="width: 80px; height: 80px; background: ${template.colors?.background || '#ffffff'}; border: 2px solid ${template.colors?.foreground || '#000000'}; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: ${template.colors?.foreground || '#000000'};">QR</div>
             `
           }
         }
-      }, 50) // Small delay to prevent rapid re-renders
+      }, 50) 
       
       return () => clearTimeout(timeoutId)
     }
   }, [previewRef, template])
-
   return (
     <div 
       className={`group relative cursor-pointer rounded-xl border-2 p-3 transition-all duration-200 hover:shadow-lg hover:scale-105 ${
@@ -346,9 +366,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   const [isClient, setIsClient] = useState(false)
   const [downloadQuality, setDownloadQuality] = useState<'web' | 'print' | 'ultra-hd'>('ultra-hd')
   const [downloadMessage] = useState<string | null>(null)
-  const [userPlan, setUserPlan] = useState<string>('FREE')
-  const [isLoadingPlan, setIsLoadingPlan] = useState(true)
+  const initialPlanState: PlanState = userId && session?.user ? 'LOADING' : 'GUEST'
+  const [userPlan, setUserPlan] = useState<PlanState>(initialPlanState)
   const [activeTab, setActiveTab] = useState<string>('basic')
+  const [showGuestUpsell, setShowGuestUpsell] = useState(false)
   
   // Dynamic QR code states
   const [isDynamic, setIsDynamic] = useState(false)
@@ -385,6 +406,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   })
   // Persist the raw logo file for upload to backend
   const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [generatedLogoFile, setGeneratedLogoFile] = useState<File | null>(null)
   
   const qrRef = useRef<HTMLDivElement>(null)
   const qrGeneratorRef = useRef<{ 
@@ -394,36 +416,71 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   } | null>(null)
   const retryOnceRef = useRef<boolean>(false)
 
+  const isPlanLoading = userPlan === 'LOADING'
+  const isPlanReady = !isPlanLoading
+  const isGuest = userPlan === 'GUEST'
+  const isFreeTier = userPlan === 'FREE' || isGuest
+
+  const requirePlanResolution = () => {
+    if (!isPlanReady) {
+      toast.info("Checking your plan. Please wait a moment...")
+      return false
+    }
+    return true
+  }
+
+  const handlePremiumAccessPrompt = (featureName: string) => {
+    if (isGuest) {
+      toast.info(`Sign in to unlock ${featureName} and save your QR codes.`)
+      setShowGuestUpsell(true)
+      return
+    }
+    toast.info(`Unlock ${featureName} with a paid plan.`)
+    router.push('/pricing')
+  }
+
   // Fetch user plan
   useEffect(() => {
+    let cancelled = false
+    if (!userId || !session?.user) {
+      setUserPlan('GUEST')
+      return
+    }
+
     const fetchUserPlan = async () => {
-      if (!userId || !session?.user) {
-        setIsLoadingPlan(false)
-        return
-      }
-      
+      setUserPlan('LOADING')
       try {
         const response = await fetch('/api/user/credits')
-        if (response.ok) {
-          const data = await response.json()
-          setUserPlan(data.plan || 'FREE')
+        if (!cancelled) {
+          if (response.ok) {
+            const data = await response.json()
+            setUserPlan((data.plan || 'FREE') as PlanState)
+          } else {
+            setUserPlan('FREE')
+          }
         }
       } catch (error) {
         console.error('Error fetching user plan:', error)
-      } finally {
-        setIsLoadingPlan(false)
+        if (!cancelled) {
+          setUserPlan('FREE')
+        }
       }
     }
-    
-    fetchUserPlan()
-  }, [userId, session])
 
-  // Force watermark ON for free users
+    fetchUserPlan()
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, session?.user])
+
+  // Force watermark ON for users on the free tier (including guests) once plan is known
   useEffect(() => {
-    if (userPlan === 'FREE' && !qrOptions.watermark) {
+    if (!isPlanReady) return
+    if (isFreeTier && !qrOptions.watermark) {
       setQrOptions(prev => ({ ...prev, watermark: true }))
     }
-  }, [userPlan, qrOptions.watermark])
+  }, [isPlanReady, isFreeTier, qrOptions.watermark])
 
   // Function to generate UPI payment URL using Bharat QR standard or UPI URL format
   const generateUpiUrl = useCallback((upiId: string, amount?: string, merchantName?: string, transactionNote?: string, format: 'bharat-qr' | 'upi-url' = upiFormat) => {
@@ -511,6 +568,8 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   // Initialize QR code with advanced features
   useEffect(() => {
     if (isClient && qrRef.current) {
+      let cancelled = false
+      
       let qrData = url || "https://example.com"
       
       // If UPI payment is enabled, generate UPI URL
@@ -523,34 +582,61 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         data: qrData
       }
       
+      // Clear previous QR code before generating new one
+      if (qrRef.current) {
+        qrRef.current.innerHTML = ""
+      }
+      
       // Add timeout to prevent infinite loops
       const timeoutId = setTimeout(() => {
-        try {
-          ;(async () => {
-            if (!qrRef.current) return
+        ;(async () => {
+          try {
+            if (!qrRef.current || cancelled) return
+            
             const getCreator = await loadAdvancedQR()
+            if (!getCreator) {
+              throw new Error('Failed to load QR generator')
+            }
+            
+            if (cancelled || !qrRef.current) return
+            
             qrGeneratorRef.current = getCreator(options) as typeof qrGeneratorRef.current
-            const result = qrGeneratorRef.current?.generate(qrRef.current)
-            Promise.resolve(result).then(() => {
-              try {
-                if (qrRef.current && (options.watermark || false)) {
-                  const svg = qrRef.current.querySelector('svg') as unknown as SVGElement | null
-                  if (svg) {
-                    // Lazy import to avoid duplicate bundle cost on server
-                    import('@/lib/qr-watermark').then(({ addBotrixLogoToQR }) => {
+            
+            if (!qrGeneratorRef.current || cancelled || !qrRef.current) return
+            
+            // Generate QR code and await completion
+            await qrGeneratorRef.current.generate(qrRef.current)
+            
+            if (cancelled || !qrRef.current) return
+            
+            // Apply watermark after QR code is generated
+            if (options.watermark || false) {
+              setTimeout(() => {
+                if (cancelled || !qrRef.current) return
+                const svg = qrRef.current.querySelector('svg') as unknown as SVGElement | null
+                if (svg) {
+                  // Lazy import to avoid duplicate bundle cost on server
+                  import('@/lib/qr-watermark').then(({ addBotrixLogoToQR }) => {
+                    if (!cancelled && qrRef.current) {
                       addBotrixLogoToQR(svg as unknown as SVGElement)
-                    }).catch(() => { /* no-op */ })
-                  }
+                    }
+                  }).catch(() => { /* no-op */ })
                 }
-              } catch { /* no-op */ }
-            })
-          })()
-        } catch (error) {
-          console.error('Error generating QR code:', error)
-        }
+              }, 100)
+            }
+          } catch (error) {
+            console.error('Error generating QR code:', error)
+            if (!cancelled && qrRef.current) {
+              qrRef.current.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 250px; color: #666; font-size: 14px;">Error generating QR code</div>`
+            }
+          }
+        })()
       }, 100) // Small delay to prevent rapid re-renders
       
-      return () => clearTimeout(timeoutId)
+      return () => {
+        cancelled = true
+        clearTimeout(timeoutId)
+      }
     }
   }, [isClient, url, qrOptions, isUpiPayment, upiId, upiAmount, upiMerchantName, upiTransactionNote, generateUpiUrl])
 
@@ -561,10 +647,17 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       const hasSvg = !!qrRef.current!.querySelector('svg')
       if (!hasSvg && !retryOnceRef.current) {
         retryOnceRef.current = true
+        // Reset retry flag after a delay to allow future retries
+        setTimeout(() => {
+          retryOnceRef.current = false
+        }, 1000)
         // Trigger a soft re-render by nudging width (no visual change)
         setQrOptions(prev => ({ ...prev }))
+      } else if (hasSvg) {
+        // Reset retry flag if SVG is present
+        retryOnceRef.current = false
       }
-    }, 180)
+    }, 300) // Increased delay to ensure generation has time to complete
     return () => clearTimeout(checkId)
   }, [isClient, qrOptions.logo, qrOptions.template, qrOptions.shape, url])
 
@@ -572,23 +665,45 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   useEffect(() => {
     if (!isClient || !qrRef.current) return
     if (!(qrOptions.watermark || false)) return
-    // Re-apply watermark shortly after any logo change which may trigger re-render
-    const tid = setTimeout(() => {
-      try {
-        const svg = qrRef.current!.querySelector('svg') as unknown as SVGElement | null
-        if (svg) {
-          import('@/lib/qr-watermark').then(({ addBotrixLogoToQR }) => {
+    
+    // Only apply watermark if QR code is already rendered
+    const checkAndApplyWatermark = () => {
+      const svg = qrRef.current?.querySelector('svg') as unknown as SVGElement | null
+      if (svg) {
+        import('@/lib/qr-watermark').then(({ addBotrixLogoToQR }) => {
+          // Double-check SVG still exists after async import
+          if (qrRef.current?.querySelector('svg')) {
             addBotrixLogoToQR(svg as unknown as SVGElement)
-          }).catch(() => { /* no-op */ })
-        }
-      } catch { /* no-op */ }
-    }, 120)
+          }
+        }).catch(() => { /* no-op */ })
+      }
+    }
+    
+    // Re-apply watermark shortly after any logo change which may trigger re-render
+    const tid = setTimeout(checkAndApplyWatermark, 200)
     return () => clearTimeout(tid)
   }, [isClient, qrOptions.logo, qrOptions.watermark])
+
+  // Clear template-generated logo when template is cleared or when switching to non-social media template
+  useEffect(() => {
+    if (!isClient) return
+    
+    const socialTemplateActive = isSocialMediaTemplate(qrOptions.template)
+    
+    // If no template is selected or template is not a social media template, clear generated logo
+    if (!qrOptions.template || !socialTemplateActive) {
+      // Only clear if it's a generated logo (not user-uploaded) and logo currently exists
+      if (!logoFile && generatedLogoFile && qrOptions.logo) {
+        setGeneratedLogoFile(null)
+        setQrOptions(prev => ({ ...prev, logo: undefined }))
+      }
+    }
+  }, [isClient, qrOptions.template, logoFile, generatedLogoFile])
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
+      setGeneratedLogoFile(null)
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
       const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']
@@ -640,8 +755,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   // Helper function to check if user is using pro features
   const isUsingProFeature = (): { isPro: boolean; featureName: string } => {
     // Check for social media templates
-    const socialMediaPlatforms: SocialMediaPlatform[] = ['instagram', 'facebook', 'snapchat', 'twitter', 'linkedin', 'youtube', 'tiktok', 'whatsapp', 'telegram', 'discord']
-    if (qrOptions.template && socialMediaPlatforms.includes(qrOptions.template as SocialMediaPlatform)) {
+    if (qrOptions.template && SOCIAL_MEDIA_PLATFORMS.includes(qrOptions.template as SocialMediaPlatform)) {
       return { isPro: true, featureName: 'Social Media QR Codes' }
     }
     
@@ -658,31 +772,33 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     return { isPro: false, featureName: '' }
   }
 
-  const handleGenerate = async () => {
-    // Require authentication before generating any QR code
-    if (!userId) {
-      const { toast } = await import("sonner")
-      toast.info("Please sign up to generate QR codes.")
-      router.push("/auth/signup")
-      return
+  const premiumTabNames: Record<string, string> = {
+    social: 'Social media QR templates',
+    upi: 'UPI payment QR codes',
+    dynamic: 'Dynamic QR codes',
+  }
+
+  const handleTabChange = (value: string) => {
+    if (['social', 'upi', 'dynamic'].includes(value)) {
+      if (!requirePlanResolution()) return
+      if (isGuest) {
+        handlePremiumAccessPrompt(premiumTabNames[value] || 'this feature')
+        return
+      }
     }
-    
-    // Check if free user is trying to use restricted features
-    if (userPlan === 'FREE') {
+    setActiveTab(value)
+  }
+
+  const handleGenerate = async () => {
+    if (!requirePlanResolution()) return
+
+    if (isFreeTier) {
       const proCheck = isUsingProFeature()
       if (proCheck.isPro) {
-        toast.info(`Unlock ${proCheck.featureName} with a paid plan. Upgrade now to generate your QR code!`, {
-          duration: 4000,
-          action: {
-            label: 'Upgrade',
-            onClick: () => router.push('/pricing')
-          }
-        })
-        router.push('/pricing')
+        handlePremiumAccessPrompt(proCheck.featureName || 'this feature')
         return
       }
       
-      // Force watermark ON for free users
       if (!qrOptions.watermark) {
         setQrOptions(prev => ({ ...prev, watermark: true }))
       }
@@ -691,13 +807,11 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     // Validate input based on mode
     if (isUpiPayment) {
       if (!upiId.trim()) {
-        const { toast } = await import("sonner")
         toast.error("Please enter a UPI ID to generate QR code")
         return
       }
     } else {
       if (!url.trim()) {
-        const { toast } = await import("sonner")
         toast.error("Please enter a URL or text to generate QR code")
         return
       }
@@ -705,133 +819,133 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     
     setIsGenerating(true)
     
+    if (!userId) {
+      try {
+        toast.success("Your QR code is ready! Sign in to save it and unlock analytics.")
+      } finally {
+        setIsGenerating(false)
+        setShowGuestUpsell(true)
+      }
+      return
+    }
+    
     try {
-      // Save QR code to database if user is logged in
-      if (userId) {
-        const formData = new FormData()
-        
-        // Determine the actual URL/data to save
-        let actualUrl = url
-        let actualTitle = title || url
-        
-        if (isUpiPayment && upiId) {
-          actualUrl = generateUpiUrl(upiId, upiAmount, upiMerchantName, upiTransactionNote)
-          actualTitle = title || `UPI Payment - ${upiId}`
-        }
-        
-        formData.append("url", actualUrl)
-        formData.append("title", actualTitle)
-        formData.append("foregroundColor", qrOptions.foregroundColor || "#000000")
-        formData.append("backgroundColor", qrOptions.backgroundColor || "#ffffff")
-        formData.append("dotType", qrOptions.dotType || "square")
-        formData.append("cornerType", qrOptions.cornerType || "square")
-        formData.append("eyePattern", qrOptions.eyePattern || "square")
-        formData.append("hasWatermark", (qrOptions.watermark || false).toString())
-        formData.append("isDynamic", isDynamic.toString())
-        formData.append("shape", qrOptions.shape || "square")
-        formData.append("template", qrOptions.template || "")
-        
-        if (dynamicContent) {
-          formData.append("dynamicContent", dynamicContent)
-        }
-        if (expiresAt) {
-          formData.append("expiresAt", expiresAt)
-        }
-        if (maxScans) {
-          formData.append("maxScans", maxScans)
-        }
-        if (redirectUrl) {
-          formData.append("redirectUrl", redirectUrl)
-        }
-        
-        if (qrOptions.gradient) {
-          formData.append("gradient", JSON.stringify(qrOptions.gradient))
-        }
-        if (qrOptions.sticker) {
-          formData.append("sticker", JSON.stringify(qrOptions.sticker))
-        }
-        if (qrOptions.effects) {
-          formData.append("effects", JSON.stringify(qrOptions.effects))
-        }
+      const formData = new FormData()
+      
+      // Determine the actual URL/data to save
+      let actualUrl = url
+      let actualTitle = title || url
+      
+      if (isUpiPayment && upiId) {
+        actualUrl = generateUpiUrl(upiId, upiAmount, upiMerchantName, upiTransactionNote)
+        actualTitle = title || `UPI Payment - ${upiId}`
+      }
+      
+      formData.append("url", actualUrl)
+      formData.append("title", actualTitle)
+      formData.append("foregroundColor", qrOptions.foregroundColor || "#000000")
+      formData.append("backgroundColor", qrOptions.backgroundColor || "#ffffff")
+      formData.append("dotType", qrOptions.dotType || "square")
+      formData.append("cornerType", qrOptions.cornerType || "square")
+      formData.append("eyePattern", qrOptions.eyePattern || "square")
+      formData.append("hasWatermark", (qrOptions.watermark || false).toString())
+      formData.append("isDynamic", isDynamic.toString())
+      formData.append("shape", qrOptions.shape || "square")
+      formData.append("template", qrOptions.template || "")
+      
+      if (dynamicContent) {
+        formData.append("dynamicContent", dynamicContent)
+      }
+      if (expiresAt) {
+        formData.append("expiresAt", expiresAt)
+      }
+      if (maxScans) {
+        formData.append("maxScans", maxScans)
+      }
+      if (redirectUrl) {
+        formData.append("redirectUrl", redirectUrl)
+      }
+      
+      if (qrOptions.gradient) {
+        formData.append("gradient", JSON.stringify(qrOptions.gradient))
+      }
+      if (qrOptions.sticker) {
+        formData.append("sticker", JSON.stringify(qrOptions.sticker))
+      }
+      if (qrOptions.effects) {
+        formData.append("effects", JSON.stringify(qrOptions.effects))
+      }
 
-        // Attach logo file if available so backend persists it and returns logoUrl
-        if (logoFile) {
-          formData.append("logo", logoFile)
+      // Attach logo file if available so backend persists it and returns logoUrl
+      const logoToUpload = logoFile || generatedLogoFile
+      if (logoToUpload) {
+        formData.append("logo", logoToUpload)
+      }
+
+      const response = await fetch("/api/qr-codes", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (response.ok) {
+        const savedQrCode = await response.json()
+        if (isDynamic && savedQrCode.id) {
+          const qrCodeUrl = `${window.location.origin}/qr/${savedQrCode.id}`
+          
+          // Update the QR code data
+          if (qrGeneratorRef.current?.updateData) {
+            qrGeneratorRef.current.updateData(qrCodeUrl)
+          }
         }
-
-        const response = await fetch("/api/qr-codes", {
-          method: "POST",
-          body: formData,
-        })
-
-        if (response.ok) {
-          const savedQrCode = await response.json()
-          if (isDynamic && savedQrCode.id) {
-            const qrCodeUrl = `${window.location.origin}/qr/${savedQrCode.id}`
-            
-            // Update the QR code data
-            if (qrGeneratorRef.current?.updateData) {
-              qrGeneratorRef.current.updateData(qrCodeUrl)
-            }
+        
+        toast.success("QR code saved successfully!")
+        router.push("/dashboard")
+      } else {
+        // Safely parse error response
+        let errorMessage = "Failed to save QR code"
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorData.message || errorMessage
+          
+          // Handle specific error cases
+          if (response.status === 402 && (errorData.error === 'no_credits' || errorData.code === 'no_credits')) {
+            toast.error("You have no credits left. Please purchase more credits to continue.")
+            router.push("/pricing")
+            return
           }
           
-          // Show success message
-          const { toast } = await import("sonner")
-          toast.success("QR code saved successfully!")
+          if (response.status === 401 || response.status === 403) {
+            errorMessage = errorData.message || "Authentication required. Please sign in."
+            toast.error(errorMessage)
+            router.push("/auth/signin")
+            return
+          }
           
-          // Redirect to dashboard
-          router.push("/dashboard")
-        } else {
-          // Safely parse error response
-          let errorMessage = "Failed to save QR code"
+          if (response.status === 429) {
+            errorMessage = "Too many requests. Please try again later."
+          }
+        } catch (parseError) {
+          // If response is not JSON, try to get text
           try {
-            const errorData = await response.json()
-            errorMessage = errorData.error || errorData.message || errorMessage
-            
-            // Handle specific error cases
-            if (response.status === 402 && (errorData.error === 'no_credits' || errorData.code === 'no_credits')) {
-              const { toast } = await import("sonner")
-              toast.error("You have no credits left. Please purchase more credits to continue.")
-              router.push("/pricing")
-              return
+            const errorText = await response.text()
+            if (errorText) {
+              errorMessage = errorText.substring(0, 200) // Limit length
             }
-            
-            if (response.status === 401 || response.status === 403) {
-              errorMessage = errorData.message || "Authentication required. Please sign in."
-              const { toast } = await import("sonner")
-              toast.error(errorMessage)
-              router.push("/auth/signin")
-              return
-            }
-            
-            if (response.status === 429) {
-              errorMessage = "Too many requests. Please try again later."
-            }
-          } catch (parseError) {
-            // If response is not JSON, try to get text
-            try {
-              const errorText = await response.text()
-              if (errorText) {
-                errorMessage = errorText.substring(0, 200) // Limit length
-              }
-            } catch (textError) {
-              // Fallback to status-based message
-              errorMessage = `Request failed with status ${response.status}`
-            }
+          } catch (textError) {
+            // Fallback to status-based message
+            errorMessage = `Request failed with status ${response.status}`
           }
-          
-          const { toast } = await import("sonner")
-          toast.error(errorMessage)
-          console.error("QR code creation failed:", {
-            status: response.status,
-            statusText: response.statusText,
-            message: errorMessage
-          })
         }
+        
+        toast.error(errorMessage)
+        console.error("QR code creation failed:", {
+          status: response.status,
+          statusText: response.statusText,
+          message: errorMessage
+        })
       }
     } catch (error) {
       console.error("Error saving QR code:", error)
-      const { toast } = await import("sonner")
       
       // Provide more specific error messages
       if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -847,22 +961,16 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   }
 
   const handleDownload = async (format: "png" | "svg") => {
-    // Check if free user is trying to download a pro feature
-    if (userPlan === 'FREE') {
+    if (!requirePlanResolution()) return
+    
+    if (isFreeTier) {
       const proCheck = isUsingProFeature()
       if (proCheck.isPro) {
-        toast.info(`Unlock ${proCheck.featureName} with a paid plan. Upgrade now to download your QR code!`, {
-          duration: 4000,
-          action: {
-            label: 'Upgrade',
-            onClick: () => router.push('/pricing')
-          }
-        })
-        router.push('/pricing')
+        handlePremiumAccessPrompt(proCheck.featureName || 'this feature')
         return
       }
     }
-    
+
     if (qrGeneratorRef.current?.download) {
       qrGeneratorRef.current.download(title || "qr-code", format, downloadQuality)
     }
@@ -884,7 +992,9 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         shadow: false,
         glow: false,
         threeD: false,
-      }
+      },
+      logo: undefined, // Clear logo on reset
+      template: undefined, // Clear template on reset
     })
     
     // Reset UPI payment fields
@@ -894,93 +1004,62 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     setUpiMerchantName("")
     setUpiTransactionNote("")
     setUpiFormat('upi-url')
+    setGeneratedLogoFile(null)
+    setLogoFile(null) // Clear uploaded logo file
   }
 
-
-  // Function to generate social media logo as base64 data URL
-  const generateSocialMediaLogoDataUrl = (platform: SocialMediaPlatform): string => {
-    const IconComponent = socialMediaIcons[platform]
-    if (!IconComponent) return ""
-    
-    // Create a temporary SVG element
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    svg.setAttribute('width', '64')
-    svg.setAttribute('height', '64')
-    svg.setAttribute('viewBox', '0 0 24 24')
-    svg.setAttribute('fill', 'none')
-    
-    // Create the SVG content directly
-    let svgContent = ''
-    
-    switch (platform) {
-      case 'instagram':
-        return '/instagram-logo.png'
-      case 'snapchat':
-        return '/snapchat-logo.webp'
-      case 'facebook':
-        svgContent = `
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2" />
-        `
-        break
-      case 'twitter':
-        svgContent = `
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#000000" />
-        `
-        break
-      case 'linkedin':
-        svgContent = `
-          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="#0077B5" />
-        `
-        break
-      case 'youtube':
-        svgContent = `
-          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="#FF0000" />
-        `
-        break
-      case 'tiktok':
-        svgContent = `
-          <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" fill="#000000" />
-        `
-        break
-      case 'whatsapp':
-        svgContent = `
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488" fill="#25D366" />
-        `
-        break
-      case 'telegram':
-        svgContent = `
-          <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" fill="#0088CC" />
-        `
-        break
-      case 'discord':
-        svgContent = `
-          <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" fill="#5865F2" />
-        `
-        break
-      default:
-        return ""
+  const prepareTemplateLogoFile = useCallback(async (imageSrc: string, templateId: string) => {
+    try {
+      if (!imageSrc) {
+        setGeneratedLogoFile(null)
+        return
+      }
+      if (imageSrc.startsWith('data:')) {
+        const file = dataUriToFile(imageSrc, `${templateId}-logo`)
+        setGeneratedLogoFile(file)
+        return
+      }
+      if (typeof window === 'undefined') {
+        setGeneratedLogoFile(null)
+        return
+      }
+      const resolvedSrc = imageSrc.startsWith('http') || imageSrc.startsWith('blob:')
+        ? imageSrc
+        : `${window.location.origin}${imageSrc}`
+      const response = await fetch(resolvedSrc)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch template logo: ${response.status}`)
+      }
+      const blob = await response.blob()
+      const extension = blob.type?.split('/')?.pop() || 'png'
+      const fileName = `${templateId}-logo.${extension}`
+      const file = new File([blob], fileName, { type: blob.type || 'image/png' })
+      setGeneratedLogoFile(file)
+    } catch (error) {
+      console.warn('Unable to prepare template logo file:', error)
+      setGeneratedLogoFile(null)
     }
-    
-    svg.innerHTML = svgContent
-    
-    // Convert SVG to data URL
-    const svgString = new XMLSerializer().serializeToString(svg)
-    const dataUrl = `data:image/svg+xml;base64,${btoa(svgString)}`
-    
-    return dataUrl
-  }
+  }, [])
+
+
 
   const handleTemplateSelect = (templateId: QRTemplate) => {
     const template = QR_TEMPLATES[templateId]
     if (template) {
       // Check if this is a social media template
-      const socialMediaPlatforms: SocialMediaPlatform[] = ['instagram', 'facebook', 'snapchat', 'twitter', 'linkedin', 'youtube', 'tiktok', 'whatsapp', 'telegram', 'discord']
-      
       let logoConfig = qrOptions.logo
       
       // If it's a social media template, add the platform logo to the center
-      if (socialMediaPlatforms.includes(templateId as SocialMediaPlatform)) {
-        const logoDataUrl = generateSocialMediaLogoDataUrl(templateId as SocialMediaPlatform)
+      if (SOCIAL_MEDIA_PLATFORMS.includes(templateId as SocialMediaPlatform)) {
+        if (!requirePlanResolution()) {
+          return
+        }
+        if (isGuest) {
+          handlePremiumAccessPrompt('Social media QR codes')
+          return
+        }
+        
+        const logoDataUrl = getSocialMediaLogoDataUrl(templateId as SocialMediaPlatform)
         if (logoDataUrl) {
           logoConfig = {
             image: logoDataUrl,
@@ -988,11 +1067,18 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
             margin: 5,
             opacity: 1
           }
+          void prepareTemplateLogoFile(logoDataUrl, templateId)
         }
       } else {
-        // Clear logo for non-social media templates unless user has uploaded a custom logo
-        if (!qrOptions.logo?.image || !qrOptions.logo.image.startsWith('data:image/')) {
+        // Clear logo for non-social media templates unless user has manually uploaded a custom logo file
+        // Only keep logo if user has manually uploaded one (tracked by logoFile state)
+        if (logoFile) {
+          // User has uploaded a logo, keep it
+          logoConfig = qrOptions.logo
+        } else {
+          // No user upload, clear any template-generated logo
           logoConfig = undefined
+          setGeneratedLogoFile(null)
         }
       }
       
@@ -1024,7 +1110,8 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
         <div className="text-center space-y-2 mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold">QR Code Generator</h1>
@@ -1048,7 +1135,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="basic" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <Tabs defaultValue="basic" value={activeTab} onValueChange={handleTabChange} className="w-full">
                 {/* Mobile: Better spaced grid, Desktop: Standard grid */}
                 <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2.5 p-2.5 sm:gap-1.5 sm:p-1.5 bg-muted/50 sm:bg-muted">
                   <TabsTrigger 
@@ -1121,21 +1208,19 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     <div className="space-y-0.5 flex-1">
                       <Label className="text-sm sm:text-base">BotrixAI Watermark</Label>
                       <p className="text-xs sm:text-sm text-muted-foreground">
-                        {userPlan === 'FREE' 
-                          ? "Watermark is required for free plan. Upgrade to remove it."
-                          : "Add our watermark to your QR code"
-                        }
+                        {isPlanLoading
+                          ? "Checking your plan..."
+                          : isFreeTier
+                            ? "Watermark is required for free users. Sign in or upgrade to remove it."
+                            : "Add our watermark to your QR code"}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {userPlan === 'FREE' && (
+                      {!isPlanLoading && isFreeTier && (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            toast.info("Remove watermark is available in paid plans. Upgrade to unlock this feature.")
-                            router.push('/pricing')
-                          }}
+                          onClick={() => handlePremiumAccessPrompt('Watermark removal')}
                           className="text-xs whitespace-nowrap"
                         >
                           Upgrade
@@ -1144,14 +1229,14 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                       <Switch
                         checked={qrOptions.watermark || false}
                         onCheckedChange={(checked) => {
-                          if (userPlan === 'FREE') {
-                            toast.info("Watermark removal is available in paid plans. Upgrade to unlock this feature.")
-                            router.push('/pricing')
+                          if (!requirePlanResolution()) return
+                          if (isFreeTier) {
+                            handlePremiumAccessPrompt('Watermark removal')
                             return
                           }
                           setQrOptions(prev => ({ ...prev, watermark: checked }))
                         }}
-                        disabled={userPlan === 'FREE'}
+                        disabled={isPlanLoading || isFreeTier}
                       />
                     </div>
                   </div>
@@ -1375,7 +1460,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             Social Media QR codes are available in paid plans. You can explore all features, but upgrading is required to generate and download.
                           </p>
                           <Button 
-                            onClick={() => router.push('/pricing')} 
+                            onClick={() => handlePremiumAccessPrompt('Social media QR codes')} 
                             size="sm"
                             className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm w-full sm:w-auto"
                           >
@@ -1565,7 +1650,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             UPI Payment QR codes are available in paid plans. You can explore all features, but upgrading is required to generate and download.
                           </p>
                           <Button 
-                            onClick={() => router.push('/pricing')} 
+                            onClick={() => handlePremiumAccessPrompt('UPI payment QR codes')} 
                             size="sm"
                             className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm w-full sm:w-auto"
                           >
@@ -1589,7 +1674,14 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                         </div>
                         <Switch
                           checked={isUpiPayment}
-                          onCheckedChange={setIsUpiPayment}
+                          onCheckedChange={(checked) => {
+                            if (!requirePlanResolution()) return
+                            if (isFreeTier) {
+                              handlePremiumAccessPrompt('UPI payment QR codes')
+                              return
+                            }
+                            setIsUpiPayment(checked)
+                          }}
                     />
                   </div>
 
@@ -1791,7 +1883,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             Dynamic QR codes are available in paid plans. You can explore all features, but upgrading is required to generate and download.
                           </p>
                           <Button 
-                            onClick={() => router.push('/pricing')} 
+                            onClick={() => handlePremiumAccessPrompt('Dynamic QR codes')} 
                             size="sm"
                             className="bg-purple-600 hover:bg-purple-700 text-white text-xs sm:text-sm w-full sm:w-auto"
                           >
@@ -1815,7 +1907,14 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     </div>
                     <Switch
                       checked={isDynamic}
-                      onCheckedChange={setIsDynamic}
+                      onCheckedChange={(checked) => {
+                        if (!requirePlanResolution()) return
+                        if (isFreeTier) {
+                          handlePremiumAccessPrompt('Dynamic QR codes')
+                          return
+                        }
+                        setIsDynamic(checked)
+                      }}
                     />
                   </div>
 
@@ -2035,7 +2134,38 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
+      <Dialog open={showGuestUpsell} onOpenChange={setShowGuestUpsell}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sign in to unlock more features</DialogTitle>
+            <DialogDescription>
+              Save your QR codes, track analytics, and access social media, UPI, and dynamic QR capabilities when you create a free account.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowGuestUpsell(false)
+                router.push('/auth/signin')
+              }}
+            >
+              I already have an account
+            </Button>
+            <Button
+              onClick={() => {
+                setShowGuestUpsell(false)
+                router.push('/auth/signup')
+              }}
+            >
+              Sign up free
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

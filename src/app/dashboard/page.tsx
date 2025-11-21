@@ -23,6 +23,7 @@ import { loadQRCodeStyling } from "@/lib/qr-loader"
 import DynamicQRManager from "@/components/dynamic-qr-manager"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { addBotrixLogoToQR } from "@/lib/qr-watermark"
+import { getSocialMediaLogoDataUrl, isSocialMediaTemplate } from "@/lib/social-media-logos"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import FolderManager from "@/components/folder-manager"
@@ -77,6 +78,9 @@ function QRCodePreview({ qrCode }: { qrCode: QRCodeData }) {
       const formattedBackgroundColor = qrCode.backgroundColor.startsWith('#') 
         ? qrCode.backgroundColor 
         : `#${qrCode.backgroundColor}`
+      const resolvedLogo = isSocialMediaTemplate(qrCode.template)
+        ? getSocialMediaLogoDataUrl(qrCode.template)
+        : qrCode.logoUrl
       
       if (qrCodeRef.current) {
         qrCodeRef.current = null
@@ -101,7 +105,7 @@ function QRCodePreview({ qrCode }: { qrCode: QRCodeData }) {
             height: 80,
             type: "svg",
             data: qrData,
-            image: qrCode.logoUrl || undefined,
+            image: resolvedLogo || undefined,
             dotsOptions: {
               color: qrCode.foregroundColor,
               type: qrCode.dotType as 'rounded' | 'dots' | 'classy' | 'classy-rounded' | 'square' | 'extra-rounded',

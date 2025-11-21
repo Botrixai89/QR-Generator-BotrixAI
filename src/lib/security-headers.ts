@@ -21,9 +21,9 @@ export function addSecurityHeaders(response: NextResponse, _: NextRequest): Next
     "default-src 'self'",
     // Allow Razorpay scripts while keeping strict defaults
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://*.razorpay.com", // Next.js + Razorpay
-    "style-src 'self' 'unsafe-inline'", // Required for CSS-in-JS
-    "img-src 'self' data: https:",
-    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Allow Google Fonts stylesheet
+    "img-src 'self' data: https: blob:",
+    "font-src 'self' data: https://fonts.gstatic.com",
     // Permit API/XHR to Supabase and Razorpay services (api, lumberjack, checkout)
     "connect-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://checkout.razorpay.com https://*.razorpay.com",
     // Allow Razorpay to open iframes (api/checkout domains)
