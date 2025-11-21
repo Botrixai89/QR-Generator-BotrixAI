@@ -8,7 +8,7 @@ import { POST as createPaymentOrder } from '@/app/api/razorpay/create/route'
 import { POST as verifyPayment } from '@/app/api/razorpay/verify/route'
 import { GET as getPaymentStatus } from '@/app/api/razorpay/status/route'
 import { createTestUser, getUserCredits, cleanupTestUser } from '../utils/test-db'
-import type { NextRequest } from 'next/server'
+import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 
 // Mock NextAuth session

@@ -362,19 +362,16 @@ describe('Supabase Storage Integration', () => {
     })
 
     it('should handle invalid file paths', async () => {
-      const { error } = await testSupabase.storage
+      // getPublicUrl is synchronous and always returns a URL
+      // Supabase handles path sanitization internally
+      const { data } = testSupabase.storage
         .from('qr-logos')
         .getPublicUrl('../invalid-path/../../file.png')
 
-      // Should still return URL (Supabase handles path sanitization)
-      // But we can check the URL doesn't contain dangerous patterns
-      if (!error) {
-        const url = testSupabase.storage
-          .from('qr-logos')
-          .getPublicUrl('../invalid-path/../../file.png')
-        
-        expect(url.data.publicUrl).not.toContain('../')
-      }
+      // Should return URL without dangerous path patterns
+      expect(data.publicUrl).toBeDefined()
+      expect(data.publicUrl).not.toContain('../')
+      expect(data.publicUrl).toMatch(/^https?:\/\//)
     })
   })
 })

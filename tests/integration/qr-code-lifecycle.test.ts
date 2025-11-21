@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { POST as createQRCode, GET as getQRCodes } from '@/app/api/qr-codes/route'
 import { DELETE as deleteQRCode } from '@/app/api/qr-codes/[id]/route'
 import { createTestUser, getUserCredits, getUserQRCodes, getQRCode, cleanupTestUser } from '../utils/test-db'
-import type { NextRequest } from 'next/server'
+import { NextRequest } from 'next/server'
 
 // Mock NextAuth session
 vi.mock('next-auth/next', () => ({
