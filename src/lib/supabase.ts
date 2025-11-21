@@ -8,7 +8,14 @@ const rawServerSupabaseUrl = (process.env.SUPABASE_URL || '').trim()
 function isValidUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
-    return parsed.protocol === 'https:' && !!parsed.hostname
+    // Allow https URLs in production/development
+    // Allow http://localhost URLs in test environments
+    const isTestEnv = process.env.NODE_ENV === 'test'
+    const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+    return (
+      (parsed.protocol === 'https:' && !!parsed.hostname) ||
+      (isTestEnv && parsed.protocol === 'http:' && isLocalhost)
+    )
   } catch {
     return false
   }
@@ -30,10 +37,11 @@ const hasValidPublicConfig = Boolean(publicSupabaseUrl && rawSupabaseAnonKey)
 if ((!publicSupabaseUrl || !rawSupabaseAnonKey) && process.env.NODE_ENV === 'development') {
   console.warn('⚠️  Missing Supabase env vars. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local')
 }
-if (rawPublicSupabaseUrl && !isValidUrl(rawPublicSupabaseUrl)) {
+// Only show validation errors outside of test environment
+if (rawPublicSupabaseUrl && !isValidUrl(rawPublicSupabaseUrl) && process.env.NODE_ENV !== 'test') {
   console.error('❌ Invalid NEXT_PUBLIC_SUPABASE_URL. Ensure it is a full https URL like https://xxx.supabase.co')
 }
-if (rawServerSupabaseUrl && !isValidUrl(rawServerSupabaseUrl)) {
+if (rawServerSupabaseUrl && !isValidUrl(rawServerSupabaseUrl) && process.env.NODE_ENV !== 'test') {
   console.error('❌ Invalid SUPABASE_URL. Ensure it is a full https URL like https://xxx.supabase.co')
 }
 if (!adminSupabaseUrl && process.env.NODE_ENV === 'development') {

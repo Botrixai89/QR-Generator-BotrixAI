@@ -31,9 +31,62 @@ export const testSupabase = hasValidConfig && supabaseUrl && supabaseServiceKey
     })
   : null
 
-// Helper to check if Supabase is available
+// Cache for Supabase availability check
+let supabaseAvailabilityCache: boolean | null = null
+
+// Helper to check if Supabase is available (with connection check)
+export async function isSupabaseAvailable(): Promise<boolean> {
+  if (!hasValidConfig || !testSupabase) {
+    return false
+  }
+  
+  // If we've already checked, return cached result
+  if (supabaseAvailabilityCache !== null) {
+    return supabaseAvailabilityCache
+  }
+  
+  // Try a simple query to check if Supabase is reachable
+  try {
+    const { error } = await testSupabase.from('User').select('id').limit(1)
+    // If we get a response (even with an error about missing table), Supabase is reachable
+    // Only fail if it's a network/connection error
+    const isAvailable = error === null || (error.code !== 'PGRST301' && !error.message.includes('fetch failed'))
+    supabaseAvailabilityCache = isAvailable
+    return isAvailable
+  } catch (err: any) {
+    // Network errors mean Supabase is not available
+    if (err?.message?.includes('fetch failed') || err?.code === 'ECONNREFUSED') {
+      supabaseAvailabilityCache = false
+      return false
+    }
+    // Other errors might mean Supabase is available but there's a different issue
+    supabaseAvailabilityCache = true
+    return true
+  }
+}
+
+// Helper to check if Supabase is configured (synchronous check for skipIf)
+// This is a best-effort check - actual availability is checked asynchronously in tests
 export function isSupabaseConfigured(): boolean {
-  return hasValidConfig && testSupabase !== null
+  if (!hasValidConfig || !testSupabase) {
+    return false
+  }
+  
+  // In CI, if we're using default test values, assume Supabase isn't available
+  // This prevents tests from running when secrets aren't configured
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
+  const isDefaultTestKey = supabaseServiceKey === 'test-service-role-key' || 
+                           supabaseServiceKey === 'test-anon-key' ||
+                           !supabaseServiceKey ||
+                           supabaseServiceKey.length < 20 // Real keys are much longer
+  
+  // If in CI and using default/placeholder test values, Supabase is likely not available
+  // Only skip if we're clearly using test defaults, not real secrets
+  if (isCI && isDefaultTestKey) {
+    return false
+  }
+  
+  return true
 }
 
 /**
