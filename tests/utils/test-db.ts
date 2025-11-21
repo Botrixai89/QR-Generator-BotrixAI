@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -128,9 +129,13 @@ export async function createTestUser(overrides: {
   const plan = overrides.plan || 'FREE'
   const credits = overrides.credits ?? 10
   
+  // Generate UUID explicitly since default might not work in all Supabase configurations
+  const id = randomUUID()
+  
   const { data, error } = await testSupabase
     .from('User')
     .insert({
+      id, // Explicitly set ID to ensure it's not null
       email,
       name,
       plan,
