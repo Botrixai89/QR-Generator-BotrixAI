@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { POST as createPaymentOrder } from '@/app/api/razorpay/create/route'
 import { POST as verifyPayment } from '@/app/api/razorpay/verify/route'
 import { GET as getPaymentStatus } from '@/app/api/razorpay/status/route'
-import { createTestUser, getUserCredits, cleanupTestUser } from '../utils/test-db'
+import { createTestUser, getUserCredits, cleanupTestUser, isSupabaseConfigured } from '../utils/test-db'
 import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 
@@ -17,6 +17,8 @@ vi.mock('next-auth/next', () => ({
 }))
 
 import { getServerSession } from 'next-auth/next'
+
+const shouldSkip = !isSupabaseConfigured()
 
 // Mock Razorpay SDK
 vi.mock('razorpay', () => {
@@ -56,7 +58,7 @@ vi.mock('razorpay', () => {
   }
 })
 
-describe('Payment Flow Integration Tests', () => {
+describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
   let testUserId: string
   let testUserEmail: string
 

@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { POST as createQRCode, GET as getQRCodes } from '@/app/api/qr-codes/route'
 import { DELETE as deleteQRCode } from '@/app/api/qr-codes/[id]/route'
-import { createTestUser, getUserCredits, getUserQRCodes, getQRCode, cleanupTestUser } from '../utils/test-db'
+import { createTestUser, getUserCredits, getUserQRCodes, getQRCode, cleanupTestUser, isSupabaseConfigured } from '../utils/test-db'
 import { NextRequest } from 'next/server'
 
 // Mock NextAuth session
@@ -16,7 +16,9 @@ vi.mock('next-auth/next', () => ({
 
 import { getServerSession } from 'next-auth/next'
 
-describe('QR Code Lifecycle Integration Tests', () => {
+const shouldSkip = !isSupabaseConfigured()
+
+describe.skipIf(shouldSkip)('QR Code Lifecycle Integration Tests', () => {
   let testUserId: string
   let testUserEmail: string
 
