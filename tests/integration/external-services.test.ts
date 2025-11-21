@@ -230,6 +230,10 @@ describe.skipIf(shouldSkip)('Supabase Storage Integration', () => {
     })
 
     it('should upload file to storage', async () => {
+      if (!testSupabase) {
+        throw new Error('Supabase not configured')
+      }
+      
       // Create a test image file (1x1 PNG)
       const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
       const buffer = Buffer.from(pngBase64, 'base64')
@@ -252,12 +256,18 @@ describe.skipIf(shouldSkip)('Supabase Storage Integration', () => {
       expect(data.path).toBe(fileName)
 
       // Clean up: delete the test file
-      await testSupabase.storage
-        .from('qr-logos')
-        .remove([fileName])
+      if (testSupabase) {
+        await testSupabase.storage
+          .from('qr-logos')
+          .remove([fileName])
+      }
     })
 
     it('should get public URL for uploaded file', async () => {
+      if (!testSupabase) {
+        throw new Error('Supabase not configured')
+      }
+      
       // Create a test file
       const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
       const buffer = Buffer.from(pngBase64, 'base64')
@@ -285,9 +295,11 @@ describe.skipIf(shouldSkip)('Supabase Storage Integration', () => {
       expect(urlData.publicUrl).toMatch(/^https?:\/\//)
 
       // Clean up
-      await testSupabase.storage
-        .from('qr-logos')
-        .remove([fileName])
+      if (testSupabase) {
+        await testSupabase.storage
+          .from('qr-logos')
+          .remove([fileName])
+      }
     })
 
     it('should validate file type restrictions', () => {
@@ -331,6 +343,10 @@ describe.skipIf(shouldSkip)('Supabase Storage Integration', () => {
     })
 
     it('should handle file deletion', async () => {
+      if (!testSupabase) {
+        throw new Error('Supabase not configured')
+      }
+      
       // Upload a test file
       const pngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
       const buffer = Buffer.from(pngBase64, 'base64')
@@ -359,6 +375,10 @@ describe.skipIf(shouldSkip)('Supabase Storage Integration', () => {
 
   describe('Storage Error Handling', () => {
     it('should handle missing bucket gracefully', async () => {
+      if (!testSupabase) {
+        throw new Error('Supabase not configured')
+      }
+      
       const { error } = await testSupabase.storage
         .from('non-existent-bucket')
         .list()
@@ -368,6 +388,10 @@ describe.skipIf(shouldSkip)('Supabase Storage Integration', () => {
     })
 
     it('should handle invalid file paths', async () => {
+      if (!testSupabase) {
+        throw new Error('Supabase not configured')
+      }
+      
       // getPublicUrl is synchronous and always returns a URL
       // Note: Supabase returns the URL as-is, path sanitization happens server-side
       const { data } = testSupabase.storage

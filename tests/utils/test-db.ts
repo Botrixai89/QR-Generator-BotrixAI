@@ -20,9 +20,9 @@ function isValidSupabaseUrl(url: string): boolean {
   }
 }
 
-const hasValidConfig = supabaseUrl && supabaseServiceKey && isValidSupabaseUrl(supabaseUrl)
+const hasValidConfig = Boolean(supabaseUrl && supabaseServiceKey && isValidSupabaseUrl(supabaseUrl))
 
-export const testSupabase = hasValidConfig
+export const testSupabase = hasValidConfig && supabaseUrl && supabaseServiceKey
   ? createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,

@@ -106,6 +106,10 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
 
       // Verify payment record was created in database
       const { testSupabase } = await import('../utils/test-db')
+      if (!testSupabase) {
+        throw new Error('Supabase not configured')
+      }
+      
       const { data: payment } = await testSupabase
         .from('payments')
         .select('*')
@@ -172,6 +176,10 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
 
       // Verify user plan was updated
       const { testSupabase } = await import('../utils/test-db')
+      if (!testSupabase) {
+        throw new Error('Supabase not configured')
+      }
+      
       const { data: user } = await testSupabase
         .from('User')
         .select('plan')

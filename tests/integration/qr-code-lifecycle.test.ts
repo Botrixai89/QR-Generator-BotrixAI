@@ -91,6 +91,10 @@ describe.skipIf(shouldSkip)('QR Code Lifecycle Integration Tests', () => {
     it('should fail when user has no credits', async () => {
       // Set user credits to 0
       const { testSupabase } = await import('../utils/test-db')
+      if (!testSupabase) {
+        throw new Error('Supabase not configured')
+      }
+      
       await testSupabase
         .from('User')
         .update({ credits: 0 })
@@ -153,6 +157,10 @@ describe.skipIf(shouldSkip)('QR Code Lifecycle Integration Tests', () => {
     it('should prevent dynamic QR creation for FREE users', async () => {
       // Change user to FREE plan
       const { testSupabase } = await import('../utils/test-db')
+      if (!testSupabase) {
+        throw new Error('Supabase not configured')
+      }
+      
       await testSupabase
         .from('User')
         .update({ plan: 'FREE' })
@@ -252,6 +260,10 @@ describe.skipIf(shouldSkip)('QR Code Lifecycle Integration Tests', () => {
     it('should enforce FREE plan QR code limit', async () => {
       // Change user to FREE plan (limit: 10 QR codes)
       const { testSupabase } = await import('../utils/test-db')
+      if (!testSupabase) {
+        throw new Error('Supabase not configured')
+      }
+      
       await testSupabase
         .from('User')
         .update({ plan: 'FREE', credits: 100 })
