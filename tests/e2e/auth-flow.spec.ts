@@ -101,9 +101,10 @@ test.describe('User Signup and Authentication', () => {
     const testPassword = process.env.E2E_TEST_PASSWORD || 'password123'
 
     await page.goto('/auth/signin')
-
-    await page.fill('input[name="email"], input[type="email"]', testEmail)
-    await page.fill('input[name="password"], input[type="password"]', testPassword)
+    // Wait for the form to be visible
+    await page.waitForSelector('#signin-email, input[name="signin-email"], input[type="email"]', { timeout: 10000 })
+    await page.fill('#signin-email, input[name="signin-email"], input[type="email"]', testEmail)
+    await page.fill('#signin-password, input[name="signin-password"], input[type="password"]', testPassword)
     await page.click('button[type="submit"], button:has-text("Sign In")')
     
     // Should redirect to dashboard
@@ -128,8 +129,10 @@ test.describe('QR Code Creation and Management', () => {
     const testPassword = process.env.E2E_TEST_PASSWORD || 'password123'
 
     await page.goto('/auth/signin')
-    await page.fill('input[name="email"]', testEmail)
-    await page.fill('input[name="password"]', testPassword)
+    // Wait for the form to be visible
+    await page.waitForSelector('#signin-email, input[name="signin-email"], input[type="email"]', { timeout: 10000 })
+    await page.fill('#signin-email, input[name="signin-email"], input[type="email"]', testEmail)
+    await page.fill('#signin-password, input[name="signin-password"], input[type="password"]', testPassword)
     await page.click('button[type="submit"]')
     await page.waitForURL('/dashboard', { timeout: 10000 })
   })
@@ -201,8 +204,10 @@ test.describe('Upgrade Flow', () => {
     const testPassword = process.env.E2E_TEST_PASSWORD || 'password123'
 
     await page.goto('/auth/signin')
-    await page.fill('input[name="email"]', testEmail)
-    await page.fill('input[name="password"]', testPassword)
+    // Wait for the form to be visible
+    await page.waitForSelector('#signin-email, input[name="signin-email"], input[type="email"]', { timeout: 10000 })
+    await page.fill('#signin-email, input[name="signin-email"], input[type="email"]', testEmail)
+    await page.fill('#signin-password, input[name="signin-password"], input[type="password"]', testPassword)
     await page.click('button[type="submit"]')
     await page.waitForURL('/dashboard', { timeout: 10000 })
   })
@@ -267,8 +272,10 @@ test.describe('Premium Features (After Upgrade)', () => {
     const testPassword = process.env.E2E_TEST_PASSWORD || 'password123'
 
     await page.goto('/auth/signin')
-    await page.fill('input[name="email"]', testEmail)
-    await page.fill('input[name="password"]', testPassword)
+    // Wait for the form to be visible
+    await page.waitForSelector('#signin-email, input[name="signin-email"], input[type="email"]', { timeout: 10000 })
+    await page.fill('#signin-email, input[name="signin-email"], input[type="email"]', testEmail)
+    await page.fill('#signin-password, input[name="signin-password"], input[type="password"]', testPassword)
     await page.click('button[type="submit"]')
     await page.waitForURL('/dashboard', { timeout: 10000 })
   })
@@ -381,8 +388,10 @@ test.describe('Plan Limits and Restrictions', () => {
     const testPassword = process.env.E2E_TEST_PASSWORD || 'password123'
 
     await page.goto('/auth/signin')
-    await page.fill('input[name="email"]', testEmail)
-    await page.fill('input[name="password"]', testPassword)
+    // Wait for the form to be visible
+    await page.waitForSelector('#signin-email, input[name="signin-email"], input[type="email"]', { timeout: 10000 })
+    await page.fill('#signin-email, input[name="signin-email"], input[type="email"]', testEmail)
+    await page.fill('#signin-password, input[name="signin-password"], input[type="password"]', testPassword)
     await page.click('button[type="submit"]')
     await page.waitForURL('/dashboard', { timeout: 10000 })
   })
