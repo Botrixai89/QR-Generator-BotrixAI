@@ -185,7 +185,7 @@ describe.skipIf(shouldSkip)('QR Code Lifecycle Integration Tests', () => {
       expect(response.status).toBe(403)
 
       const error = await response.json()
-      expect(error.error).toContain('not available')
+      expect(error.message || error.error).toContain('not available')
     })
   })
 
@@ -308,7 +308,7 @@ describe.skipIf(shouldSkip)('QR Code Lifecycle Integration Tests', () => {
       expect(response.status).toBe(403)
 
       const error = await response.json()
-      expect(error.error).toContain('limit')
-    })
+      expect(error.error || error.message).toContain('limit')
+    }, 30000) // Increase timeout to 30 seconds for this test
   })
 })

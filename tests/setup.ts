@@ -28,4 +28,6 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANO
 process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key'
 process.env.NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET || 'test-secret'
 process.env.NEXTAUTH_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+process.env.RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'test_key_id'
+process.env.RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'test_key_secret'
 
