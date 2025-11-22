@@ -132,6 +132,8 @@ export async function createTestUser(overrides: {
   // Generate UUID explicitly since default might not work in all Supabase configurations
   const id = randomUUID()
   
+  const now = new Date().toISOString()
+  
   const { data, error } = await testSupabase
     .from('User')
     .insert({
@@ -140,8 +142,9 @@ export async function createTestUser(overrides: {
       name,
       plan,
       credits,
-      emailVerified: new Date().toISOString(), // emailVerified is a timestamp, not boolean
-      // createdAt and updatedAt have DEFAULT NOW() in the schema, so we don't need to set them
+      emailVerified: now, // emailVerified is a timestamp, not boolean
+      createdAt: now, // Explicitly set to ensure it's not null
+      updatedAt: now, // Explicitly set to ensure it's not null (required by schema)
     })
     .select()
     .single()
