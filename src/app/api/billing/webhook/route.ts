@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET
     if (!secret) {
-      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 503 })
     }
 
     const body = await request.text()
@@ -22,7 +22,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
     }
 
-    const evt = JSON.parse(body)
+    let evt
+    try {
+      evt = JSON.parse(body)
+    } catch (parseError) {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
     const eventId = evt?.payload?.payment?.entity?.id || evt?.payload?.subscription?.entity?.id || evt?.id || 'unknown'
     const recorded = await recordIdempotentWebhook('razorpay', String(eventId))
     if (!recorded) {

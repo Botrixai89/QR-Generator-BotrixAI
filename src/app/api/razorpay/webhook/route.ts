@@ -73,9 +73,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
+    if (!webhookSecret) {
+      console.error("Razorpay webhook secret not configured")
+      return NextResponse.json(
+        { error: "Webhook secret not configured" },
+        { status: 503 }
+      )
+    }
+
     // Verify webhook signature
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET!)
+      .createHmac("sha256", webhookSecret)
       .update(body)
       .digest("hex")
 
@@ -87,7 +96,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const event = JSON.parse(body)
+    let event
+    try {
+      event = JSON.parse(body)
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: "Invalid JSON body" },
+        { status: 400 }
+      )
+    }
     console.log(`Webhook received: ${event.event}`)
 
     // Handle payment.authorized event (for UPI and other payment methods)
