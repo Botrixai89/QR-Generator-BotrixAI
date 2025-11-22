@@ -25,12 +25,16 @@ vi.mock('razorpay', () => {
   return {
     default: vi.fn().mockImplementation(() => ({
       orders: {
-        create: vi.fn().mockResolvedValue({
-          id: 'order_test_123',
-          amount: 100, // ₹1 in paise
-          currency: 'INR',
-          status: 'created',
-          receipt: `order_${Date.now()}`,
+        create: vi.fn().mockImplementation(() => {
+          // Generate unique order ID for each call
+          const orderId = `order_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          return Promise.resolve({
+            id: orderId,
+            amount: 100, // ₹1 in paise
+            currency: 'INR',
+            status: 'created',
+            receipt: `order_${Date.now()}`,
+          })
         }),
         fetch: vi.fn().mockResolvedValue({
           id: 'order_test_123',
@@ -84,6 +88,14 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
 
   afterEach(async () => {
     if (testUserId) {
+      // Clean up payment records first
+      const { testSupabase } = await import('../utils/test-db')
+      if (testSupabase) {
+        await testSupabase
+          .from('payments')
+          .delete()
+          .eq('user_id', testUserId)
+      }
       await cleanupTestUser(testUserId)
     }
   })
@@ -143,7 +155,9 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
         body: JSON.stringify({ plan: 'FLEX' }),
       })
       const createResponse = await createPaymentOrder(createRequest)
+      expect(createResponse.status).toBe(200)
       const orderData = await createResponse.json()
+      expect(orderData.order_id).toBeDefined()
 
       // Generate valid signature
       const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || 'test_secret'
@@ -195,7 +209,9 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
         body: JSON.stringify({ plan: 'FLEX' }),
       })
       const createResponse = await createPaymentOrder(createRequest)
+      expect(createResponse.status).toBe(200)
       const orderData = await createResponse.json()
+      expect(orderData.order_id).toBeDefined()
 
       // Use invalid signature
       const verifyRequest = new NextRequest('http://localhost:3000/api/razorpay/verify', {
@@ -221,7 +237,9 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
         body: JSON.stringify({ plan: 'FLEX' }),
       })
       const createResponse = await createPaymentOrder(createRequest)
+      expect(createResponse.status).toBe(200)
       const orderData = await createResponse.json()
+      expect(orderData.order_id).toBeDefined()
 
       const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || 'test_secret'
       const body = `${orderData.order_id}|pay_test_123`

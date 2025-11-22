@@ -308,7 +308,8 @@ describe.skipIf(shouldSkip)('QR Code Lifecycle Integration Tests', () => {
       expect(response.status).toBe(403)
 
       const error = await response.json()
-      expect(error.error || error.message).toContain('limit')
+      // Check both error code and message for 'limit'
+      expect(error.error === 'PLAN_LIMIT_QR_CODES' || (error.message && error.message.toLowerCase().includes('limit'))).toBe(true)
     }, 30000) // Increase timeout to 30 seconds for this test
   })
 })
