@@ -262,7 +262,16 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
       expect(firstResponse.status).toBe(200)
 
       // Second verification (should return already processed)
-      const secondResponse = await verifyPayment(verifyRequest)
+      // Create a new request since the body can only be read once
+      const secondVerifyRequest = new NextRequest('http://localhost:3000/api/razorpay/verify', {
+        method: 'POST',
+        body: JSON.stringify({
+          razorpay_order_id: orderData.order_id,
+          razorpay_payment_id: 'pay_test_123',
+          razorpay_signature: signature,
+        }),
+      })
+      const secondResponse = await verifyPayment(secondVerifyRequest)
       expect(secondResponse.status).toBe(200)
 
       const secondData = await secondResponse.json()
