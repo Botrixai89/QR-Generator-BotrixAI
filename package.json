@@ -20,6 +20,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:smoke": "playwright test --config=playwright.smoke.config.ts",
     "test:all": "npm run typecheck && npm run lint && npm run test && npm run test:e2e",
+    "playwright:install": "playwright install --with-deps",
     "seed": "tsx scripts/seed.ts",
     "seed:dev": "tsx scripts/seed-dev.ts",
     "reset-test-db": "tsx scripts/reset-test-db.ts",

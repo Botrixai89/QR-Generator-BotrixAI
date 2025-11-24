@@ -167,7 +167,7 @@ jobs:
         run: npm ci
       
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps
 
       - name: Build application
         run: npm run build
@@ -237,7 +237,7 @@ jobs:
         run: npm ci
       
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps
       
       - name: Run smoke tests
         run: npm run test:smoke
