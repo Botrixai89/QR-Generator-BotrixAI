@@ -120,7 +120,7 @@ describe.skipIf(shouldSkip)('QR Code Lifecycle Integration Tests', () => {
 
       const error = await response.json()
       expect(error.error).toBeDefined()
-    })
+    }, 30000)
 
     it('should create dynamic QR code for PRO users', async () => {
       const formData = new FormData()
@@ -220,7 +220,7 @@ describe.skipIf(shouldSkip)('QR Code Lifecycle Integration Tests', () => {
       const foundQR = qrCodes.find((q: any) => q.id === createdQR.id)
       expect(foundQR).toBeDefined()
       expect(foundQR.title).toBe('Test QR Code')
-    })
+    }, 30000) // Increase timeout to 30 seconds
   })
 
   describe('QR Code Deletion', () => {

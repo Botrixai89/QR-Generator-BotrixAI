@@ -1,5 +1,9 @@
 import { vi } from 'vitest'
 import '@testing-library/jest-dom'
+import { config } from 'dotenv'
+
+// Load environment variables from .env.local
+config({ path: '.env.local' })
 
 // Mock Next.js modules
 vi.mock('next/navigation', () => ({

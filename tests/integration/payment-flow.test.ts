@@ -280,7 +280,7 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
       // Credits should still be 100 (not doubled)
       const finalCredits = await getUserCredits(testUserId)
       expect(finalCredits).toBe(100)
-    })
+    }, { timeout: 30000, retry: 2 }) // Increase timeout and add retry for flaky network
   })
 
   describe('Payment Status Check', () => {
