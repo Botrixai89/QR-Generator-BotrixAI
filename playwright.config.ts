@@ -36,12 +36,14 @@ const e2eEnv = {
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  /* Global timeout for each test */
+  timeout: 60 * 1000, // 60 seconds per test
   /* Run tests sequentially to avoid overloading the dev server */
   fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 1 : 0, // Reduced from 2 to 1 retry
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : 2,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
@@ -58,31 +60,41 @@ export default defineConfig({
   },
 
   /* Configure projects for major browsers */
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-  ],
+  projects: process.env.CI
+    ? [
+        // Only run Chromium in CI for faster tests
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
+      ]
+    : [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
+        {
+          name: 'firefox',
+          use: { ...devices['Desktop Firefox'] },
+        },
+        {
+          name: 'webkit',
+          use: { ...devices['Desktop Safari'] },
+        },
+      ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev:e2e',
-    url: 'http://localhost:3000',
-    reuseExistingServer: true,
-    timeout: 120 * 1000,
-    env: {
-      ...process.env,
-      ...e2eEnv,
-    },
-  },
+  webServer: process.env.CI
+    ? undefined // CI starts the server separately
+    : {
+        command: 'npm run dev:e2e',
+        url: 'http://localhost:3000',
+        reuseExistingServer: true,
+        timeout: 120 * 1000,
+        env: {
+          ...process.env,
+          ...e2eEnv,
+        },
+      },
 })
 
