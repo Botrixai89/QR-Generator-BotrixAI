@@ -839,6 +839,15 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       return
     }
 
+    // Determine the actual URL/data to save
+    let actualUrl = url
+    let actualTitle = title || url
+    
+    if (isUpiPayment && upiId) {
+      actualUrl = generateUpiUrl(upiId, upiAmount, upiMerchantName, upiTransactionNote)
+      actualTitle = title || `UPI Payment - ${upiId}`
+    }
+
     if (isClientTestMode) {
       try {
         const nowIso = new Date().toISOString()
@@ -869,15 +878,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     
     try {
       const formData = new FormData()
-      
-      // Determine the actual URL/data to save
-      let actualUrl = url
-      let actualTitle = title || url
-      
-      if (isUpiPayment && upiId) {
-        actualUrl = generateUpiUrl(upiId, upiAmount, upiMerchantName, upiTransactionNote)
-        actualTitle = title || `UPI Payment - ${upiId}`
-      }
       
       formData.append("url", actualUrl)
       formData.append("title", actualTitle)
