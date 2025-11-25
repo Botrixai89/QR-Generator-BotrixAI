@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import Link from "next/link"
+import { saveE2ETestSession } from "@/lib/e2e-test-session"
 
 export default function SignUpPage() {
   const [name, setName] = useState("")
@@ -17,6 +18,7 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const isClientTestMode = process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true"
 
   // Clear form fields on component mount to prevent auto-fill
   useEffect(() => {
@@ -50,6 +52,19 @@ export default function SignUpPage() {
     }
 
     try {
+      if (isClientTestMode) {
+        const plan = email.includes("test-user-1") ? "PRO" : "FREE"
+        saveE2ETestSession({
+          id: `test-${email}`,
+          email,
+          name: name || email.split("@")[0] || "E2E User",
+          plan: plan as "FREE" | "PRO",
+        })
+        toast.success("Account created successfully! (test mode)")
+        router.push("/dashboard")
+        return
+      }
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {

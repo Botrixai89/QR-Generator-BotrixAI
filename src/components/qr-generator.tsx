@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import type { QRTemplateConfig, QRStickerConfig } from "@/types/qr-code-advanced"
 import type { PlanName } from "@/types/billing"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -52,7 +51,9 @@ import {
 } from "lucide-react"
 import { socialMediaIcons, SocialMediaPlatform } from "@/components/social-media-icons"
 import { loadAdvancedQR } from "@/lib/qr-loader"
+import { appendTestQrCode } from "@/lib/e2e-test-storage"
 import { getSocialMediaLogoDataUrl, isSocialMediaTemplate, SOCIAL_MEDIA_PLATFORMS } from "@/lib/social-media-logos"
+import { useEffectiveSession } from "@/hooks/use-effective-session"
 import { 
   AdvancedQROptions, 
   QRShape, 
@@ -359,14 +360,18 @@ function StickerPreview({ sticker, isSelected, onClick }: {
 
 export default function QRGenerator({ userId }: QRGeneratorProps) {
   const router = useRouter()
-  const { data: session } = useSession()
+  const { session } = useEffectiveSession()
   const [url, setUrl] = useState("")
   const [title, setTitle] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isClient, setIsClient] = useState(false)
   const [downloadQuality, setDownloadQuality] = useState<'web' | 'print' | 'ultra-hd'>('ultra-hd')
   const [downloadMessage] = useState<string | null>(null)
-  const initialPlanState: PlanState = userId && session?.user ? 'LOADING' : 'GUEST'
+  const isClientTestMode = process.env.NEXT_PUBLIC_E2E_TEST_MODE === 'true'
+  const sessionUserPlan = (session?.user as { plan?: PlanState })?.plan
+  const initialPlanState: PlanState = isClientTestMode
+    ? sessionUserPlan || (userId ? 'FREE' : 'GUEST')
+    : userId && session?.user ? 'LOADING' : 'GUEST'
   const [userPlan, setUserPlan] = useState<PlanState>(initialPlanState)
   const [activeTab, setActiveTab] = useState<string>('basic')
   const [showGuestUpsell, setShowGuestUpsell] = useState(false)
@@ -443,7 +448,12 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   useEffect(() => {
     let cancelled = false
     if (!userId || !session?.user) {
-      setUserPlan('GUEST')
+      setUserPlan(sessionUserPlan || 'GUEST')
+      return
+    }
+
+    if (isClientTestMode) {
+      setUserPlan(sessionUserPlan || 'FREE')
       return
     }
 
@@ -472,7 +482,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     return () => {
       cancelled = true
     }
-  }, [userId, session?.user])
+  }, [userId, session?.user, isClientTestMode, sessionUserPlan])
 
   // Force watermark ON for users on the free tier (including guests) once plan is known
   useEffect(() => {
@@ -825,6 +835,34 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       } finally {
         setIsGenerating(false)
         setShowGuestUpsell(true)
+      }
+      return
+    }
+
+    if (isClientTestMode) {
+      try {
+        const nowIso = new Date().toISOString()
+        const generatedId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `test-${Date.now()}`
+        appendTestQrCode({
+          id: generatedId,
+          title: actualTitle,
+          url: actualUrl,
+          originalUrl: actualUrl,
+          foregroundColor: qrOptions.foregroundColor || "#000000",
+          backgroundColor: qrOptions.backgroundColor || "#ffffff",
+          dotType: qrOptions.dotType || "square",
+          cornerType: qrOptions.cornerType || "square",
+          hasWatermark: qrOptions.watermark ?? true,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+          downloadCount: 0,
+        })
+        toast.success("QR code saved successfully! (test mode)")
+        router.push("/dashboard")
+      } finally {
+        setIsGenerating(false)
       }
       return
     }

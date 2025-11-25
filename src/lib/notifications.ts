@@ -99,7 +99,8 @@ export async function getUserNotifications(
       if ((error as { code?: string })?.code === 'PGRST205') {
         return { notifications: [], total: 0 }
       }
-      throw new Error('Failed to fetch notifications')
+      console.warn('Supabase error fetching notifications:', error)
+      return { notifications: [], total: 0 }
     }
 
     return {
@@ -170,7 +171,8 @@ export async function getUnreadCount(userId: string): Promise<number> {
 
     if (error) {
       if ((error as { code?: string })?.code === 'PGRST205') return 0
-      throw new Error('Failed to fetch unread count')
+      console.warn('Supabase error fetching unread count:', error)
+      return 0
     }
 
     return count || 0

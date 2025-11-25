@@ -1,6 +1,6 @@
 "use client"
 
-import { useSession, signOut } from "next-auth/react"
+import { signOut } from "next-auth/react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -17,9 +17,15 @@ import Link from "next/link"
 import { ThemeToggle } from "./theme-toggle"
 import NotificationsDropdown from "./notifications-dropdown"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
+import { useEffectiveSession } from "@/hooks/use-effective-session"
+import { clearE2ETestSession } from "@/lib/e2e-test-session"
+
+const isClientTestMode = process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true"
 
 export default function Navigation() {
-  const { data: session } = useSession()
+  const { session } = useEffectiveSession()
+  const router = useRouter()
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
@@ -27,6 +33,11 @@ export default function Navigation() {
   }, [])
 
   const handleSignOut = async () => {
+    if (isClientTestMode) {
+      clearE2ETestSession()
+      router.push("/")
+      return
+    }
     await signOut({ callbackUrl: "/" })
   }
 

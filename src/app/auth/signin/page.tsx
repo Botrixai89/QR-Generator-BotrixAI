@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import Link from "next/link"
+import { saveE2ETestSession } from "@/lib/e2e-test-session"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const isClientTestMode = process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true"
 
   // Clear form fields on component mount to prevent auto-fill
   useEffect(() => {
@@ -34,6 +36,19 @@ export default function SignInPage() {
     }
 
     try {
+      if (isClientTestMode) {
+        const plan = email.includes("test-user-1") ? "PRO" : "FREE"
+        saveE2ETestSession({
+          id: `test-${email}`,
+          email,
+          name: email.split("@")[0] || "E2E User",
+          plan: plan as "FREE" | "PRO",
+        })
+        toast.success("Successfully signed in! (test mode)")
+        router.push("/dashboard")
+        return
+      }
+
       const result = await signIn("credentials", {
         email,
         password,

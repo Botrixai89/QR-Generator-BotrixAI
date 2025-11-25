@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:e2e": "cross-env E2E_TEST_MODE=true NEXT_PUBLIC_E2E_TEST_MODE=true NEXTAUTH_SECRET=e2e-test-secret NEXTAUTH_URL=http://localhost:3000 E2E_TEST_EMAIL=test-user-1@example.com E2E_TEST_PASSWORD=password123 next dev",
     "build": "next build",
     "build:analyze": "cross-env ANALYZE=true next build",
     "build:fast": "next build",

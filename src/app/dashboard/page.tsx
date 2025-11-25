@@ -1,7 +1,6 @@
 "use client"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +27,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import FolderManager from "@/components/folder-manager"
 import FileManager from "@/components/file-manager"
+import { readTestQrCodes, writeTestQrCodes, type E2ETestQrCodeRecord } from "@/lib/e2e-test-storage"
+import { useEffectiveSession } from "@/hooks/use-effective-session"
 
 interface QRCodeData {
   id: string
@@ -159,8 +160,9 @@ function QRCodePreview({ qrCode }: { qrCode: QRCodeData }) {
 }
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession()
+  const { session, status } = useEffectiveSession()
   const router = useRouter()
+  const isClientTestMode = process.env.NEXT_PUBLIC_E2E_TEST_MODE === 'true'
   const [qrCodes, setQrCodes] = useState<QRCodeData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isClient, setIsClient] = useState(false)
@@ -189,23 +191,102 @@ export default function DashboardPage() {
     data: Record<string, unknown> | null
   }>({ open: false, qrCode: null, isLoading: false, data: null })
 
+  const convertRecordToQrCode = useCallback((record: E2ETestQrCodeRecord): QRCodeData => {
+    const fallbackColor = record.foregroundColor || "#000000"
+    const fallbackBackground = record.backgroundColor || "#ffffff"
+    const timestamp = record.createdAt || new Date().toISOString()
+    return {
+      id: record.id,
+      url: record.url,
+      originalUrl: record.originalUrl,
+      title: record.title,
+      foregroundColor: fallbackColor,
+      backgroundColor: fallbackBackground,
+      dotType: (record.dotType || "square") as string,
+      cornerType: (record.cornerType || "square") as string,
+      hasWatermark: record.hasWatermark,
+      downloadCount: record.downloadCount ?? 0,
+      createdAt: timestamp,
+      updatedAt: record.updatedAt || timestamp,
+    }
+  }, [])
+
+  const convertQrToRecord = useCallback((code: QRCodeData): E2ETestQrCodeRecord => ({
+    id: code.id,
+    title: code.title,
+    url: code.url,
+    originalUrl: code.originalUrl,
+    foregroundColor: code.foregroundColor,
+    backgroundColor: code.backgroundColor,
+    dotType: code.dotType,
+    cornerType: code.cornerType,
+    hasWatermark: code.hasWatermark,
+    downloadCount: code.downloadCount,
+    createdAt: code.createdAt,
+    updatedAt: code.updatedAt,
+  }), [])
+
+  const persistTestQrCodes = useCallback((codes: QRCodeData[]) => {
+    const serialized = codes.map(convertQrToRecord)
+    writeTestQrCodes(serialized)
+  }, [convertQrToRecord])
+
+  const hydrateTestData = useCallback(() => {
+    const stored = readTestQrCodes()
+    const data = stored.length
+      ? stored.map(convertRecordToQrCode)
+      : [convertRecordToQrCode({
+          id: "demo-qr",
+          title: "Sample QR",
+          url: "https://example.com/demo",
+          originalUrl: "https://example.com/demo",
+          foregroundColor: "#000000",
+          backgroundColor: "#ffffff",
+          dotType: "square",
+          cornerType: "square",
+          hasWatermark: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          downloadCount: 0,
+        })]
+
+    const totalCodes = data.length
+    const totalDownloads = data.reduce((sum, code) => sum + (code.downloadCount || 0), 0)
+
+    setQrCodes(data)
+    setStats({
+      totalCodes,
+      totalDownloads,
+      thisMonth: totalCodes,
+      lastMonth: Math.max(0, totalCodes - 1)
+    })
+    setUserCredits(999)
+    setUserPlan('PRO')
+    setIsLoading(false)
+  }, [convertRecordToQrCode])
+
   useEffect(() => {
     setIsClient(true)
   }, [])
 
   useEffect(() => {
+    if (isClientTestMode) return
     if (status === "unauthenticated") {
       router.push("/auth/signin")
     }
-  }, [status, router])
+  }, [status, router, isClientTestMode])
 
   useEffect(() => {
+    if (isClientTestMode) {
+      hydrateTestData()
+      return
+    }
     const user = session?.user as { id?: string } | undefined
     if (user?.id) {
       fetchQrCodes()
       fetchUserCredits()
     }
-  }, [session])
+  }, [session, isClientTestMode, hydrateTestData])
 
   const fetchQrCodes = async () => {
     try {
@@ -288,6 +369,26 @@ export default function DashboardPage() {
 
     setDeleteDialog(prev => ({ ...prev, isDeleting: true }))
 
+    if (isClientTestMode) {
+      const updated = qrCodes.filter(code => code.id !== deleteDialog.qrCode!.id)
+      setQrCodes(updated)
+      persistTestQrCodes(updated)
+      toast.success("QR code deleted successfully (test mode)")
+      setDeleteDialog({
+        open: false,
+        qrCode: null,
+        isDeleting: false
+      })
+      const totalDownloads = updated.reduce((sum, code) => sum + (code.downloadCount || 0), 0)
+      setStats({
+        totalCodes: updated.length,
+        totalDownloads,
+        thisMonth: updated.length,
+        lastMonth: Math.max(0, updated.length - 1)
+      })
+      return
+    }
+
     try {
       const response = await fetch(`/api/qr-codes/${deleteDialog.qrCode.id}`, {
         method: "DELETE"
@@ -314,6 +415,22 @@ export default function DashboardPage() {
 
   const openAnalytics = async (qrCode: QRCodeData) => {
     setAnalyticsDialog({ open: true, qrCode, isLoading: true, data: null })
+
+    if (isClientTestMode) {
+      setTimeout(() => {
+        setAnalyticsDialog(prev => ({
+          ...prev,
+          isLoading: false,
+          data: {
+            totalScans: 42,
+            uniqueScans: 30,
+            lastScanAt: new Date().toISOString()
+          }
+        }))
+      }, 300)
+      return
+    }
+
     try {
       const res = await fetch(`/api/qr-codes/${qrCode.id}/scan`)
       if (res.ok) {

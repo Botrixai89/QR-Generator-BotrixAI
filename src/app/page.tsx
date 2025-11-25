@@ -1,6 +1,5 @@
 "use client"
 
-import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 import QRGenerator from "@/components/qr-generator"
 import { Button } from "@/components/ui/button"
@@ -8,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { QrCode, BarChart3, Palette, Zap, Shield, Download } from "lucide-react"
 import Link from "next/link"
 import { StructuredData, OrganizationSchema } from "@/components/seo/structured-data"
+import { useEffectiveSession } from "@/hooks/use-effective-session"
 
 export default function Home() {
-  const { data: session, status } = useSession()
+  const { session, status } = useEffectiveSession()
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {

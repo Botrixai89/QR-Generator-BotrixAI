@@ -4,6 +4,16 @@ import bcrypt from "bcryptjs"
 
 const jwtStrategy = "jwt" as const
 
+const isTestMode = process.env.E2E_TEST_MODE === 'true'
+
+const buildTestUser = (email: string, name?: string) => ({
+  id: `test-${email}`,
+  email,
+  name: name || email.split('@')[0] || 'E2E User',
+  image: null as string | null,
+  emailVerified: new Date().toISOString()
+})
+
 // Automatically detect the correct NEXTAUTH_URL based on environment
 function getNextAuthUrl(): string {
   // In production (Vercel), use NEXTAUTH_URL if set, otherwise use VERCEL_URL
@@ -29,6 +39,10 @@ export const authOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null
+        }
+
+        if (isTestMode) {
+          return buildTestUser(credentials.email, credentials.email.split('@')[0])
         }
 
         if (!supabaseAdmin) {
@@ -92,6 +106,11 @@ export const authOptions = {
         token.email = user.email
         token.emailVerified = user.emailVerified
         token.createdAt = Date.now()
+        token.name = user.name
+      }
+
+      if (isTestMode) {
+        return token
       }
 
       // Token rotation: Check if token needs refresh
@@ -111,7 +130,7 @@ export const authOptions = {
       }
 
       // On update trigger, refresh user data
-      if (trigger === 'update' && token.id) {
+      if (trigger === 'update' && token.id && supabaseAdmin) {
         const { data: user } = await supabaseAdmin!
           .from('User')
           .select('id, email, name, image, isActive, emailVerified')

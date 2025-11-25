@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Check, Zap, Star } from "lucide-react"
 import { toast } from "sonner"
+import { useEffectiveSession } from "@/hooks/use-effective-session"
+import { getE2ETestSession, saveE2ETestSession } from "@/lib/e2e-test-session"
 
 interface RazorpayOptions {
   key?: string
@@ -45,8 +46,10 @@ declare global {
   }
 }
 
+const isClientTestMode = process.env.NEXT_PUBLIC_E2E_TEST_MODE === "true"
+
 export default function PricingPage() {
-  const { data: session, status } = useSession()
+  const { session, status } = useEffectiveSession()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
@@ -57,6 +60,20 @@ export default function PricingPage() {
     }
 
     setIsLoading(true)
+
+    if (isClientTestMode) {
+      const existingSession = getE2ETestSession()
+      if (!existingSession) {
+        router.push("/auth/signin")
+        setIsLoading(false)
+        return
+      }
+      saveE2ETestSession({ ...existingSession, plan: "PRO" })
+      toast.success("Payment successful! 100 credits added to your account (test mode)")
+      router.push("/dashboard")
+      setIsLoading(false)
+      return
+    }
 
     try {
       // Create Razorpay order
