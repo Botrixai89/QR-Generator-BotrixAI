@@ -38,9 +38,9 @@ const performSignIn = async (page: Page, email: string, password: string) => {
   await page.fill('#signin-email', email)
   await page.fill('#signin-password', password)
   
-  // Capture network response from sign-in
+  // Capture the actual credentials callback POST response
   const responsePromise = page.waitForResponse(
-    (resp) => resp.url().includes('/api/auth') || resp.url().includes('signin'),
+    (resp) => resp.url().includes('/api/auth/callback/credentials') && resp.request().method() === 'POST',
     { timeout: 15000 }
   ).catch(() => null)
   
@@ -48,25 +48,28 @@ const performSignIn = async (page: Page, email: string, password: string) => {
   
   const response = await responsePromise
   const responseStatus = response?.status()
-  const responseBody = await response?.text().catch(() => null)
   
-  // Wait for either dashboard redirect or error message
-  const result = await Promise.race([
-    page.waitForURL(/\/dashboard/, { timeout: 15000 }).then(() => 'success'),
-    page.locator('[role="alert"], .error, [data-testid="error"], .text-red-500, .text-destructive').waitFor({ timeout: 15000 }).then(() => 'error'),
-  ]).catch(() => 'timeout')
+  // Wait for navigation after form submit
+  await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {})
   
-  if (result !== 'success') {
-    const errorText = await page.locator('[role="alert"], .error, [data-testid="error"], .text-red-500, .text-destructive').first().textContent().catch(() => null)
-    const pageContent = await page.locator('body').textContent().catch(() => '')
-    const currentUrl = page.url()
-    throw new Error(
-      `Sign-in failed for ${email}. URL: ${currentUrl}, ` +
-      `API Status: ${responseStatus || 'N/A'}, ` +
-      `Error: ${errorText || 'No error element found'}, ` +
-      `Response: ${responseBody?.substring(0, 200) || 'N/A'}`
-    )
+  // Check if we're on dashboard
+  if (page.url().includes('/dashboard')) {
+    return
   }
+  
+  // Check for URL with error parameter (NextAuth error)
+  const url = new URL(page.url())
+  const errorParam = url.searchParams.get('error')
+  
+  // Check for visible error messages
+  const errorText = await page.locator('[role="alert"], .error, [data-testid="error"], .text-red-500, .text-destructive, p:has-text("Invalid"), p:has-text("error")').first().textContent().catch(() => null)
+  
+  throw new Error(
+    `Sign-in failed for ${email}. URL: ${page.url()}, ` +
+    `API Status: ${responseStatus || 'N/A'}, ` +
+    `URL Error: ${errorParam || 'none'}, ` +
+    `Page Error: ${errorText || 'No error element found'}`
+  )
 }
 
 const waitForDashboard = async (page: Page, timeout = 15000) => {
