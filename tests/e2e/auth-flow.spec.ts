@@ -37,18 +37,35 @@ const performSignIn = async (page: Page, email: string, password: string) => {
   await page.waitForSelector('#signin-email', { timeout: 10000 })
   await page.fill('#signin-email', email)
   await page.fill('#signin-password', password)
+  
+  // Capture network response from sign-in
+  const responsePromise = page.waitForResponse(
+    (resp) => resp.url().includes('/api/auth') || resp.url().includes('signin'),
+    { timeout: 15000 }
+  ).catch(() => null)
+  
   await page.click('button[type="submit"]')
+  
+  const response = await responsePromise
+  const responseStatus = response?.status()
+  const responseBody = await response?.text().catch(() => null)
   
   // Wait for either dashboard redirect or error message
   const result = await Promise.race([
     page.waitForURL(/\/dashboard/, { timeout: 15000 }).then(() => 'success'),
-    page.locator('[role="alert"], .error, [data-testid="error"]').waitFor({ timeout: 15000 }).then(() => 'error'),
+    page.locator('[role="alert"], .error, [data-testid="error"], .text-red-500, .text-destructive').waitFor({ timeout: 15000 }).then(() => 'error'),
   ]).catch(() => 'timeout')
   
   if (result !== 'success') {
-    const errorText = await page.locator('[role="alert"], .error, [data-testid="error"]').textContent().catch(() => null)
+    const errorText = await page.locator('[role="alert"], .error, [data-testid="error"], .text-red-500, .text-destructive').first().textContent().catch(() => null)
+    const pageContent = await page.locator('body').textContent().catch(() => '')
     const currentUrl = page.url()
-    throw new Error(`Sign-in failed. URL: ${currentUrl}, Error: ${errorText || 'No error message found'}`)
+    throw new Error(
+      `Sign-in failed for ${email}. URL: ${currentUrl}, ` +
+      `API Status: ${responseStatus || 'N/A'}, ` +
+      `Error: ${errorText || 'No error element found'}, ` +
+      `Response: ${responseBody?.substring(0, 200) || 'N/A'}`
+    )
   }
 }
 
