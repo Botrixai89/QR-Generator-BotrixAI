@@ -169,6 +169,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
+      - name: Seed test database
+        run: npm run seed
+
       - name: Build application
         run: npm run build
         env:
