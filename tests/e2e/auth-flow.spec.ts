@@ -32,6 +32,26 @@ const dismissGuestUpsell = async (page: Page) => {
   }
 }
 
+const performSignIn = async (page: Page, email: string, password: string) => {
+  await page.goto('/auth/signin')
+  await page.waitForSelector('#signin-email', { timeout: 10000 })
+  await page.fill('#signin-email', email)
+  await page.fill('#signin-password', password)
+  await page.click('button[type="submit"]')
+  
+  // Wait for either dashboard redirect or error message
+  const result = await Promise.race([
+    page.waitForURL(/\/dashboard/, { timeout: 15000 }).then(() => 'success'),
+    page.locator('[role="alert"], .error, [data-testid="error"]').waitFor({ timeout: 15000 }).then(() => 'error'),
+  ]).catch(() => 'timeout')
+  
+  if (result !== 'success') {
+    const errorText = await page.locator('[role="alert"], .error, [data-testid="error"]').textContent().catch(() => null)
+    const currentUrl = page.url()
+    throw new Error(`Sign-in failed. URL: ${currentUrl}, Error: ${errorText || 'No error message found'}`)
+  }
+}
+
 const waitForDashboard = async (page: Page, timeout = 15000) => {
   await expect(page).toHaveURL(/\/dashboard$/, { timeout })
 }
@@ -152,15 +172,7 @@ test.describe('User Signup and Authentication', () => {
     const testEmail = process.env.E2E_TEST_EMAIL || 'test-user-1@example.com'
     const testPassword = process.env.E2E_TEST_PASSWORD || 'password123'
 
-    await page.goto('/auth/signin')
-    // Wait for the form to be visible
-    await page.waitForSelector('#signin-email', { timeout: 10000 })
-    await page.fill('#signin-email', testEmail)
-    await page.fill('#signin-password', testPassword)
-    await page.click('button[type="submit"], button:has-text("Sign In")')
-    
-    // Should redirect to dashboard
-    await waitForDashboard(page, 10000)
+    await performSignIn(page, testEmail, testPassword)
     expect(page.url()).toContain('/dashboard')
   })
 
@@ -182,14 +194,7 @@ test.describe('QR Code Creation and Management', () => {
     // Sign in before each test
     const testEmail = process.env.E2E_TEST_EMAIL || 'test-user-1@example.com'
     const testPassword = process.env.E2E_TEST_PASSWORD || 'password123'
-
-    await page.goto('/auth/signin')
-    // Wait for the form to be visible
-    await page.waitForSelector('#signin-email', { timeout: 10000 })
-    await page.fill('#signin-email', testEmail)
-    await page.fill('#signin-password', testPassword)
-    await page.click('button[type="submit"]')
-    await waitForDashboard(page, 10000)
+    await performSignIn(page, testEmail, testPassword)
   })
 
   test('should create and save QR code', async ({ page }) => {
@@ -253,14 +258,7 @@ test.describe('Upgrade Flow', () => {
     // Sign in as FREE user
     const testEmail = process.env.E2E_TEST_EMAIL || 'test-user-1@example.com'
     const testPassword = process.env.E2E_TEST_PASSWORD || 'password123'
-
-    await page.goto('/auth/signin')
-    // Wait for the form to be visible
-    await page.waitForSelector('#signin-email', { timeout: 10000 })
-    await page.fill('#signin-email', testEmail)
-    await page.fill('#signin-password', testPassword)
-    await page.click('button[type="submit"]')
-    await waitForDashboard(page, 10000)
+    await performSignIn(page, testEmail, testPassword)
   })
 
   test('should navigate to pricing page', async ({ page }) => {
@@ -325,14 +323,7 @@ test.describe('Premium Features (After Upgrade)', () => {
     // Sign in as PRO/FLEX user (from seed: test-user-1@example.com is PRO)
     const testEmail = process.env.E2E_TEST_EMAIL || 'test-user-1@example.com'
     const testPassword = process.env.E2E_TEST_PASSWORD || 'password123'
-
-    await page.goto('/auth/signin')
-    // Wait for the form to be visible
-    await page.waitForSelector('#signin-email', { timeout: 10000 })
-    await page.fill('#signin-email', testEmail)
-    await page.fill('#signin-password', testPassword)
-    await page.click('button[type="submit"]')
-    await waitForDashboard(page, 10000)
+    await performSignIn(page, testEmail, testPassword)
   })
 
   test('should create dynamic QR code', async ({ page }) => {
@@ -447,14 +438,7 @@ test.describe('Plan Limits and Restrictions', () => {
     // Sign in as FREE user
     const testEmail = process.env.E2E_TEST_EMAIL || 'test-user-3@example.com' // Assuming user 3 is FREE
     const testPassword = process.env.E2E_TEST_PASSWORD || 'password123'
-
-    await page.goto('/auth/signin')
-    // Wait for the form to be visible
-    await page.waitForSelector('#signin-email', { timeout: 10000 })
-    await page.fill('#signin-email', testEmail)
-    await page.fill('#signin-password', testPassword)
-    await page.click('button[type="submit"]')
-    await waitForDashboard(page, 10000)
+    await performSignIn(page, testEmail, testPassword)
   })
 
   test('should show plan limit warning when approaching limit', async ({ page }) => {
