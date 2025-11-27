@@ -496,17 +496,17 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 text-sm sm:text-base">
               Welcome back, {session.user?.name || session.user?.email}
             </p>
             <p className="text-xs font-medium text-gray-500">
               {userPlan === 'PRO' ? 'Pro Plan' : 'Free Plan'}
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             {/* Only show credits for Pro plan users */}
             {userPlan === 'PRO' && userCredits !== null && (
               <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
@@ -733,7 +733,7 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                           <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-100" asChild>
                             <Link href={`/qr/${qrCode.id}?preview=true`}>
                               <Eye className="h-4 w-4" />
@@ -745,8 +745,8 @@ export default function DashboardPage() {
                             className="border-gray-300 text-gray-700 hover:bg-gray-100"
                             onClick={() => openAnalytics(qrCode)}
                           >
-                            <BarChart3 className="h-4 w-4 mr-2" />
-                            Analytics
+                            <BarChart3 className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Analytics</span>
                           </Button>
                           <Button 
                             variant="outline" 
@@ -754,7 +754,8 @@ export default function DashboardPage() {
                             className="border-gray-300 text-gray-700 hover:bg-gray-100"
                             onClick={() => openAnalytics(qrCode)}
                           >
-                            Download Stats
+                            <Download className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Download Stats</span>
                           </Button>
                           <Button 
                             variant="outline" 
