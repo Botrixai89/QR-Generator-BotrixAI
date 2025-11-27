@@ -12,7 +12,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { QrCode, BarChart3, LogOut, CreditCard } from "lucide-react"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { QrCode, BarChart3, LogOut, CreditCard, Menu, Home, DollarSign, Info } from "lucide-react"
 import Link from "next/link"
 import { ThemeToggle } from "./theme-toggle"
 import NotificationsDropdown from "./notifications-dropdown"
@@ -27,6 +34,7 @@ export default function Navigation() {
   const { session } = useEffectiveSession()
   const router = useRouter()
   const [isClient, setIsClient] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -191,10 +199,80 @@ export default function Navigation() {
             )}
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {session && <NotificationsDropdown />}
             <ThemeToggle />
             {renderAuthSection()}
+            
+            {/* Mobile Menu Button */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[280px] sm:w-[320px]">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <QrCode className="h-5 w-5" />
+                    QR Generator
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col gap-1 mt-6">
+                  <Link 
+                    href="/" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
+                  >
+                    <Home className="h-4 w-4" />
+                    Generator
+                  </Link>
+                  {session && (
+                    <Link 
+                      href="/dashboard" 
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  )}
+                  <Link 
+                    href="/pricing" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
+                  >
+                    <DollarSign className="h-4 w-4" />
+                    Pricing
+                  </Link>
+                  <Link 
+                    href="/about" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
+                  >
+                    <Info className="h-4 w-4" />
+                    About
+                  </Link>
+                  
+                  {session && (
+                    <>
+                      <div className="my-2 border-t" />
+                      <button 
+                        onClick={() => {
+                          setMobileMenuOpen(false)
+                          handleSignOut()
+                        }}
+                        className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors text-red-600"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign out
+                      </button>
+                    </>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
