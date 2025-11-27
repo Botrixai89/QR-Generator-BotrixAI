@@ -493,13 +493,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600">
               Welcome back, {session.user?.name || session.user?.email}
             </p>
             <p className="text-xs font-medium text-gray-500">
@@ -562,58 +562,58 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
+          <Card className="bg-white border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total QR Codes</CardTitle>
-              <QrCode className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-900">Total QR Codes</CardTitle>
+              <QrCode className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalCodes}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-gray-900">{stats.totalCodes}</div>
+              <p className="text-xs text-gray-500">
                 {stats.thisMonth} created this month
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Scans</CardTitle>
-              <Eye className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-900">Total Scans</CardTitle>
+              <Eye className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalScans}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-gray-900">{stats.totalScans}</div>
+              <p className="text-xs text-gray-500">
                 Dynamic QR codes only
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Month</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-900">This Month</CardTitle>
+              <Calendar className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.thisMonth}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-gray-900">{stats.thisMonth}</div>
+              <p className="text-xs text-gray-500">
                 QR codes created
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Scan Growth</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-gray-900">Scan Growth</CardTitle>
+              <BarChart3 className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-gray-900">
                 {stats.scansLastMonth > 0 
                   ? `${Math.round(((stats.scansThisMonth - stats.scansLastMonth) / stats.scansLastMonth) * 100)}%`
                   : stats.scansThisMonth > 0 ? "+100%" : "0%"
                 }
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-gray-500">
                 vs last month
               </p>
             </CardContent>
@@ -641,11 +641,11 @@ export default function DashboardPage() {
 
               {/* QR Codes List */}
               <div className="lg:col-span-3">
-                <Card>
+                <Card className="bg-white border-gray-200">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle>Your QR Codes</CardTitle>
+                        <CardTitle className="text-gray-900">Your QR Codes</CardTitle>
                       </div>
                       <Button asChild>
                         <Link href="/">
@@ -663,11 +663,11 @@ export default function DashboardPage() {
 
                       return filteredCodes.length === 0 ? (
                         <div className="text-center py-12">
-                          <QrCode className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                          <h3 className="text-lg font-medium mb-2">
+                          <QrCode className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium mb-2 text-gray-900">
                             {selectedFolderId ? "No QR codes in this folder" : "No QR codes yet"}
                           </h3>
-                          <p className="text-muted-foreground mb-4">
+                          <p className="text-gray-500 mb-4">
                             {selectedFolderId 
                               ? "Move QR codes to this folder or create new ones"
                               : "Create your first QR code to get started"
@@ -690,13 +690,13 @@ export default function DashboardPage() {
                       onUpdate={fetchQrCodes}
                     />
                   ) : (
-                    <div key={qrCode.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div key={qrCode.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex gap-4 flex-1 min-w-0">
                           <QRCodePreview qrCode={qrCode} />
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                              <h3 className="font-medium truncate">{qrCode.title}</h3>
+                              <h3 className="font-medium truncate text-gray-900">{qrCode.title}</h3>
                               <div className="flex gap-1 flex-wrap">
                                 <Badge variant="secondary" className="text-xs">
                                   {qrCode.dotType}
@@ -721,7 +721,7 @@ export default function DashboardPage() {
                                 )}
                               </div>
                             </div>
-                            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                               <span className="flex items-center gap-1">
                                 <Download className="h-3 w-3" />
                                 {qrCode.downloadCount} downloads
@@ -734,7 +734,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <Button variant="outline" size="sm" asChild>
+                          <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-100" asChild>
                             <Link href={`/qr/${qrCode.id}?preview=true`}>
                               <Eye className="h-4 w-4" />
                             </Link>
@@ -742,6 +742,7 @@ export default function DashboardPage() {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="border-gray-300 text-gray-700 hover:bg-gray-100"
                             onClick={() => openAnalytics(qrCode)}
                           >
                             <BarChart3 className="h-4 w-4 mr-2" />
@@ -750,6 +751,7 @@ export default function DashboardPage() {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="border-gray-300 text-gray-700 hover:bg-gray-100"
                             onClick={() => openAnalytics(qrCode)}
                           >
                             Download Stats
@@ -757,6 +759,7 @@ export default function DashboardPage() {
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="border-gray-300 text-red-600 hover:bg-red-50"
                             onClick={() => handleDeleteClick(qrCode)}
                           >
                             <Trash2 className="h-4 w-4" />

@@ -139,8 +139,7 @@ function TemplatePreview({ template, isSelected, onClick }: {
             eyePattern: template.styles?.eyePattern || 'square',
             watermark: false,
             effects: {},
-            gradient: template.colors?.gradient,
-            shape: template.shape || 'square'
+            gradient: template.colors?.gradient
           }
           ;(async () => {
             const getCreator = await loadAdvancedQR()
@@ -390,7 +389,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   const [upiAmount, setUpiAmount] = useState("")
   const [upiMerchantName, setUpiMerchantName] = useState("")
   const [upiTransactionNote, setUpiTransactionNote] = useState("")
-  const [upiFormat, setUpiFormat] = useState<'bharat-qr' | 'upi-url'>('upi-url')
   
   // Advanced QR options
   const [qrOptions, setQrOptions] = useState<AdvancedQROptions>({
@@ -493,12 +491,12 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     }
   }, [isPlanReady, isFreeTier, qrOptions.watermark])
 
-  // Function to generate UPI payment URL using Bharat QR standard or UPI URL format
-  const generateUpiUrl = useCallback((upiId: string, amount?: string, merchantName?: string, transactionNote?: string, format: 'bharat-qr' | 'upi-url' = upiFormat) => {
+  // Function to generate UPI payment URL - Simple format for maximum compatibility
+  const generateUpiUrl = useCallback((upiId: string, amount?: string, merchantName?: string, transactionNote?: string) => {
     if (!upiId.trim()) return ""
     
-    // Clean and validate UPI ID
-    const cleanUpiId = upiId.trim().toLowerCase()
+    // Clean UPI ID (preserve case for compatibility)
+    const cleanUpiId = upiId.trim()
     
     // Validate UPI ID format (basic validation)
     const upiIdPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/
@@ -506,64 +504,33 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       console.warn("Invalid UPI ID format:", cleanUpiId)
     }
     
-    if (format === 'bharat-qr') {
-      // Generate Bharat QR format (JSON structure)
-      const bharatQrData = {
-        "upi": {
-          "pa": cleanUpiId, // Payee Address (UPI ID)
-          "pn": merchantName?.trim() || cleanUpiId.split('@')[0], // Payee Name
-          "mc": "0000", // Merchant Category Code (default)
-          "tr": `TXN${Date.now()}`, // Transaction Reference
-          "tn": transactionNote?.trim() || "Payment", // Transaction Note
-          "am": amount?.trim() && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0 ? parseFloat(amount).toString() : undefined, // Amount
-          "cu": "INR", // Currency
-          "url": "" // Optional URL
-        }
-      }
-      
-      // Remove undefined values
-      if (!bharatQrData.upi.am) {
-        delete bharatQrData.upi.am
-      }
-      
-      // Convert to Bharat QR string format
-      return JSON.stringify(bharatQrData)
+    // Generate simple UPI URL - works with all UPI apps (GPay, PhonePe, Paytm, BHIM)
+    // Format: upi://pay?pa=<UPI_ID>&pn=<NAME>&am=<AMOUNT>&cu=INR
+    let upiUrl = `upi://pay?pa=${encodeURIComponent(cleanUpiId)}`
+    
+    // Add payee name
+    if (merchantName?.trim()) {
+      upiUrl += `&pn=${encodeURIComponent(merchantName.trim())}`
     } else {
-      // Generate UPI URL format - CRITICAL: This must be exactly right for UPI apps to recognize it
-      let upiUrl = `upi://pay?pa=${encodeURIComponent(cleanUpiId)}`
-      
-      // Add currency FIRST (required by UPI spec)
-      upiUrl += `&cu=INR`
-      
-      // Add merchant name (required for better recognition)
-      if (merchantName?.trim()) {
-        upiUrl += `&pn=${encodeURIComponent(merchantName.trim())}`
-      } else {
-        // Use UPI ID username as fallback merchant name
-        const username = cleanUpiId.split('@')[0]
-        upiUrl += `&pn=${encodeURIComponent(username)}`
-      }
-      
-      // Add amount if specified (must be numeric)
-      if (amount?.trim() && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
-        upiUrl += `&am=${parseFloat(amount)}`
-      }
-      
-      // Add transaction note if specified
-      if (transactionNote?.trim()) {
-        upiUrl += `&tn=${encodeURIComponent(transactionNote.trim())}`
-      }
-      
-      // Add transaction reference for better tracking
-      const transactionRef = `TXN${Date.now()}`
-      upiUrl += `&tr=${transactionRef}`
-      
-      // Add merchant category code (optional but recommended)
-      upiUrl += `&mc=0000`
-      
-      return upiUrl
+      const username = cleanUpiId.split('@')[0]
+      upiUrl += `&pn=${encodeURIComponent(username)}`
     }
-  }, [upiFormat])
+    
+    // Add amount if specified
+    if (amount?.trim() && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
+      upiUrl += `&am=${parseFloat(amount).toFixed(2)}`
+    }
+    
+    // Add currency (required for UPI)
+    upiUrl += `&cu=INR`
+    
+    // Add transaction note if specified
+    if (transactionNote?.trim()) {
+      upiUrl += `&tn=${encodeURIComponent(transactionNote.trim())}`
+    }
+    
+    return upiUrl
+  }, [])
 
   // Ensure we're on the client side and auto-fill URL
   useEffect(() => {
@@ -1042,7 +1009,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     setUpiAmount("")
     setUpiMerchantName("")
     setUpiTransactionNote("")
-    setUpiFormat('upi-url')
     setGeneratedLogoFile(null)
     setLogoFile(null) // Clear uploaded logo file
   }
@@ -1130,15 +1096,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         dotType: template.styles.dotType,
         cornerType: template.styles.cornerType,
         eyePattern: template.styles.eyePattern,
-        shape: template.shape,
         sticker: template.sticker,
         logo: logoConfig,
       })
     }
-  }
-
-  const handleShapeSelect = (shape: QRShape) => {
-    setQrOptions(prev => ({ ...prev, shape }))
   }
 
   const handleStickerSelect = (stickerId: QRSticker) => {
@@ -1150,7 +1111,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
 
   return (
     <>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
       <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
         <div className="text-center space-y-2 mb-4 sm:mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold">QR Code Generator</h1>
@@ -1674,35 +1635,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     <>
                       <Separator />
                       
-                      {/* UPI Format Selection */}
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">QR Code Format</Label>
-                        <div className="flex gap-2">
-                          <Button
-                            variant={upiFormat === 'bharat-qr' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setUpiFormat('bharat-qr')}
-                            className="flex-1"
-                          >
-                            Bharat QR
-                          </Button>
-                          <Button
-                            variant={upiFormat === 'upi-url' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setUpiFormat('upi-url')}
-                            className="flex-1"
-                          >
-                            UPI URL (Recommended)
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {upiFormat === 'bharat-qr' 
-                            ? 'Uses official Bharat QR JSON format - try if UPI URL doesn\'t work' 
-                            : 'Uses standard UPI URL format - best compatibility with all UPI apps'
-                          }
-                        </p>
-                      </div>
-                      
                       {/* UPI ID Input */}
                       <div className="space-y-2">
                         <Label htmlFor="upiId" className="flex items-center gap-2">
@@ -1786,32 +1718,12 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             size="sm"
                             onClick={() => {
                               const upiUrl = generateUpiUrl(upiId, upiAmount, upiMerchantName, upiTransactionNote)
-                              if (upiFormat === 'upi-url') {
-                                // Try to open the UPI URL directly
-                                window.open(upiUrl, '_blank')
-                              } else {
-                                // For Bharat QR, copy to clipboard
-                                navigator.clipboard.writeText(upiUrl)
-                                alert('Bharat QR data copied to clipboard. Paste it into a QR generator to test.')
-                              }
+                              window.open(upiUrl, '_blank')
                             }}
                             className="w-full"
                           >
-                            {upiFormat === 'upi-url' ? 'Test UPI URL' : 'Copy Bharat QR Data'}
+                            Test UPI URL
                           </Button>
-                          
-                          {/* Debug Information */}
-                          <div className="space-y-1 p-2 bg-yellow-50 rounded border border-yellow-200">
-                            <div className="text-xs font-medium text-yellow-800">Debug Info:</div>
-                            <div className="text-xs text-yellow-700">
-                              <div>• Format: {upiFormat}</div>
-                              <div>• UPI ID: {upiId}</div>
-                              <div>• Currency: INR</div>
-                              <div>• Amount: {upiAmount || 'Not specified'}</div>
-                              <div>• Merchant: {upiMerchantName || upiId.split('@')[0]}</div>
-                              <div>• Note: {upiTransactionNote || 'Not specified'}</div>
-                            </div>
-                          </div>
                         </div>
                       )}
 
@@ -1823,28 +1735,24 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             <p className="font-medium mb-1">Important Notes:</p>
                             <ul className="space-y-1 text-xs">
                               <li>• UPI QR codes are designed for <strong>receiving payments</strong></li>
-                              <li>• <strong>UPI URL format</strong> is recommended for best compatibility</li>
-                              <li>• If you get alerts instead of payment intent, try switching formats</li>
-                              <li>• Some UPI apps may show security alerts - this is normal</li>
+                              <li>• Works with Google Pay, PhonePe, Paytm, BHIM, and all UPI apps</li>
                               <li>• Always verify the UPI ID before sharing</li>
-                              <li>• Test with Google Pay, PhonePe, or Paytm QR scanner</li>
+                              <li>• Use the UPI app&apos;s built-in QR scanner for best results</li>
                             </ul>
                           </div>
                         </div>
                       </div>
                       
                       {/* Troubleshooting Section */}
-                      <div className="space-y-2 p-3 bg-red-50 rounded-md">
+                      <div className="space-y-2 p-3 bg-amber-50 rounded-md">
                         <div className="flex items-start gap-2">
-                          <div className="text-red-600 text-sm">🔧</div>
-                          <div className="text-xs text-red-800">
-                            <p className="font-medium mb-1">Troubleshooting:</p>
+                          <div className="text-amber-600 text-sm">💡</div>
+                          <div className="text-xs text-amber-800">
+                            <p className="font-medium mb-1">Tips:</p>
                             <ul className="space-y-1 text-xs">
-                              <li>• <strong>Getting alerts?</strong> Try UPI URL format instead of Bharat QR</li>
-                              <li>• <strong>Not opening UPI app?</strong> Use a UPI app&apos;s built-in QR scanner</li>
+                              <li>• <strong>Not scanning?</strong> Use the UPI app&apos;s QR scanner, not camera</li>
                               <li>• <strong>Invalid UPI ID?</strong> Check format: username@bankname</li>
                               <li>• <strong>Amount issues?</strong> Leave amount empty to allow any amount</li>
-                              <li>• <strong>Still not working?</strong> Try minimal UPI URL with just pa and cu</li>
                             </ul>
                           </div>
                         </div>

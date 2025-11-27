@@ -11,20 +11,12 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { 
   Palette, 
-  Shapes, 
   Sparkles, 
   Sticker, 
   Download, 
   RotateCcw,
   Settings,
   Eye,
-  Circle,
-  Square,
-  Heart,
-  Star,
-  Hexagon,
-  Diamond,
-  Cloud,
   Gift,
   Coffee,
   Music,
@@ -40,7 +32,6 @@ import {
 } from "lucide-react"
 import { 
   AdvancedQROptions, 
-  QRShape, 
   QRTemplate, 
   QRSticker, 
   QR_TEMPLATES,
@@ -52,30 +43,6 @@ interface QRCustomizationPanelProps {
   onOptionsChange: (options: AdvancedQROptions) => void
   onDownload: (format: 'png' | 'svg') => void
   onReset: () => void
-}
-
-// Shape icons mapping
-const shapeIcons: Record<QRShape, React.ComponentType<{ className?: string }>> = {
-  square: Square,
-  circle: Circle,
-  heart: Heart,
-  hexagon: Hexagon,
-  brain: Brain,
-  star: Star,
-  diamond: Diamond,
-  cloud: Cloud,
-  flower: Flower,
-  shield: Shield,
-  gift: Gift,
-  cake: Cake,
-  coffee: Coffee,
-  music: Music,
-  car: Car,
-  house: Home,
-  tree: Leaf,
-  sun: Sun,
-  moon: Moon,
-  custom: Settings,
 }
 
 // Template preview component
@@ -97,31 +64,6 @@ function TemplatePreview({ template, isSelected, onClick }: {
       <div className="mt-2 text-center">
         <div className="text-sm font-medium">{template.name}</div>
         <div className="text-xs text-muted-foreground">{template.description}</div>
-      </div>
-    </div>
-  )
-}
-
-// Shape preview component
-function ShapePreview({ shape, isSelected, onClick }: { 
-  shape: QRShape, 
-  isSelected: boolean, 
-  onClick: () => void 
-}) {
-  const IconComponent = shapeIcons[shape] || Square
-  
-  return (
-    <div 
-      className={`relative cursor-pointer rounded-lg border-2 p-3 transition-all hover:shadow-md ${
-        isSelected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-      }`}
-      onClick={onClick}
-    >
-      <div className="aspect-square w-full rounded bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-        <IconComponent className="h-8 w-8 text-gray-600" />
-      </div>
-      <div className="mt-2 text-center">
-        <div className="text-xs font-medium capitalize">{shape}</div>
       </div>
     </div>
   )
@@ -216,14 +158,9 @@ export default function QRCustomizationPanel({
         dotType: template.styles.dotType,
         cornerType: template.styles.cornerType,
         eyePattern: template.styles.eyePattern,
-        shape: template.shape,
         sticker: template.sticker,
       })
     }
-  }
-
-  const handleShapeSelect = (shape: QRShape) => {
-    handleOptionChange('shape', shape)
   }
 
   const handleStickerSelect = (stickerId: QRSticker) => {
@@ -246,14 +183,10 @@ export default function QRCustomizationPanel({
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="templates" className="text-xs">
               <Sparkles className="h-3 w-3 mr-1" />
               Templates
-            </TabsTrigger>
-            <TabsTrigger value="shapes" className="text-xs">
-              <Shapes className="h-3 w-3 mr-1" />
-              Shapes
             </TabsTrigger>
             <TabsTrigger value="stickers" className="text-xs">
               <Sticker className="h-3 w-3 mr-1" />
@@ -278,20 +211,6 @@ export default function QRCustomizationPanel({
                   template={template}
                   isSelected={options.template === id}
                   onClick={() => handleTemplateSelect(id as QRTemplate)}
-                />
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Shapes Tab */}
-          <TabsContent value="shapes" className="space-y-4 mt-4">
-            <div className="grid grid-cols-4 gap-2">
-              {Object.keys(shapeIcons).map((shape) => (
-                <ShapePreview
-                  key={shape}
-                  shape={shape as QRShape}
-                  isSelected={options.shape === shape}
-                  onClick={() => handleShapeSelect(shape as QRShape)}
                 />
               ))}
             </div>

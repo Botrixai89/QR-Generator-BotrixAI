@@ -293,7 +293,6 @@ export const QR_TEMPLATES: Record<QRTemplate, QRTemplateConfig> = {
       cornerType: 'heart',
       eyePattern: 'heart',
     },
-    shape: 'heart',
   },
   tech: {
     id: 'tech',
@@ -322,7 +321,6 @@ export const QR_TEMPLATES: Record<QRTemplate, QRTemplateConfig> = {
       cornerType: 'rounded',
       eyePattern: 'rounded',
     },
-    shape: 'circle',
   },
   retro: {
     id: 'retro',
@@ -371,7 +369,6 @@ export const QR_TEMPLATES: Record<QRTemplate, QRTemplateConfig> = {
       cornerType: 'extra-rounded',
       eyePattern: 'extra-rounded',
     },
-    shape: 'circle',
   },
   facebook: {
     id: 'facebook',
@@ -400,7 +397,6 @@ export const QR_TEMPLATES: Record<QRTemplate, QRTemplateConfig> = {
       cornerType: 'circle',
       eyePattern: 'circle',
     },
-    shape: 'circle',
   },
   twitter: {
     id: 'twitter',
@@ -595,7 +591,6 @@ export const QR_TEMPLATES: Record<QRTemplate, QRTemplateConfig> = {
       cornerType: 'rounded',
       eyePattern: 'rounded',
     },
-    shape: 'circle',
   },
   'dark-mode': {
     id: 'dark-mode',
@@ -630,7 +625,6 @@ export const QR_TEMPLATES: Record<QRTemplate, QRTemplateConfig> = {
       cornerType: 'extra-rounded',
       eyePattern: 'extra-rounded',
     },
-    shape: 'circle',
   },
 }
 

@@ -171,12 +171,12 @@ export default function FolderManager({ onFolderSelect, selectedFolderId }: Fold
 
   if (loading) {
     return (
-      <Card>
+      <Card className="bg-white border-gray-200">
         <CardHeader>
-          <CardTitle>Folders</CardTitle>
+          <CardTitle className="text-gray-900">Folders</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground">Loading folders...</div>
+          <div className="text-sm text-gray-500">Loading folders...</div>
         </CardContent>
       </Card>
     )
@@ -184,12 +184,12 @@ export default function FolderManager({ onFolderSelect, selectedFolderId }: Fold
 
   return (
     <>
-      <Card>
+      <Card className="bg-white border-gray-200">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Folders</CardTitle>
-              <CardDescription>Organize your QR codes into folders</CardDescription>
+              <CardTitle className="text-gray-900">Folders</CardTitle>
+              <CardDescription className="text-gray-500">Organize your QR codes into folders</CardDescription>
             </div>
             <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
               <FolderPlus className="h-4 w-4 mr-2" />
@@ -199,8 +199,8 @@ export default function FolderManager({ onFolderSelect, selectedFolderId }: Fold
         </CardHeader>
         <CardContent>
           {rootFolders.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Folder className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <div className="text-center py-8 text-gray-500">
+              <Folder className="h-12 w-12 mx-auto mb-4 opacity-50 text-gray-400" />
               <p>No folders yet</p>
             </div>
           ) : (
@@ -220,8 +220,8 @@ export default function FolderManager({ onFolderSelect, selectedFolderId }: Fold
                   key={folder.id}
                   className={`flex items-center justify-between p-3 rounded-lg border ${
                     selectedFolderId === folder.id
-                      ? "bg-primary/10 border-primary"
-                      : "bg-background hover:bg-accent"
+                      ? "bg-gray-100 border-gray-400"
+                      : "bg-gray-50 hover:bg-gray-100 border-gray-200"
                   }`}
                 >
                   <div className="flex items-center gap-3 flex-1">
@@ -233,10 +233,10 @@ export default function FolderManager({ onFolderSelect, selectedFolderId }: Fold
                       onClick={() => onFolderSelect?.(folder.id)}
                       className="flex items-center gap-2 flex-1 text-left"
                     >
-                      <Folder className="h-4 w-4" />
-                      <span className="font-medium">{folder.name}</span>
+                      <Folder className="h-4 w-4 text-gray-600" />
+                      <span className="font-medium text-gray-900">{folder.name}</span>
                       {folder.description && (
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-sm text-gray-500">
                           - {folder.description}
                         </span>
                       )}

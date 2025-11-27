@@ -240,13 +240,13 @@ export default function PricingPage() {
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-800"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -259,22 +259,22 @@ export default function PricingPage() {
 
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* Free Plan */}
-          <Card className="relative">
+          <Card className="relative bg-white border-gray-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-blue-600" />
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <Zap className="h-5 w-5 text-gray-700" />
                 Free Plan
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-500">
                 Perfect for getting started
               </CardDescription>
-              <div className="text-3xl font-bold text-foreground">
+              <div className="text-3xl font-bold text-gray-900">
                 ₹0
-                <span className="text-lg font-normal text-muted-foreground">/month</span>
+                <span className="text-lg font-normal text-gray-500">/month</span>
               </div>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3 mb-6">
+              <ul className="space-y-3 mb-6 text-gray-700">
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-600" />
                   <span>10 free credits</span>
@@ -294,7 +294,7 @@ export default function PricingPage() {
               </ul>
               <Button 
                 variant="outline" 
-                className="w-full text-muted-foreground"
+                className="w-full text-gray-500 border-gray-300"
                 disabled
               >
                 Current Plan
@@ -303,29 +303,29 @@ export default function PricingPage() {
           </Card>
 
           {/* Pro Plan */}
-          <Card className="relative border-blue-500 shadow-lg">
+          <Card className="relative bg-white border-gray-300 shadow-lg">
             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-              <Badge className="bg-blue-600 text-white px-4 py-1">
+              <Badge className="bg-gray-800 text-white px-4 py-1">
                 <Star className="h-3 w-3 mr-1" />
                 Save ₹100 vs competitor
               </Badge>
             </div>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star className="h-5 w-5 text-blue-600" />
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <Star className="h-5 w-5 text-gray-700" />
                 Pro Plan
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-500">
                 Most popular choice
               </CardDescription>
-              <div className="text-3xl font-bold text-foreground">
+              <div className="text-3xl font-bold text-gray-900">
                 ₹1
-                <span className="text-lg font-normal text-muted-foreground">/one-time</span>
+                <span className="text-lg font-normal text-gray-500">/one-time</span>
                 <span className="ml-2 text-xs font-normal text-amber-600">(Testing Mode)</span>
               </div>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3 mb-6">
+              <ul className="space-y-3 mb-6 text-gray-700">
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-600" />
                   <span>100 credits included</span>
@@ -362,7 +362,7 @@ export default function PricingPage() {
               <Button 
                 onClick={handlePurchase}
                 disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white"
               >
                 {isLoading ? "Processing..." : "Buy now"}
               </Button>

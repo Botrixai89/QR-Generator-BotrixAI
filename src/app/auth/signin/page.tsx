@@ -72,11 +72,11 @@ export default function SignInPage() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 p-4">
+      <Card className="w-full max-w-md bg-white border-gray-200">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Sign In</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl font-bold text-center text-gray-900">Sign In</CardTitle>
+          <CardDescription className="text-center text-gray-600">
             Enter your credentials to access your QR codes
           </CardDescription>
         </CardHeader>
@@ -86,7 +86,7 @@ export default function SignInPage() {
             <input type="text" style={{ display: 'none' }} autoComplete="username" />
             <input type="password" style={{ display: 'none' }} autoComplete="current-password" />
             <div className="space-y-2">
-              <Label htmlFor="signin-email">Email</Label>
+              <Label htmlFor="signin-email" className="text-gray-700">Email</Label>
               <Input
                 id="signin-email"
                 name="signin-email"
@@ -99,7 +99,7 @@ export default function SignInPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="signin-password">Password</Label>
+              <Label htmlFor="signin-password" className="text-gray-700">Password</Label>
               <div className="relative">
                 <Input
                   id="signin-password"
@@ -126,9 +126,9 @@ export default function SignInPage() {
           </form>
 
 
-          <div className="text-center text-sm">
+          <div className="text-center text-sm text-gray-600">
             Don&apos;t have an account?{" "}
-            <Link href="/auth/signup" className="text-primary hover:underline">
+            <Link href="/auth/signup" className="text-gray-900 font-medium hover:underline">
               Sign up
             </Link>
           </div>

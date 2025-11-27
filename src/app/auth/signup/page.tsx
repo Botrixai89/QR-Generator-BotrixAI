@@ -109,11 +109,11 @@ export default function SignUpPage() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 p-4">
+      <Card className="w-full max-w-md bg-white border-gray-200">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Sign Up</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl font-bold text-center text-gray-900">Sign Up</CardTitle>
+          <CardDescription className="text-center text-gray-600">
             Create an account to start generating QR codes
           </CardDescription>
         </CardHeader>
@@ -123,7 +123,7 @@ export default function SignUpPage() {
             <input type="text" style={{ display: 'none' }} autoComplete="username" />
             <input type="password" style={{ display: 'none' }} autoComplete="current-password" />
             <div className="space-y-2">
-              <Label htmlFor="signup-name">Name</Label>
+              <Label htmlFor="signup-name" className="text-gray-700">Name</Label>
               <Input
                 id="signup-name"
                 name="signup-name"
@@ -136,7 +136,7 @@ export default function SignUpPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="signup-email">Email</Label>
+              <Label htmlFor="signup-email" className="text-gray-700">Email</Label>
               <Input
                 id="signup-email"
                 name="signup-email"
@@ -149,7 +149,7 @@ export default function SignUpPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="signup-password">Password</Label>
+              <Label htmlFor="signup-password" className="text-gray-700">Password</Label>
               <div className="relative">
                 <Input
                   id="signup-password"
@@ -171,7 +171,7 @@ export default function SignUpPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+              <Label htmlFor="signup-confirm-password" className="text-gray-700">Confirm Password</Label>
               <div className="relative">
                 <Input
                   id="signup-confirm-password"
@@ -198,9 +198,9 @@ export default function SignUpPage() {
           </form>
 
 
-          <div className="text-center text-sm">
+          <div className="text-center text-sm text-gray-600">
             Already have an account?{" "}
-            <Link href="/auth/signin" className="text-primary hover:underline">
+            <Link href="/auth/signin" className="text-gray-900 font-medium hover:underline">
               Sign in
             </Link>
           </div>

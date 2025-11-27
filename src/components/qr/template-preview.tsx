@@ -33,8 +33,7 @@ const TemplatePreviewComponent = ({ template, isSelected, onClick }: TemplatePre
             eyePattern: template.styles?.eyePattern || 'square',
             watermark: false,
             effects: {},
-            gradient: template.colors?.gradient,
-            shape: template.shape || 'square'
+            gradient: template.colors?.gradient
           }
           
           ;(async () => {

@@ -17,9 +17,20 @@ export default function Home() {
     setIsClient(true)
   }, [])
 
-  if (!isClient || status === "loading") {
+  if (!isClient) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p>Loading...</p>
@@ -38,14 +49,14 @@ export default function Home() {
         <StructuredData type="faq" />
         <OrganizationSchema />
 
-        <div className="min-h-screen bg-gradient-to-br from-background to-muted">
+        <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
           <div className="container mx-auto px-4 py-12 md:py-16">
             {/* Hero Section - Simplified */}
             <header className="text-center mb-12 md:mb-16">
-              <h1 className="text-3xl md:text-5xl font-bold mb-4">
-                <span className="text-primary">BotrixAI</span> QR Generator - Free QR Code Generator with Logo & Analytics
+              <h1 className="text-3xl md:text-5xl font-bold mb-4 text-gray-900">
+                <span className="text-gray-700">BotrixAI</span> QR Generator - Free QR Code Generator with Logo & Analytics
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
+              <p className="text-lg md:text-xl text-gray-600 mb-6 max-w-2xl mx-auto">
                 Create stunning, customizable QR codes with BotrixAI QR Generator. Add logos, customize colors, track analytics, and download in multiple formats—all for free!
               </p>
               <div className="flex gap-4 justify-center flex-wrap mb-6">
@@ -58,17 +69,17 @@ export default function Home() {
               </div>
               
               {/* Trust Indicators - Compact */}
-              <div className="flex gap-6 justify-center text-sm text-muted-foreground flex-wrap">
+              <div className="flex gap-6 justify-center text-sm text-gray-600 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-primary" />
+                  <Shield className="h-4 w-4 text-gray-700" />
                   <span>100% Free</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-primary" />
+                  <Zap className="h-4 w-4 text-gray-700" />
                   <span>Instant</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Download className="h-4 w-4 text-primary" />
+                  <Download className="h-4 w-4 text-gray-700" />
                   <span>PNG & SVG</span>
                 </div>
               </div>
@@ -76,29 +87,29 @@ export default function Home() {
 
             {/* Features Section - Compact */}
             <section className="grid md:grid-cols-3 gap-6 mb-12">
-              <Card>
+              <Card className="bg-white border-gray-200">
                 <CardHeader>
-                  <QrCode className="h-6 w-6 text-primary mb-2" aria-hidden="true" />
-                  <CardTitle className="text-lg">Custom Design</CardTitle>
-                  <CardDescription className="text-sm">
+                  <QrCode className="h-6 w-6 text-gray-700 mb-2" aria-hidden="true" />
+                  <CardTitle className="text-lg text-gray-900">Custom Design</CardTitle>
+                  <CardDescription className="text-sm text-gray-600">
                     Custom templates, shapes, and visual effects for professional branding.
                   </CardDescription>
                 </CardHeader>
               </Card>
-              <Card>
+              <Card className="bg-white border-gray-200">
                 <CardHeader>
-                  <Palette className="h-6 w-6 text-primary mb-2" aria-hidden="true" />
-                  <CardTitle className="text-lg">Add Logo</CardTitle>
-                  <CardDescription className="text-sm">
+                  <Palette className="h-6 w-6 text-gray-700 mb-2" aria-hidden="true" />
+                  <CardTitle className="text-lg text-gray-900">Add Logo</CardTitle>
+                  <CardDescription className="text-sm text-gray-600">
                     Embed your logo and customize colors to match your brand identity.
                   </CardDescription>
                 </CardHeader>
               </Card>
-              <Card>
+              <Card className="bg-white border-gray-200">
                 <CardHeader>
-                  <BarChart3 className="h-6 w-6 text-primary mb-2" aria-hidden="true" />
-                  <CardTitle className="text-lg">Analytics & Tracking</CardTitle>
-                  <CardDescription className="text-sm">
+                  <BarChart3 className="h-6 w-6 text-gray-700 mb-2" aria-hidden="true" />
+                  <CardTitle className="text-lg text-gray-900">Analytics & Tracking</CardTitle>
+                  <CardDescription className="text-sm text-gray-600">
                     Track scans with detailed analytics including location and device data.
                   </CardDescription>
                 </CardHeader>
@@ -107,10 +118,10 @@ export default function Home() {
 
             {/* Interactive Demo Section - Simplified */}
             <section className="max-w-6xl mx-auto mb-12">
-              <Card>
+              <Card className="bg-white border-gray-200">
                 <CardHeader className="text-center pb-4">
-                  <CardTitle>Try It Now</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-gray-900">Try It Now</CardTitle>
+                  <CardDescription className="text-gray-600">
                     Generate your first QR code instantly. Sign up to unlock advanced features.
                   </CardDescription>
                 </CardHeader>
@@ -122,21 +133,21 @@ export default function Home() {
 
             {/* SEO Content Section */}
             <section className="max-w-4xl mx-auto mb-12">
-              <div className="prose prose-lg dark:prose-invert max-w-none">
-                <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
+              <div className="prose prose-lg max-w-none">
+                <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center text-gray-900">
                   Why Choose BotrixAI QR Generator?
                 </h2>
-                <div className="space-y-6 text-muted-foreground">
+                <div className="space-y-6 text-gray-600">
                   <p>
-                    <strong className="text-foreground">BotrixAI QR Generator</strong> is the leading free QR code generator that empowers businesses and individuals to create professional, branded QR codes in seconds. Whether you're searching for "qr generator botrix ai" or "botrix ai qr generator", you've found the perfect solution for all your QR code needs.
+                    <strong className="text-gray-900">BotrixAI QR Generator</strong> is the leading free QR code generator that empowers businesses and individuals to create professional, branded QR codes in seconds. Whether you're searching for "qr generator botrix ai" or "botrix ai qr generator", you've found the perfect solution for all your QR code needs.
                   </p>
                   <p>
-                    Our <strong className="text-foreground">BotrixAI QR Code Generator</strong> offers advanced features including logo embedding, color customization, analytics tracking, and multiple export formats. Create dynamic QR codes that track scans, locations, and device types—all without any cost.
+                    Our <strong className="text-gray-900">BotrixAI QR Code Generator</strong> offers advanced features including logo embedding, color customization, analytics tracking, and multiple export formats. Create dynamic QR codes that track scans, locations, and device types—all without any cost.
                   </p>
                   <p>
-                    With <strong className="text-foreground">BotrixAI QR Generator</strong>, you can generate unlimited QR codes for websites, contact information, WiFi credentials, UPI payments, and more. Our platform combines ease of use with powerful customization options, making it the ideal choice for marketing campaigns, business cards, product packaging, and digital signage.
+                    With <strong className="text-gray-900">BotrixAI QR Generator</strong>, you can generate unlimited QR codes for websites, contact information, WiFi credentials, UPI payments, and more. Our platform combines ease of use with powerful customization options, making it the ideal choice for marketing campaigns, business cards, product packaging, and digital signage.
                   </p>
-                  <h3 className="text-xl font-semibold mt-8 mb-4 text-foreground">
+                  <h3 className="text-xl font-semibold mt-8 mb-4 text-gray-900">
                     Key Features of BotrixAI QR Generator
                   </h3>
                   <ul className="list-disc list-inside space-y-2">
@@ -150,7 +161,7 @@ export default function Home() {
                     <li><strong>API Access:</strong> Integrate BotrixAI QR Generator into your applications</li>
                   </ul>
                   <p className="mt-6">
-                    Start using <strong className="text-foreground">BotrixAI QR Generator</strong> today and experience the most powerful, free QR code generator available. Join thousands of users who trust BotrixAI for their QR code generation needs.
+                    Start using <strong className="text-gray-900">BotrixAI QR Generator</strong> today and experience the most powerful, free QR code generator available. Join thousands of users who trust BotrixAI for their QR code generation needs.
                   </p>
                 </div>
               </div>

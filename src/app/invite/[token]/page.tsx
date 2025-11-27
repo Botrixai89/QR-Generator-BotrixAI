@@ -126,7 +126,7 @@ export default function InviteAcceptPage() {
   const org = (invitation.Organization || {}) as Record<string, unknown>
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 p-4">
       <Card className="max-w-md w-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

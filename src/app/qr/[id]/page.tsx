@@ -939,11 +939,11 @@ export default function QRCodeRedirectPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200">
+        <Card className="w-full max-w-md bg-white border-gray-200">
           <CardContent className="flex flex-col items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin mb-4" />
-            <p className="text-muted-foreground">Processing QR code...</p>
+            <Loader2 className="h-8 w-8 animate-spin mb-4 text-gray-600" />
+            <p className="text-gray-500">Processing QR code...</p>
           </CardContent>
         </Card>
       </div>
@@ -952,13 +952,13 @@ export default function QRCodeRedirectPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200">
+        <Card className="w-full max-w-md bg-white border-gray-200">
           <CardHeader>
             <CardTitle className="text-center text-red-600">Error</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-muted-foreground mb-4">{error}</p>
+            <p className="text-gray-500 mb-4">{error}</p>
             <Button onClick={() => router.back()} variant="outline">
               Go Back
             </Button>
@@ -969,12 +969,12 @@ export default function QRCodeRedirectPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-gray-100 to-gray-200">
       <div className="w-full max-w-2xl space-y-6">
         {/* Main Redirect Card */}
-        <Card>
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-gray-900">
               {redirecting ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -987,7 +987,7 @@ export default function QRCodeRedirectPage() {
                 </>
               )}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-gray-500">
               {redirecting 
                 ? 'You are being redirected to the destination...'
                 : isPreviewMode
@@ -1001,10 +1001,10 @@ export default function QRCodeRedirectPage() {
               <div className="flex flex-col items-center space-y-4 mb-6">
                 <QRCodePreview qrCode={qrCode} onDownload={handleDownload} setDownloadMessage={setDownloadMessage} />
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-gray-500">
                     Scan this QR code or click the button below to visit the destination
                   </p>
-                  <p className="text-sm font-medium mt-2">
+                  <p className="text-sm font-medium mt-2 text-gray-900">
                     {qrCode.title}
                   </p>
                   {downloadMessage && (
@@ -1039,8 +1039,8 @@ export default function QRCodeRedirectPage() {
           </CardContent>
         </Card>
 
-        {/* Analytics Card */}
-        {analytics && (
+        {/* Analytics Card - Only show for dynamic QR codes (static/UPI QR codes can't be tracked) */}
+        {analytics && qrCode?.isDynamic && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
