@@ -109,13 +109,13 @@ export const metadata: Metadata = {
     },
   },
   // TODO: Add your actual verification codes from Google Search Console, Bing Webmaster, etc.
-  // verification: {
-  //   google: "your-google-verification-code",
-  //   yandex: "your-yandex-verification-code",
-  //   other: {
-  //     bing: ["your-bing-verification-code"],
-  //   },
-  // },
+  verification: {
+    google: "oPKtGmXArI-1q2c_17cFYPrLUNmURm0D1fz5GFUhYqw",
+    // yandex: "your-yandex-verification-code",
+    // other: {
+    //   bing: ["your-bing-verification-code"],
+    // },
+  },
   icons: {
     icon: [
       { url: "/favicon.ico" },
