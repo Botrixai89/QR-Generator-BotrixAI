@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/providers/session-provider"
 import { Toaster } from "@/components/ui/sonner"
 import Navigation from "@/components/navigation"
 import { WebVitals } from "@/components/web-vitals"
+import { Breadcrumbs } from "@/components/seo/breadcrumbs"
 
 interface LayoutClientWrapperProps {
   children: React.ReactNode
@@ -24,6 +25,9 @@ export function LayoutClientWrapper({ children }: LayoutClientWrapperProps) {
           <WebVitals />
           <Navigation />
           <main className="pt-16">
+            <div className="container mx-auto px-4">
+              <Breadcrumbs />
+            </div>
             {children}
           </main>
           <Toaster />

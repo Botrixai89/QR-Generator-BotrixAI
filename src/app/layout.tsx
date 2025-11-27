@@ -108,13 +108,14 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  verification: {
-    google: "google-site-verification-code-here",
-    yandex: "yandex-verification-code-here",
-    other: {
-      bing: ["bing-verification-code-here"],
-    },
-  },
+  // TODO: Add your actual verification codes from Google Search Console, Bing Webmaster, etc.
+  // verification: {
+  //   google: "your-google-verification-code",
+  //   yandex: "your-yandex-verification-code",
+  //   other: {
+  //     bing: ["your-bing-verification-code"],
+  //   },
+  // },
   icons: {
     icon: [
       { url: "/favicon.ico" },
