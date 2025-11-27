@@ -79,11 +79,11 @@ export const metadata: Metadata = {
     description: "BotrixAI QR Generator - Create stunning, customizable QR codes instantly! Free QR code generator with logo, color customization, analytics tracking, and multiple export formats.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.svg",
         width: 1200,
         height: 630,
         alt: "BotrixAI QR Code Generator - Create Beautiful Custom QR Codes",
-        type: "image/png",
+        type: "image/svg+xml",
       }
     ],
   },
@@ -93,7 +93,7 @@ export const metadata: Metadata = {
     creator: "@BotrixAI",
     title: "BotrixAI QR Generator - Free QR Code Generator with Logo & Analytics",
     description: "BotrixAI QR Generator - Create stunning, customizable QR codes instantly! Free QR code generator with logo, color customization, and analytics tracking.",
-    images: ["/twitter-image.png"],
+    images: ["/twitter-image.svg"],
   },
   robots: {
     index: true,
