@@ -8,6 +8,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://qr-generator.botrixai.com'
   const currentDate = new Date()
 
+  // Blog posts for sitemap
+  const blogPosts = [
+    { slug: 'how-to-create-upi-qr-code-free', date: '2025-11-27' },
+    { slug: 'free-qr-code-generator-with-logo', date: '2025-11-26' },
+    { slug: 'qr-code-for-business-cards', date: '2025-11-25' },
+    { slug: 'dynamic-vs-static-qr-codes', date: '2025-11-24' },
+    { slug: 'qr-code-size-guide', date: '2025-11-23' },
+  ]
+
   // Static routes with priorities and change frequencies
   const routes: MetadataRoute.Sitemap = [
     // Homepage - highest priority
@@ -36,13 +45,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.8,
     },
-    // Content pages
+    // Blog listing
     {
       url: `${baseUrl}/blog`,
       lastModified: currentDate,
       changeFrequency: 'weekly',
-      priority: 0.7,
+      priority: 0.8,
     },
+    // Blog posts - high priority for SEO
+    ...blogPosts.map((post) => ({
+      url: `${baseUrl}/blog/${post.slug}`,
+      lastModified: new Date(post.date),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+    // Other content pages
     {
       url: `${baseUrl}/docs`,
       lastModified: currentDate,
