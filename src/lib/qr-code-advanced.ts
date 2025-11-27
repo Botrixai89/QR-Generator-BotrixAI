@@ -168,56 +168,93 @@ export class AdvancedQRCodeGenerator {
     // Skip if shape is square (default)
     if (shape === 'square') return
 
-    const shapeMask = this.createShapeMask(shape, this.options.width, this.options.height)
-    if (shapeMask) {
-      // Create mask definition
-      let defs = svg.querySelector('defs')
-      if (!defs) {
-        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
-        svg.insertBefore(defs, svg.firstChild)
-      }
+    const width = this.options.width
+    const height = this.options.height
 
-      const mask = document.createElementNS('http://www.w3.org/2000/svg', 'mask')
-      mask.setAttribute('id', `shape-mask-${shape}`)
-      mask.appendChild(shapeMask)
-      defs.appendChild(mask)
+    // Create defs if not exists
+    let defs = svg.querySelector('defs')
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+      svg.insertBefore(defs, svg.firstChild)
+    }
 
-      // Apply mask to the entire QR code group
-      const qrGroup = svg.querySelector('g') || svg
-      qrGroup.setAttribute('mask', `url(#shape-mask-${shape})`)
+    // Create clipPath for the shape
+    const clipPath = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
+    clipPath.setAttribute('id', `shape-clip-${shape}`)
+
+    const shapeElement = this.createShapeElement(shape, width, height)
+    if (shapeElement) {
+      clipPath.appendChild(shapeElement)
+      defs.appendChild(clipPath)
+
+      // Apply clip-path directly to the SVG element's style
+      svg.style.clipPath = `url(#shape-clip-${shape})`
     }
   }
 
-  // Create shape mask SVG element
-  private createShapeMask(shape: string, width: number, height: number): SVGElement | null {
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-    
-    // Set up white background
-    rect.setAttribute('width', width.toString())
-    rect.setAttribute('height', height.toString())
-    rect.setAttribute('fill', 'white')
+  // Create shape element for clipping
+  private createShapeElement(shape: string, width: number, height: number): SVGElement | null {
+    const cx = width / 2
+    const cy = height / 2
 
-    // Define shape paths
-    const shapePaths: Record<string, string> = {
-      circle: `M${width/2},0 A${width/2},${height/2} 0 1,1 ${width/2},${height} A${width/2},${height/2} 0 1,1 ${width/2},0`,
-      heart: `M${width/2},${height*0.7} C${width/2},${height*0.7} ${width*0.1},${height*0.3} ${width*0.1},${height*0.5} C${width*0.1},${height*0.6} ${width*0.2},${height*0.7} ${width*0.3},${height*0.7} C${width*0.4},${height*0.7} ${width/2},${height*0.9} ${width/2},${height*0.9} C${width/2},${height*0.9} ${width*0.6},${height*0.7} ${width*0.7},${height*0.7} C${width*0.8},${height*0.7} ${width*0.9},${height*0.6} ${width*0.9},${height*0.5} C${width*0.9},${height*0.3} ${width/2},${height*0.7} ${width/2},${height*0.7} Z`,
-      star: `M${width/2},0 L${width*0.6},${height*0.4} L${width},${height*0.4} L${width*0.7},${height*0.6} L${width*0.8},${height} L${width/2},${height*0.8} L${width*0.2},${height} L${width*0.3},${height*0.6} L0,${height*0.4} L${width*0.4},${height*0.4} Z`,
-      hexagon: `M${width*0.25},0 L${width*0.75},0 L${width},${height*0.5} L${width*0.75},${height} L${width*0.25},${height} L0,${height*0.5} Z`,
-      diamond: `M${width/2},0 L${width},${height/2} L${width/2},${height} L0,${height/2} Z`,
+    switch (shape) {
+      case 'circle': {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+        circle.setAttribute('cx', cx.toString())
+        circle.setAttribute('cy', cy.toString())
+        circle.setAttribute('r', (Math.min(width, height) / 2).toString())
+        return circle
+      }
+      case 'heart': {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        // Heart shape centered and scaled to fit
+        const s = Math.min(width, height) / 512 // Scale factor based on 512 viewbox
+        const heartPath = `M ${cx} ${height * 0.85}
+          C ${cx - 180*s} ${height * 0.55}, ${cx - 220*s} ${height * 0.15}, ${cx} ${height * 0.35}
+          C ${cx + 220*s} ${height * 0.15}, ${cx + 180*s} ${height * 0.55}, ${cx} ${height * 0.85} Z`
+        path.setAttribute('d', heartPath)
+        return path
+      }
+      case 'star': {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        const outerRadius = Math.min(width, height) / 2
+        const innerRadius = outerRadius * 0.38
+        const points = 5
+        let d = ''
+        for (let i = 0; i < points * 2; i++) {
+          const radius = i % 2 === 0 ? outerRadius : innerRadius
+          const angle = (i * Math.PI / points) - Math.PI / 2
+          const x = cx + radius * Math.cos(angle)
+          const y = cy + radius * Math.sin(angle)
+          d += (i === 0 ? 'M' : 'L') + x + ',' + y
+        }
+        d += 'Z'
+        path.setAttribute('d', d)
+        return path
+      }
+      case 'hexagon': {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        const radius = Math.min(width, height) / 2
+        let d = ''
+        for (let i = 0; i < 6; i++) {
+          const angle = (i * Math.PI / 3) - Math.PI / 2
+          const x = cx + radius * Math.cos(angle)
+          const y = cy + radius * Math.sin(angle)
+          d += (i === 0 ? 'M' : 'L') + x + ',' + y
+        }
+        d += 'Z'
+        path.setAttribute('d', d)
+        return path
+      }
+      case 'diamond': {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        const size = Math.min(width, height) / 2
+        path.setAttribute('d', `M${cx},${cy - size} L${cx + size},${cy} L${cx},${cy + size} L${cx - size},${cy} Z`)
+        return path
+      }
+      default:
+        return null
     }
-
-    if (shapePaths[shape]) {
-      path.setAttribute('d', shapePaths[shape])
-      path.setAttribute('fill', 'white')
-      
-      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-      group.appendChild(rect)
-      group.appendChild(path)
-      return group
-    }
-
-    return rect
   }
 
   // Apply gradient to QR code
@@ -671,58 +708,93 @@ export class AdvancedQRCodeGenerator {
     const svg = this.container.querySelector('svg')
     if (!svg) return
 
-    const defs = svg.querySelector('defs') || document.createElementNS('http://www.w3.org/2000/svg', 'defs')
-    if (!svg.querySelector('defs')) {
+    let defs = svg.querySelector('defs')
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
       svg.insertBefore(defs, svg.firstChild)
     }
 
+    // Create a combined filter for all effects
+    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter')
+    filter.setAttribute('id', 'qr-effects')
+    filter.setAttribute('x', '-50%')
+    filter.setAttribute('y', '-50%')
+    filter.setAttribute('width', '200%')
+    filter.setAttribute('height', '200%')
+
+    let lastResult = 'SourceGraphic'
+    let hasEffects = false
+
     // Apply shadow effect
     if (effects.shadow) {
-      const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter')
-      filter.setAttribute('id', 'qr-shadow')
-      filter.setAttribute('x', '-50%')
-      filter.setAttribute('y', '-50%')
-      filter.setAttribute('width', '200%')
-      filter.setAttribute('height', '200%')
-
+      hasEffects = true
       const feDropShadow = document.createElementNS('http://www.w3.org/2000/svg', 'feDropShadow')
-      feDropShadow.setAttribute('dx', '2')
-      feDropShadow.setAttribute('dy', '2')
-      feDropShadow.setAttribute('stdDeviation', '3')
-      feDropShadow.setAttribute('flood-color', 'rgba(0,0,0,0.3)')
-
+      feDropShadow.setAttribute('in', lastResult)
+      feDropShadow.setAttribute('dx', '4')
+      feDropShadow.setAttribute('dy', '4')
+      feDropShadow.setAttribute('stdDeviation', '4')
+      feDropShadow.setAttribute('flood-color', 'rgba(0,0,0,0.4)')
+      feDropShadow.setAttribute('flood-opacity', '0.4')
+      feDropShadow.setAttribute('result', 'shadow')
       filter.appendChild(feDropShadow)
-      defs.appendChild(filter)
-
-      svg.setAttribute('filter', 'url(#qr-shadow)')
+      lastResult = 'shadow'
     }
 
     // Apply glow effect
     if (effects.glow) {
-      const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter')
-      filter.setAttribute('id', 'qr-glow')
-      filter.setAttribute('x', '-50%')
-      filter.setAttribute('y', '-50%')
-      filter.setAttribute('width', '200%')
-      filter.setAttribute('height', '200%')
-
+      hasEffects = true
+      // Create glow by blurring and compositing
       const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur')
-      feGaussianBlur.setAttribute('stdDeviation', '4')
-      feGaussianBlur.setAttribute('result', 'coloredBlur')
+      feGaussianBlur.setAttribute('in', 'SourceGraphic')
+      feGaussianBlur.setAttribute('stdDeviation', '3')
+      feGaussianBlur.setAttribute('result', 'blur')
+      filter.appendChild(feGaussianBlur)
 
+      // Colorize the blur
+      const feColorMatrix = document.createElementNS('http://www.w3.org/2000/svg', 'feColorMatrix')
+      feColorMatrix.setAttribute('in', 'blur')
+      feColorMatrix.setAttribute('type', 'matrix')
+      feColorMatrix.setAttribute('values', '1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7')
+      feColorMatrix.setAttribute('result', 'glow')
+      filter.appendChild(feColorMatrix)
+
+      // Merge glow with original
       const feMerge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge')
       const feMergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode')
-      feMergeNode1.setAttribute('in', 'coloredBlur')
+      feMergeNode1.setAttribute('in', 'glow')
       const feMergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode')
-      feMergeNode2.setAttribute('in', 'SourceGraphic')
-
+      feMergeNode2.setAttribute('in', lastResult === 'shadow' ? 'shadow' : 'SourceGraphic')
       feMerge.appendChild(feMergeNode1)
       feMerge.appendChild(feMergeNode2)
-      filter.appendChild(feGaussianBlur)
+      feMerge.setAttribute('result', 'glowMerge')
       filter.appendChild(feMerge)
-      defs.appendChild(filter)
+      lastResult = 'glowMerge'
+    }
 
-      svg.setAttribute('filter', 'url(#qr-glow)')
+    // Apply 3D effect (emboss-like)
+    if (effects.threeD) {
+      hasEffects = true
+      // Create 3D emboss effect using convolution
+      const feConvolveMatrix = document.createElementNS('http://www.w3.org/2000/svg', 'feConvolveMatrix')
+      feConvolveMatrix.setAttribute('in', lastResult === 'SourceGraphic' ? 'SourceGraphic' : lastResult)
+      feConvolveMatrix.setAttribute('order', '3')
+      feConvolveMatrix.setAttribute('kernelMatrix', '-2 -1 0 -1 1 1 0 1 2')
+      feConvolveMatrix.setAttribute('result', 'emboss')
+      filter.appendChild(feConvolveMatrix)
+
+      // Blend with original for subtle 3D look
+      const feBlend = document.createElementNS('http://www.w3.org/2000/svg', 'feBlend')
+      feBlend.setAttribute('in', 'SourceGraphic')
+      feBlend.setAttribute('in2', 'emboss')
+      feBlend.setAttribute('mode', 'multiply')
+      feBlend.setAttribute('result', 'threeD')
+      filter.appendChild(feBlend)
+      lastResult = 'threeD'
+    }
+
+    if (hasEffects) {
+      defs.appendChild(filter)
+      svg.setAttribute('filter', 'url(#qr-effects)')
     }
   }
 

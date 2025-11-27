@@ -89,9 +89,12 @@ const encodeSvg = (svg: string): string => {
 }
 
 export const getSocialMediaLogoDataUrl = (platform: SocialMediaPlatform): string | null => {
-  // Use the actual image file for Snapchat
+  // Use the actual image files for these platforms
   if (platform === "snapchat") {
     return "/snapchat-logo.webp"
+  }
+  if (platform === "instagram") {
+    return "/instagram-logo.png"
   }
   const svg = svgTemplates[platform]
   if (!svg) return null

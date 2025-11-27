@@ -72,7 +72,7 @@ export default function Navigation() {
                   {session.user?.name || "User"}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  {session.user?.email || ""}
+                  Plan: <span className="font-medium">{(session.user as { plan?: string })?.plan === 'PRO' ? 'Pro' : 'Free'}</span>
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -182,10 +182,10 @@ export default function Navigation() {
                   Pricing
                 </Link>
                 <Link 
-                  href="/test-dynamic" 
+                  href="/about" 
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Test Dynamic QR
+                  About
                 </Link>
               </div>
             )}

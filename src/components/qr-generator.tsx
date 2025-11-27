@@ -375,6 +375,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   const [userPlan, setUserPlan] = useState<PlanState>(initialPlanState)
   const [activeTab, setActiveTab] = useState<string>('basic')
   const [showGuestUpsell, setShowGuestUpsell] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   
   // Dynamic QR code states
   const [isDynamic, setIsDynamic] = useState(false)
@@ -1292,29 +1293,24 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Templates</Label>
                       <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-                        {Object.entries(QR_TEMPLATES).map(([id, template]) => (
-                          <TemplatePreview
-                            key={id}
-                            template={template}
-                            isSelected={qrOptions.template === id}
-                            onClick={() => handleTemplateSelect(id as QRTemplate)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Shapes */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Shapes</Label>
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                        {Object.keys(shapeIcons).slice(0, 12).map((shape) => (
-                          <ShapePreview
-                            key={shape}
-                            shape={shape as QRShape}
-                            isSelected={qrOptions.shape === shape}
-                            onClick={() => handleShapeSelect(shape as QRShape)}
-                          />
-                        ))}
+                        {Object.entries(QR_TEMPLATES).map(([id, template]) => {
+                          const isAllowedForFree = id === 'business' || id === 'creative'
+                          const isDisabled = isFreeTier && !isAllowedForFree
+                          return (
+                            <TemplatePreview
+                              key={id}
+                              template={template}
+                              isSelected={qrOptions.template === id}
+                              onClick={() => {
+                                if (isDisabled) {
+                                  setShowUpgradeModal(true)
+                                } else {
+                                  handleTemplateSelect(id as QRTemplate)
+                                }
+                              }}
+                            />
+                          )
+                        })}
                       </div>
                     </div>
 
@@ -1360,7 +1356,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     {/* Styles */}
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Styles</Label>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <Label className="text-xs">Dot Style</Label>
                           <Select 
@@ -1377,9 +1373,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                               <SelectItem value="classy">Classy</SelectItem>
                               <SelectItem value="classy-rounded">Classy Rounded</SelectItem>
                               <SelectItem value="dots">Dots</SelectItem>
-                              <SelectItem value="circles">Circles</SelectItem>
-                              <SelectItem value="diamonds">Diamonds</SelectItem>
-                              <SelectItem value="stars">Stars</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1397,32 +1390,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                               <SelectItem value="square">Square</SelectItem>
                               <SelectItem value="rounded">Rounded</SelectItem>
                               <SelectItem value="extra-rounded">Extra Rounded</SelectItem>
-                              <SelectItem value="diamond">Diamond</SelectItem>
-                              <SelectItem value="star">Star</SelectItem>
-                              <SelectItem value="heart">Heart</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-xs">Eye Pattern</Label>
-                          <Select 
-                            value={qrOptions.eyePattern || 'square'} 
-                            onValueChange={(value) => setQrOptions(prev => ({ ...prev, eyePattern: value as AdvancedQROptions['eyePattern'] }))}
-                          >
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="square">Square</SelectItem>
-                              <SelectItem value="circle">Circle</SelectItem>
-                              <SelectItem value="diamond">Diamond</SelectItem>
-                              <SelectItem value="rounded">Rounded</SelectItem>
-                              <SelectItem value="extra-rounded">Extra Rounded</SelectItem>
-                              <SelectItem value="classy">Classy</SelectItem>
-                              <SelectItem value="classy-rounded">Classy Rounded</SelectItem>
-                              <SelectItem value="star">Star</SelectItem>
-                              <SelectItem value="heart">Heart</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1436,9 +1403,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                         <div className="flex items-center space-x-2">
                           <Switch 
                             checked={qrOptions.effects?.threeD || false}
-                            onCheckedChange={(checked) => 
-                              setQrOptions(prev => ({ ...prev, effects: { ...prev.effects, threeD: checked } }))
-                            }
+                            onCheckedChange={(checked) => setQrOptions(prev => ({ ...prev, effects: { ...prev.effects, threeD: checked } }))}
                             className="scale-75"
                           />
                           <Label className="text-xs">3D Effect</Label>
@@ -1446,9 +1411,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                         <div className="flex items-center space-x-2">
                           <Switch 
                             checked={qrOptions.effects?.shadow || false}
-                            onCheckedChange={(checked) => 
-                              setQrOptions(prev => ({ ...prev, effects: { ...prev.effects, shadow: checked } }))
-                            }
+                            onCheckedChange={(checked) => setQrOptions(prev => ({ ...prev, effects: { ...prev.effects, shadow: checked } }))}
                             className="scale-75"
                           />
                           <Label className="text-xs">Shadow</Label>
@@ -1456,9 +1419,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                         <div className="flex items-center space-x-2">
                           <Switch 
                             checked={qrOptions.effects?.glow || false}
-                            onCheckedChange={(checked) => 
-                              setQrOptions(prev => ({ ...prev, effects: { ...prev.effects, glow: checked } }))
-                            }
+                            onCheckedChange={(checked) => setQrOptions(prev => ({ ...prev, effects: { ...prev.effects, glow: checked } }))}
                             className="scale-75"
                           />
                           <Label className="text-xs">Glow</Label>
@@ -1466,20 +1427,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                       </div>
                     </div>
 
-                    {/* Stickers */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Stickers</Label>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                        {Object.entries(QR_STICKERS).slice(0, 8).map(([id, sticker]) => (
-                          <StickerPreview
-                            key={id}
-                            sticker={sticker}
-                            isSelected={qrOptions.sticker?.type === sticker.type}
-                            onClick={() => handleStickerSelect(id as QRSticker)}
-                          />
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 </TabsContent>
 
@@ -2199,6 +2146,59 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
               }}
             >
               Sign up free
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade Modal for Advanced Customization */}
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <Sparkles className="h-7 w-7 text-primary" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-xl">Unlock Premium Customization</DialogTitle>
+            <DialogDescription className="text-center">
+              Transform your QR codes into stunning, branded masterpieces! Get access to custom shapes, vibrant colors, eye-catching effects, and exclusive templates.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <div className="flex items-center gap-3 text-sm">
+              <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+              <span>All premium templates & shapes</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+              <span>Custom colors & gradients</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+              <span>3D effects, shadows & glow</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+              <span>Exclusive stickers & decorations</span>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-col">
+            <Button
+              className="w-full"
+              onClick={() => {
+                setShowUpgradeModal(false)
+                router.push('/pricing')
+              }}
+            >
+              Upgrade Now
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowUpgradeModal(false)}
+            >
+              Maybe later
             </Button>
           </DialogFooter>
         </DialogContent>

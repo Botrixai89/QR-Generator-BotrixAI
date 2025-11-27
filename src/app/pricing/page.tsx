@@ -121,7 +121,7 @@ export default function PricingPage() {
         amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
         currency: "INR",
         name: "QR Generator",
-        description: "Flex Plan - 100 Credits",
+        description: "Pro Plan - 100 Credits",
         order_id: order_id,
         handler: async function (response: RazorpayPaymentResponse) {
           try {
@@ -253,7 +253,7 @@ export default function PricingPage() {
             Choose Your Plan
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Get started with free credits or upgrade to our Flex plan for unlimited QR code generation
+            Get started with free credits or upgrade to our Pro plan for unlimited QR code generation
           </p>
         </div>
 
@@ -268,9 +268,9 @@ export default function PricingPage() {
               <CardDescription>
                 Perfect for getting started
               </CardDescription>
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-foreground">
                 ₹0
-                <span className="text-lg font-normal text-gray-500">/month</span>
+                <span className="text-lg font-normal text-muted-foreground">/month</span>
               </div>
             </CardHeader>
             <CardContent>
@@ -294,7 +294,7 @@ export default function PricingPage() {
               </ul>
               <Button 
                 variant="outline" 
-                className="w-full"
+                className="w-full text-muted-foreground"
                 disabled
               >
                 Current Plan
@@ -302,7 +302,7 @@ export default function PricingPage() {
             </CardContent>
           </Card>
 
-          {/* Flex Plan */}
+          {/* Pro Plan */}
           <Card className="relative border-blue-500 shadow-lg">
             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
               <Badge className="bg-blue-600 text-white px-4 py-1">
@@ -313,14 +313,14 @@ export default function PricingPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Star className="h-5 w-5 text-blue-600" />
-                Flex Plan
+                Pro Plan
               </CardTitle>
               <CardDescription>
                 Most popular choice
               </CardDescription>
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-foreground">
                 ₹1
-                <span className="text-lg font-normal text-gray-500">/one-time</span>
+                <span className="text-lg font-normal text-muted-foreground">/one-time</span>
                 <span className="ml-2 text-xs font-normal text-amber-600">(Testing Mode)</span>
               </div>
             </CardHeader>
@@ -344,6 +344,14 @@ export default function PricingPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-600" />
+                  <span>Social Media QR codes</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span>UPI Payment QR codes</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
                   <span>Priority support</span>
                 </li>
                 <li className="flex items-center gap-2">
@@ -354,7 +362,7 @@ export default function PricingPage() {
               <Button 
                 onClick={handlePurchase}
                 disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {isLoading ? "Processing..." : "Buy now"}
               </Button>

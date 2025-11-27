@@ -202,7 +202,6 @@ export default function FolderManager({ onFolderSelect, selectedFolderId }: Fold
             <div className="text-center py-8 text-muted-foreground">
               <Folder className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No folders yet</p>
-              <p className="text-sm">Create a folder to organize your QR codes</p>
             </div>
           ) : (
             <div className="space-y-2">

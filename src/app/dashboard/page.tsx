@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { 
   QrCode, 
-  Download, 
+  Download,
   Calendar, 
   BarChart3, 
   Plus,
@@ -168,9 +168,11 @@ export default function DashboardPage() {
   const [isClient, setIsClient] = useState(false)
   const [stats, setStats] = useState({
     totalCodes: 0,
-    totalDownloads: 0,
+    totalScans: 0,
     thisMonth: 0,
-    lastMonth: 0
+    lastMonth: 0,
+    scansThisMonth: 0,
+    scansLastMonth: 0
   })
   const [userCredits, setUserCredits] = useState<number | null>(null)
   const [userPlan, setUserPlan] = useState<string | null>(null)
@@ -256,9 +258,11 @@ export default function DashboardPage() {
     setQrCodes(data)
     setStats({
       totalCodes,
-      totalDownloads,
+      totalScans: totalDownloads,
       thisMonth: totalCodes,
-      lastMonth: Math.max(0, totalCodes - 1)
+      lastMonth: Math.max(0, totalCodes - 1),
+      scansThisMonth: 0,
+      scansLastMonth: 0
     })
     setUserCredits(999)
     setUserPlan('PRO')
@@ -303,7 +307,7 @@ export default function DashboardPage() {
         
         // Calculate stats
         const totalCodes = data.length
-        const totalDownloads = data.reduce((sum: number, code: QRCodeData) => sum + code.downloadCount, 0)
+        const totalScans = data.reduce((sum: number, code: QRCodeData) => sum + (code.scanCount || 0), 0)
         const thisMonth = data.filter((code: QRCodeData) => {
           const createdDate = new Date(code.createdAt)
           const now = new Date()
@@ -317,11 +321,36 @@ export default function DashboardPage() {
           return createdDate.getMonth() === lastMonthDate.getMonth() && createdDate.getFullYear() === lastMonthDate.getFullYear()
         }).length
 
+        // Calculate scans this month and last month (based on lastScannedAt)
+        const now = new Date()
+        const scansThisMonth = data.reduce((sum: number, code: QRCodeData) => {
+          if (code.lastScannedAt) {
+            const scannedDate = new Date(code.lastScannedAt)
+            if (scannedDate.getMonth() === now.getMonth() && scannedDate.getFullYear() === now.getFullYear()) {
+              return sum + (code.scanCount || 0)
+            }
+          }
+          return sum
+        }, 0)
+
+        const scansLastMonth = data.reduce((sum: number, code: QRCodeData) => {
+          if (code.lastScannedAt) {
+            const scannedDate = new Date(code.lastScannedAt)
+            const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1)
+            if (scannedDate.getMonth() === lastMonthDate.getMonth() && scannedDate.getFullYear() === lastMonthDate.getFullYear()) {
+              return sum + (code.scanCount || 0)
+            }
+          }
+          return sum
+        }, 0)
+
         setStats({
           totalCodes,
-          totalDownloads,
+          totalScans,
           thisMonth,
-          lastMonth
+          lastMonth,
+          scansThisMonth,
+          scansLastMonth
         })
       } else {
         const errorData = await response.json() as { error?: string }
@@ -379,12 +408,14 @@ export default function DashboardPage() {
         qrCode: null,
         isDeleting: false
       })
-      const totalDownloads = updated.reduce((sum, code) => sum + (code.downloadCount || 0), 0)
+      const totalScans = updated.reduce((sum, code) => sum + (code.scanCount || 0), 0)
       setStats({
         totalCodes: updated.length,
-        totalDownloads,
+        totalScans,
         thisMonth: updated.length,
-        lastMonth: Math.max(0, updated.length - 1)
+        lastMonth: Math.max(0, updated.length - 1),
+        scansThisMonth: 0,
+        scansLastMonth: 0
       })
       return
     }
@@ -471,9 +502,13 @@ export default function DashboardPage() {
             <p className="text-muted-foreground">
               Welcome back, {session.user?.name || session.user?.email}
             </p>
+            <p className="text-xs font-medium text-gray-500">
+              {userPlan === 'PRO' ? 'Pro Plan' : 'Free Plan'}
+            </p>
           </div>
           <div className="flex items-center gap-4">
-            {userCredits !== null && (
+            {/* Only show credits for Pro plan users */}
+            {userPlan === 'PRO' && userCredits !== null && (
               <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
                 <Zap className="h-4 w-4 text-blue-600" />
                 <span className="text-sm font-medium text-blue-900">
@@ -488,11 +523,11 @@ export default function DashboardPage() {
                 )}
               </div>
             )}
-            {userPlan && (
+            {/* Only show plan info for Pro plan users */}
+            {userPlan && userPlan !== 'FREE' && (
               <div className="hidden sm:flex flex-col gap-1 bg-amber-50 px-3 py-2 rounded-lg min-w-[220px]">
                 <div className="flex items-center justify-between text-xs text-amber-900">
                   <span>Plan: <strong>{userPlan}</strong></span>
-                  <Link className="underline" href="/pricing">Upgrade</Link>
                 </div>
                 {(() => {
                   const maxByPlan: Record<string, number> = { FREE: 10, FLEX: 100, PRO: 1000, BUSINESS: 10000 }
@@ -507,6 +542,14 @@ export default function DashboardPage() {
                   )
                 })()}
               </div>
+            )}
+            {/* Show upgrade button for free users */}
+            {userPlan === 'FREE' && (
+              <Button variant="outline" asChild>
+                <Link href="/pricing">
+                  Upgrade to Pro
+                </Link>
+              </Button>
             )}
             <Button asChild>
               <Link href="/">
@@ -534,13 +577,13 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Downloads</CardTitle>
-              <Download className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total Scans</CardTitle>
+              <Eye className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalDownloads}</div>
+              <div className="text-2xl font-bold">{stats.totalScans}</div>
               <p className="text-xs text-muted-foreground">
-                Across all your codes
+                Dynamic QR codes only
               </p>
             </CardContent>
           </Card>
@@ -560,14 +603,14 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Growth</CardTitle>
+              <CardTitle className="text-sm font-medium">Scan Growth</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats.lastMonth > 0 
-                  ? `${Math.round(((stats.thisMonth - stats.lastMonth) / stats.lastMonth) * 100)}%`
-                  : "0%"
+                {stats.scansLastMonth > 0 
+                  ? `${Math.round(((stats.scansThisMonth - stats.scansLastMonth) / stats.scansLastMonth) * 100)}%`
+                  : stats.scansThisMonth > 0 ? "+100%" : "0%"
                 }
               </div>
               <p className="text-xs text-muted-foreground">
@@ -603,12 +646,6 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle>Your QR Codes</CardTitle>
-                        <CardDescription>
-                          {selectedFolderId 
-                            ? "QR codes in selected folder"
-                            : "Manage and track all your generated QR codes"
-                          }
-                        </CardDescription>
                       </div>
                       <Button asChild>
                         <Link href="/">
