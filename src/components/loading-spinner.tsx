@@ -13,7 +13,7 @@ export function LoadingSpinner({ size = "md", text }: LoadingSpinnerProps) {
   return (
     <div className="flex flex-col items-center justify-center space-y-2">
       <div className={`animate-spin rounded-full border-b-2 border-primary ${sizeClasses[size]}`}></div>
-      {text && <p className="text-sm text-muted-foreground">{text}</p>}
+      {text && <p className="text-sm text-foreground">{text}</p>}
     </div>
   )
 }

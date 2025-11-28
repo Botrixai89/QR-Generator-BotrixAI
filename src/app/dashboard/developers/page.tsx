@@ -23,7 +23,7 @@ export default function DevelopersPage() {
   }, [status, router])
 
   if (status === 'loading' || !session) {
-    return <div className="container mx-auto p-6">Loading...</div>
+    return <div className="container mx-auto p-6 bg-background text-foreground">Loading...</div>
   }
 
   return (

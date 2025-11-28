@@ -939,11 +939,11 @@ export default function QRCodeRedirectPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200">
-        <Card className="w-full max-w-md bg-white border-gray-200">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950">
+        <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin mb-4 text-gray-600" />
-            <p className="text-gray-500">Processing QR code...</p>
+            <Loader2 className="h-8 w-8 animate-spin mb-4 text-foreground" />
+            <p className="text-foreground">Processing QR code...</p>
           </CardContent>
         </Card>
       </div>
@@ -952,13 +952,13 @@ export default function QRCodeRedirectPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200">
-        <Card className="w-full max-w-md bg-white border-gray-200">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950">
+        <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-center text-red-600">Error</CardTitle>
+            <CardTitle className="text-center text-destructive">Error</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-gray-500 mb-4">{error}</p>
+            <p className="text-foreground mb-4">{error}</p>
             <Button onClick={() => router.back()} variant="outline">
               Go Back
             </Button>
@@ -969,7 +969,7 @@ export default function QRCodeRedirectPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-gray-100 to-gray-200">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950">
       <div className="w-full max-w-2xl space-y-6">
         {/* Main Redirect Card */}
         <Card className="bg-white border-gray-200">

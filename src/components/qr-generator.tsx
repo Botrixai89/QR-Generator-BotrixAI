@@ -213,11 +213,11 @@ function ShapePreview({ shape, isSelected, onClick }: {
       }`}
       onClick={onClick}
     >
-      <div className="aspect-square w-full rounded bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-        <IconComponent className="h-8 w-8 text-gray-600" />
+      <div className="aspect-square w-full rounded bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <IconComponent className="h-8 w-8 text-gray-600 dark:text-gray-400" />
       </div>
       <div className="mt-2 text-center">
-        <div className="text-xs font-medium capitalize">{shape}</div>
+        <div className="text-xs font-medium capitalize text-foreground">{shape}</div>
       </div>
     </div>
   )
@@ -260,7 +260,7 @@ function StickerPreview({ sticker, isSelected, onClick }: {
         )
       case 'silver-frame':
         return (
-          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-500">
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-500 dark:text-gray-400">
             <rect x="2" y="2" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"/>
           </svg>
         )
@@ -297,7 +297,7 @@ function StickerPreview({ sticker, isSelected, onClick }: {
         )
       case 'snowman':
         return (
-          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-400">
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-400 dark:text-gray-500">
             <circle cx="12" cy="6" r="3" fill="currentColor"/>
             <circle cx="12" cy="14" r="4" fill="currentColor"/>
             <circle cx="10" cy="5" r="1" fill="white"/>
@@ -321,14 +321,14 @@ function StickerPreview({ sticker, isSelected, onClick }: {
         )
       case 'bat':
         return (
-          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-800">
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-800 dark:text-gray-300">
             <path d="M12,2 C8,4 6,8 6,12 C6,16 8,20 12,22 C16,20 18,16 18,12 C18,8 16,4 12,2 Z M10,8 C10.5,8 11,8.5 11,9 C11,9.5 10.5,10 10,10 C9.5,10 9,9.5 9,9 C9,8.5 9.5,8 10,8 Z M14,8 C14.5,8 15,8.5 15,9 C15,9.5 14.5,10 14,10 C13.5,10 13,9.5 13,9 C13,8.5 13.5,8 14,8 Z" 
                   fill="currentColor"/>
           </svg>
         )
       case 'skull':
         return (
-          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-600">
+          <svg width={size} height={size} viewBox="0 0 24 24" className="text-gray-600 dark:text-gray-400">
             <circle cx="12" cy="8" r="6" fill="currentColor"/>
             <circle cx="9" cy="7" r="1" fill="white"/>
             <circle cx="15" cy="7" r="1" fill="white"/>
@@ -336,7 +336,7 @@ function StickerPreview({ sticker, isSelected, onClick }: {
           </svg>
         )
       default:
-        return <Sticker className="h-6 w-6 text-gray-600" />
+        return <Sticker className="h-6 w-6 text-gray-600 dark:text-gray-400" />
     }
   }
 
@@ -351,7 +351,7 @@ function StickerPreview({ sticker, isSelected, onClick }: {
         {renderStickerPreview()}
       </div>
       <div className="mt-2 text-center">
-        <div className="text-xs font-medium capitalize">{sticker.type.replace('-', ' ')}</div>
+        <div className="text-xs font-medium capitalize text-foreground">{sticker.type.replace('-', ' ')}</div>
       </div>
     </div>
   )
@@ -1111,11 +1111,11 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
+      <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950">
       <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
         <div className="text-center space-y-2 mb-4 sm:mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold">QR Code Generator</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">QR Code Generator</h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
             Create beautiful, customizable QR codes with advanced features
           </p>
         </div>
@@ -1978,7 +1978,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     <div className="space-y-3">
                       {/* Quality Selector */}
                       <div className="flex flex-col gap-2 w-full">
-                        <label className="text-xs sm:text-sm font-medium text-gray-700">Download Quality:</label>
+                        <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Download Quality:</label>
                         <div className="flex gap-1 sm:gap-2 flex-wrap">
                           {(['web', 'print', 'ultra-hd'] as const).map((quality) => (
                             <Button
