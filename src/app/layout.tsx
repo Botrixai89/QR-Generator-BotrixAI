@@ -118,11 +118,14 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon.png", type: "image/png", sizes: "16x16" },
     ],
     shortcut: "/favicon.ico",
-    apple: "/favicon.png",
+    apple: [
+      { url: "/favicon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 
@@ -133,10 +136,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="/favicon.png" type="image/png" />
-        <link rel="shortcut icon" href="/favicon.png" type="image/png" />
-      </head>
       <body
         className={`${poppins.variable} ${firaCode.variable} font-sans antialiased`}
         suppressHydrationWarning
