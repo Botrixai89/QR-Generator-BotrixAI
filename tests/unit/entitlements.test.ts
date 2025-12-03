@@ -31,7 +31,8 @@ describe('Entitlements', () => {
 
     it('should return correct entitlements for each plan', () => {
       expect(getEntitlements('FREE')).toEqual(PLAN_MATRIX.FREE)
-      expect(getEntitlements('FLEX')).toEqual(PLAN_MATRIX.FLEX)
+      // FLEX is legacy plan name that maps to PRO
+      expect(getEntitlements('FLEX' as any)).toEqual(PLAN_MATRIX.PRO)
       expect(getEntitlements('PRO')).toEqual(PLAN_MATRIX.PRO)
       expect(getEntitlements('BUSINESS')).toEqual(PLAN_MATRIX.BUSINESS)
     })
