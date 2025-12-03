@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
@@ -47,7 +46,6 @@ export default function DynamicQRManager({ qrCode, onUpdate }: DynamicQRManagerP
     title: qrCode.title,
     url: qrCode.url,
     redirectUrl: qrCode.redirectUrl || "",
-    dynamicContent: qrCode.dynamicContent ? JSON.stringify(qrCode.dynamicContent, null, 2) : "",
     isActive: qrCode.isActive ?? true,
     expiresAt: qrCode.expiresAt ? new Date(qrCode.expiresAt).toISOString().slice(0, 16) : "",
     maxScans: qrCode.maxScans?.toString() || ""
@@ -75,7 +73,6 @@ export default function DynamicQRManager({ qrCode, onUpdate }: DynamicQRManagerP
           title: editData.title,
           url: editData.url,
           redirectUrl: editData.redirectUrl,
-          dynamicContent: editData.dynamicContent,
           isActive: editData.isActive,
           expiresAt: editData.expiresAt,
           maxScans: editData.maxScans ? parseInt(editData.maxScans) : null
@@ -379,16 +376,6 @@ export default function DynamicQRManager({ qrCode, onUpdate }: DynamicQRManagerP
                           id="edit-redirect"
                           value={editData.redirectUrl}
                           onChange={(e) => setEditData({...editData, redirectUrl: e.target.value})}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-content">Dynamic Content (JSON)</Label>
-                        <Textarea
-                          id="edit-content"
-                          value={editData.dynamicContent}
-                          onChange={(e) => setEditData({...editData, dynamicContent: e.target.value})}
-                          rows={4}
                         />
                       </div>
 

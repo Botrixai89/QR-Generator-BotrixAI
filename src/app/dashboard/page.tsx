@@ -516,21 +516,35 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             {/* Only show credits for paid plan users */}
-            {userPlan && userPlan !== 'FREE' && userCredits !== null && (
-              <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg">
-                <Zap className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  Credits: {userCredits}
-                </span>
-                {userCredits <= 5 && (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/pricing">
-                      Buy More
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            )}
+            {userPlan && userPlan !== 'FREE' && (() => {
+              // Map FLEX to PRO for credits calculation (legacy support)
+              const normalizedPlan = userPlan === 'FLEX' ? 'PRO' : userPlan
+              
+              // Get base credits allocated by the plan (100 for Pro, 0 for Free)
+              const planBaseCredits = getCreditsByPlan(normalizedPlan)
+              
+              // Calculate credits used from existing QR codes
+              const creditsUsed = calculateTotalCreditsUsed(qrCodes)
+              
+              // Calculate remaining credits
+              const remainingCredits = Math.max(0, planBaseCredits - creditsUsed)
+              
+              return (
+                <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg">
+                  <Zap className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Credits: {remainingCredits}
+                  </span>
+                  {remainingCredits <= 5 && (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/pricing">
+                        Buy More
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              )
+            })()}
             {/* Only show plan info for paid plan users */}
             {userPlan && userPlan !== 'FREE' && (
               <div className="hidden sm:flex flex-col gap-1 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 rounded-lg min-w-[220px] border border-amber-200 dark:border-amber-800">

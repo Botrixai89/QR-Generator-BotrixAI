@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { 
   Download, 
@@ -378,7 +377,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   
   // Dynamic QR code states
   const [isDynamic, setIsDynamic] = useState(false)
-  const [dynamicContent, setDynamicContent] = useState("")
   const [expiresAt, setExpiresAt] = useState("")
   const [maxScans, setMaxScans] = useState("")
   const [redirectUrl, setRedirectUrl] = useState("")
@@ -859,9 +857,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       formData.append("shape", qrOptions.shape || "square")
       formData.append("template", qrOptions.template || "")
       
-      if (dynamicContent) {
-        formData.append("dynamicContent", dynamicContent)
-      }
       if (expiresAt) {
         formData.append("expiresAt", expiresAt)
       }
@@ -1813,21 +1808,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                     <>
                       <Separator />
                       
-                      {/* Dynamic Content */}
-                      <div className="space-y-2">
-                        <Label htmlFor="dynamicContent">Dynamic Content (JSON)</Label>
-                        <Textarea
-                          id="dynamicContent"
-                          placeholder='{"message": "Welcome!", "action": "redirect", "url": "https://example.com"}'
-                          value={dynamicContent}
-                          onChange={(e) => setDynamicContent(e.target.value)}
-                          rows={4}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          JSON object containing dynamic content that can be updated later
-                        </p>
-                      </div>
-
                       {/* Redirect URL */}
                       <div className="space-y-2">
                         <Label htmlFor="redirectUrl" className="flex items-center gap-2">
