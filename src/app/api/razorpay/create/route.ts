@@ -31,7 +31,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { plan = 'PRO' } = await request.json()
+    const { plan: requestedPlan = 'PRO' } = await request.json()
+    
+    // Map FLEX to PRO (legacy support - FLEX plan was renamed to PRO)
+    const plan = (requestedPlan as string) === 'FLEX' ? 'PRO' : requestedPlan
 
     if (plan !== 'PRO') {
       return NextResponse.json(

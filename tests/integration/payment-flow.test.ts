@@ -200,7 +200,8 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
         .eq('id', testUserId)
         .single()
 
-      expect(user?.plan).toBe('FLEX')
+      // FLEX plan maps to PRO (legacy support)
+      expect(user?.plan).toBe('PRO')
     })
 
     it('should reject invalid signature', async () => {
