@@ -29,6 +29,7 @@ import FolderManager from "@/components/folder-manager"
 import FileManager from "@/components/file-manager"
 import { readTestQrCodes, writeTestQrCodes, type E2ETestQrCodeRecord } from "@/lib/e2e-test-storage"
 import { useEffectiveSession } from "@/hooks/use-effective-session"
+import { calculateTotalCreditsUsed, getMaxQRCodesFromCredits, getCreditsByPlan } from "@/lib/credit-calculator"
 
 interface QRCodeData {
   id: string
@@ -148,13 +149,13 @@ function QRCodePreview({ qrCode }: { qrCode: QRCodeData }) {
   }, [isClient, qrCode])
 
   if (!isClient) {
-    return <div className="w-20 h-20 bg-gray-100 rounded animate-pulse" />
+    return <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
   }
 
   return (
     <div 
       ref={qrRef}
-      className="w-20 h-20 border rounded bg-white flex-shrink-0"
+      className="w-20 h-20 border border-border rounded bg-card flex-shrink-0"
     />
   )
 }
@@ -493,25 +494,32 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 text-sm sm:text-base">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
               Welcome back, {session.user?.name || session.user?.email}
             </p>
-            <p className="text-xs font-medium text-gray-500">
-              {userPlan === 'PRO' ? 'Pro Plan' : 'Free Plan'}
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              {(() => {
+                // Map FLEX to PRO (legacy support)
+                const normalizedPlan = userPlan === 'FLEX' ? 'PRO' : userPlan
+                if (normalizedPlan === 'FREE') return 'Free Plan'
+                if (normalizedPlan === 'PRO') return 'Pro Plan'
+                if (normalizedPlan === 'BUSINESS') return 'Business Plan'
+                return `${normalizedPlan} Plan`
+              })()}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            {/* Only show credits for Pro plan users */}
-            {userPlan === 'PRO' && userCredits !== null && (
-              <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
-                <Zap className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-900">
+            {/* Only show credits for paid plan users */}
+            {userPlan && userPlan !== 'FREE' && userCredits !== null && (
+              <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg">
+                <Zap className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
                   Credits: {userCredits}
                 </span>
                 {userCredits <= 5 && (
@@ -523,21 +531,41 @@ export default function DashboardPage() {
                 )}
               </div>
             )}
-            {/* Only show plan info for Pro plan users */}
+            {/* Only show plan info for paid plan users */}
             {userPlan && userPlan !== 'FREE' && (
-              <div className="hidden sm:flex flex-col gap-1 bg-amber-50 px-3 py-2 rounded-lg min-w-[220px]">
-                <div className="flex items-center justify-between text-xs text-amber-900">
-                  <span>Plan: <strong>{userPlan}</strong></span>
+              <div className="hidden sm:flex flex-col gap-1 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 rounded-lg min-w-[220px] border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center justify-between text-xs text-amber-900 dark:text-amber-100">
+                  <span>Plan: <strong>{(() => {
+                    // Map FLEX to PRO (legacy support)
+                    const normalizedPlan = userPlan === 'FLEX' ? 'PRO' : userPlan
+                    if (normalizedPlan === 'PRO') return 'Pro'
+                    if (normalizedPlan === 'BUSINESS') return 'Business'
+                    return normalizedPlan
+                  })()}</strong></span>
                 </div>
                 {(() => {
-                  const maxByPlan: Record<string, number> = { FREE: 10, FLEX: 100, PRO: 1000, BUSINESS: 10000 }
-                  const max = maxByPlan[userPlan] ?? 10
-                  const used = stats.totalCodes
-                  const pct = Math.min(100, Math.round((used / max) * 100))
+                  // Map FLEX to PRO for credits calculation (legacy support)
+                  const normalizedPlan = userPlan === 'FLEX' ? 'PRO' : userPlan
+                  
+                  // Get base credits allocated by the plan (100 for Pro, 0 for Free)
+                  // Free users don't have credits - they have feature restrictions instead
+                  const planBaseCredits = getCreditsByPlan(normalizedPlan)
+                  
+                  // Calculate credits used from existing QR codes
+                  // Note: This calculates what credits would be used based on QR code types
+                  // Free users' QR codes are also calculated, but they don't consume credits
+                  // Only Pro users actually consume credits when creating QR codes
+                  const creditsUsed = calculateTotalCreditsUsed(qrCodes)
+                  
+                  // Progress based on credits used vs plan's base allocation (0-100%)
+                  const creditsPct = planBaseCredits > 0 ? Math.min(100, Math.round((creditsUsed / planBaseCredits) * 100)) : 0
+                  
                   return (
                     <div className="space-y-1">
-                      <Progress value={pct} />
-                      <div className="text-[11px] text-amber-900">{used} / {max} QR codes</div>
+                      <Progress value={creditsPct} />
+                      <div className="text-[11px] text-amber-900 dark:text-amber-200">
+                        {creditsUsed} / {planBaseCredits} credits used
+                      </div>
                     </div>
                   )
                 })()}
@@ -562,52 +590,52 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-900">Total QR Codes</CardTitle>
-              <QrCode className="h-4 w-4 text-gray-500" />
+              <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Total QR Codes</CardTitle>
+              <QrCode className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stats.totalCodes}</div>
-              <p className="text-xs text-gray-500">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalCodes}</div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {stats.thisMonth} created this month
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-900">Total Scans</CardTitle>
-              <Eye className="h-4 w-4 text-gray-500" />
+              <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Total Scans</CardTitle>
+              <Eye className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stats.totalScans}</div>
-              <p className="text-xs text-gray-500">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalScans}</div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Dynamic QR codes only
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-900">This Month</CardTitle>
-              <Calendar className="h-4 w-4 text-gray-500" />
+              <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">This Month</CardTitle>
+              <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stats.thisMonth}</div>
-              <p className="text-xs text-gray-500">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.thisMonth}</div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 QR codes created
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-gray-200">
+          <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-900">Scan Growth</CardTitle>
-              <BarChart3 className="h-4 w-4 text-gray-500" />
+              <CardTitle className="text-sm font-medium text-gray-900 dark:text-gray-100">Scan Growth</CardTitle>
+              <BarChart3 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {stats.scansLastMonth > 0 
                   ? `${Math.round(((stats.scansThisMonth - stats.scansLastMonth) / stats.scansLastMonth) * 100)}%`
                   : stats.scansThisMonth > 0 ? "+100%" : "0%"
@@ -641,11 +669,11 @@ export default function DashboardPage() {
 
               {/* QR Codes List */}
               <div className="lg:col-span-3">
-                <Card className="bg-white border-gray-200">
+                <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-gray-900">Your QR Codes</CardTitle>
+                        <CardTitle className="text-gray-900 dark:text-gray-100">Your QR Codes</CardTitle>
                       </div>
                       <Button asChild>
                         <Link href="/">
@@ -664,10 +692,10 @@ export default function DashboardPage() {
                       return filteredCodes.length === 0 ? (
                         <div className="text-center py-12">
                           <QrCode className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium mb-2 text-gray-900">
+                          <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-white">
                             {selectedFolderId ? "No QR codes in this folder" : "No QR codes yet"}
                           </h3>
-                          <p className="text-gray-500 mb-4">
+                          <p className="text-gray-500 dark:text-gray-400 mb-4">
                             {selectedFolderId 
                               ? "Move QR codes to this folder or create new ones"
                               : "Create your first QR code to get started"
@@ -690,7 +718,7 @@ export default function DashboardPage() {
                       onUpdate={fetchQrCodes}
                     />
                   ) : (
-                    <div key={qrCode.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50">
+                    <div key={qrCode.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50 dark:bg-gray-900/60">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex gap-4 flex-1 min-w-0">
                           <QRCodePreview qrCode={qrCode} />

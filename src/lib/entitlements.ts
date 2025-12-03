@@ -16,20 +16,6 @@ export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
     logoUploadsAllowed: true,
     fileStorageMB: 100,
   },
-  FLEX: {
-    name: 'FLEX',
-    label: 'Flex (Credits)',
-    monthlyPriceCents: 0,
-    maxQrCodes: 100,
-    monthlyScanQuota: 10000,
-    dynamicQrAllowed: true,
-    customDomainsAllowed: false,
-    webhooksAllowed: false,
-    removeWatermarkAllowed: true,
-    removeAdsAllowed: true, // Ads feature removed - all plans have no ads
-    logoUploadsAllowed: true,
-    fileStorageMB: 250,
-  },
   PRO: {
     name: 'PRO',
     label: 'Pro',
@@ -61,7 +47,9 @@ export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
 }
 
 export function getEntitlements(plan: PlanName | null | undefined): PlanEntitlements {
-  const key: PlanName = (plan as PlanName) || 'FREE'
+  // Map FLEX to PRO (legacy support - FLEX plan was renamed to PRO)
+  const normalizedPlan = (plan as string) === 'FLEX' ? 'PRO' : plan
+  const key: PlanName = (normalizedPlan as PlanName) || 'FREE'
   return PLAN_MATRIX[key] || PLAN_MATRIX.FREE
 }
 
@@ -78,8 +66,10 @@ export async function getUserPlan(userId: string): Promise<PlanName> {
     .single()
 
   if (error || !data?.plan) return 'FREE'
-  const plan = (data.plan as string).toUpperCase() as PlanName
-  return PLAN_MATRIX[plan] ? plan : 'FREE'
+  const plan = (data.plan as string).toUpperCase()
+  // Map FLEX to PRO (legacy support - FLEX plan was renamed to PRO)
+  const normalizedPlan = plan === 'FLEX' ? 'PRO' : (plan as PlanName)
+  return PLAN_MATRIX[normalizedPlan] ? normalizedPlan : 'FREE'
 }
 
 export async function getUsageSnapshot(userId: string): Promise<UsageSnapshot> {

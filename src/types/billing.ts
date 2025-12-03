@@ -1,4 +1,4 @@
-export type PlanName = 'FREE' | 'FLEX' | 'PRO' | 'BUSINESS'
+export type PlanName = 'FREE' | 'PRO' | 'BUSINESS'
 
 export interface PlanEntitlements {
   name: PlanName

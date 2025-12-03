@@ -76,7 +76,7 @@ export default function AdminDashboardPage() {
 
   if (status === 'loading' || !session || loading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
@@ -166,12 +166,12 @@ export default function AdminDashboardPage() {
       description: 'Configure admin preferences',
       href: '/dashboard/admin/settings',
       color: 'text-gray-600',
-      bgColor: 'bg-gray-50',
+      bgColor: 'bg-gray-50 dark:bg-gray-800',
     },
   ]
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto p-6 max-w-7xl min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Admin Console</h1>
         <p className="text-muted-foreground">

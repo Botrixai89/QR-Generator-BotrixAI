@@ -109,11 +109,11 @@ export default function SignUpPage() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 p-4">
-      <Card className="w-full max-w-md bg-white border-gray-200">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950 p-4">
+      <Card className="w-full max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center text-gray-900">Sign Up</CardTitle>
-          <CardDescription className="text-center text-gray-600">
+          <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">Sign Up</CardTitle>
+          <CardDescription className="text-center text-gray-600 dark:text-gray-300">
             Create an account to start generating QR codes
           </CardDescription>
         </CardHeader>

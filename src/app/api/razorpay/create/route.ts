@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { plan = 'FLEX' } = await request.json()
+    const { plan = 'PRO' } = await request.json()
 
-    if (plan !== 'FLEX') {
+    if (plan !== 'PRO') {
       return NextResponse.json(
         { error: "Invalid plan" },
         { status: 400 }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         currency: 'INR',
         receipt: `order_${Date.now()}`,
         notes: {
-          plan: 'FLEX',
+          plan: 'PRO',
           user_id: session.user.id
         },
         // Enable automatic capture (1 = true, 0 = false)
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         currency: 'INR',
         status: 'created',
         metadata: {
-          plan: 'FLEX',
+          plan: 'PRO',
           receipt: order.receipt
         }
       })

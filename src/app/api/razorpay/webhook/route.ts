@@ -29,25 +29,13 @@ async function processPaymentSuccess(paymentRecord: any, paymentId: string) {
     throw new Error("Failed to update payment")
   }
 
-  // Credit user with 100 credits and update plan
-  const { data: user, error: userError } = await supabaseAdmin!
-    .from('User')
-    .select('credits')
-    .eq('id', paymentRecord.user_id)
-    .single()
-
-  if (userError || !user) {
-    console.error("Error fetching user from webhook:", userError)
-    throw new Error("Failed to fetch user")
-  }
-
-  const newCredits = (user.credits || 0) + 100
-
+  // Set user to Pro plan with exactly 100 credits (not add to existing)
+  // Pro plan users get 100 credits as part of their plan purchase
   const { error: creditError } = await supabaseAdmin!
     .from('User')
     .update({
-      credits: newCredits,
-      plan: 'FLEX'
+      credits: 100, // SET to 100, not ADD 100
+      plan: 'PRO'
     })
     .eq('id', paymentRecord.user_id)
 

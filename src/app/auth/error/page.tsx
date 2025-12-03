@@ -78,7 +78,7 @@ export default function AuthErrorPage() {
     : errorMessages.Default
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950 px-4">
       <Card className="max-w-md w-full shadow-lg">
         <CardHeader className="text-center pb-4">
           <div className="mx-auto w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">

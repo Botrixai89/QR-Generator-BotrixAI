@@ -35,10 +35,32 @@ export default function Navigation() {
   const router = useRouter()
   const [isClient, setIsClient] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [userPlan, setUserPlan] = useState<string | null>(null)
 
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // Fetch user plan from API to ensure consistency with dashboard
+  useEffect(() => {
+    if (isClient && session?.user && 'id' in session.user && session.user.id) {
+      fetch("/api/user/credits")
+        .then((response) => {
+          if (response.ok) {
+            return response.json() as Promise<{ credits?: number; plan?: string }>
+          }
+          return null
+        })
+        .then((data) => {
+          if (data?.plan) {
+            setUserPlan(data.plan)
+          }
+        })
+        .catch((error) => {
+          console.error("Error fetching user plan:", error)
+        })
+    }
+  }, [isClient, session?.user])
 
   const handleSignOut = async () => {
     if (isClientTestMode) {
@@ -80,7 +102,18 @@ export default function Navigation() {
                   {session.user?.name || "User"}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  Plan: <span className="font-medium">{(session.user as { plan?: string })?.plan === 'PRO' ? 'Pro' : 'Free'}</span>
+                  Plan: <span className="font-medium">
+                    {(() => {
+                      // Use fetched plan from API, fallback to session plan
+                      const plan = userPlan || (session.user as { plan?: string })?.plan
+                      // Map FLEX to PRO (legacy support)
+                      const normalizedPlan = plan === 'FLEX' ? 'PRO' : plan
+                      if (normalizedPlan === 'PRO') return 'Pro'
+                      if (normalizedPlan === 'BUSINESS') return 'Business'
+                      if (normalizedPlan === 'FREE') return 'Free'
+                      return normalizedPlan || 'Free'
+                    })()}
+                  </span>
                 </p>
               </div>
             </DropdownMenuLabel>

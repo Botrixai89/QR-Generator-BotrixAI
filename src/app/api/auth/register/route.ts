@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
-        credits: 10, // Give new users 10 free credits
+        credits: 0, // Free users don't have credits - they have feature restrictions
         plan: 'FREE', // Set default plan to FREE
         createdAt: now,
         updatedAt: now,

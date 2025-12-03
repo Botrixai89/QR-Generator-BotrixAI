@@ -471,7 +471,7 @@ export default async function BlogPostPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200">
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950">
       <article className="container mx-auto px-4 py-12 max-w-4xl">
         {/* Back button */}
         <Link href="/blog">

@@ -72,11 +72,11 @@ export default function SignInPage() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 p-4">
-      <Card className="w-full max-w-md bg-white border-gray-200">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950 p-4">
+      <Card className="w-full max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center text-gray-900">Sign In</CardTitle>
-          <CardDescription className="text-center text-gray-600">
+          <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">Sign In</CardTitle>
+          <CardDescription className="text-center text-gray-600 dark:text-gray-300">
             Enter your credentials to access your QR codes
           </CardDescription>
         </CardHeader>

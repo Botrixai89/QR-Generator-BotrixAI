@@ -91,14 +91,6 @@ export async function GET(request: NextRequest) {
       
       if (capturedPayment || order.status === 'paid' || (order as any).amount_paid === order.amount) {
         // Payment completed - update our database
-        const { data: user } = await supabaseAdmin!
-          .from('User')
-          .select('credits')
-          .eq('id', session.user.id)
-          .single()
-
-        const newCredits = ((user?.credits || 0) + 100)
-
         // Update payment record with payment ID if available
         await supabaseAdmin!
           .from('payments')
@@ -113,19 +105,20 @@ export async function GET(request: NextRequest) {
           })
           .eq('id', payment.id)
 
-        // Credit user
+        // Set user to Pro plan with exactly 100 credits (not add to existing)
+        // Pro plan users get 100 credits as part of their plan purchase
         await supabaseAdmin!
           .from('User')
           .update({
-            credits: newCredits,
-            plan: 'FLEX'
+            credits: 100, // SET to 100, not ADD 100
+            plan: 'PRO'
           })
           .eq('id', session.user.id)
 
         return NextResponse.json({
           status: 'paid',
           paid: true,
-          credits: newCredits,
+          credits: 100,
           message: "Payment completed successfully"
         })
       }

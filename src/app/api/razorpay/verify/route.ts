@@ -86,28 +86,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Credit user with 100 credits and update plan
-    const { data: user, error: userError } = await supabaseAdmin!
-      .from('User')
-      .select('credits')
-      .eq('id', session.user.id)
-      .single()
-
-    if (userError || !user) {
-      console.error("Error fetching user:", userError)
-      return NextResponse.json(
-        { error: "Failed to fetch user" },
-        { status: 500 }
-      )
-    }
-
-    const newCredits = (user.credits || 0) + 100
-
+    // Set user to Pro plan with exactly 100 credits (not add to existing)
+    // Pro plan users get 100 credits as part of their plan purchase
     const { error: creditError } = await supabaseAdmin!
       .from('User')
       .update({
-        credits: newCredits,
-        plan: 'FLEX'
+        credits: 100, // SET to 100, not ADD 100
+        plan: 'PRO'
       })
       .eq('id', session.user.id)
 
@@ -121,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      credits: newCredits,
+      credits: 100,
       message: "Payment verified and credits added successfully"
     })
 

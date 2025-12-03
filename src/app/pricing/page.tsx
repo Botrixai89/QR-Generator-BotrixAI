@@ -82,7 +82,7 @@ export default function PricingPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ plan: "FLEX" }),
+        body: JSON.stringify({ plan: "PRO" }),
       })
 
       if (!response.ok) {
@@ -246,35 +246,35 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-950 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
             Choose Your Plan
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Get started with free credits or upgrade to our Pro plan for unlimited QR code generation
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* Free Plan */}
-          <Card className="relative bg-white border-gray-200">
+          <Card className="relative bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-gray-900">
-                <Zap className="h-5 w-5 text-gray-700" />
+              <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+                <Zap className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                 Free Plan
               </CardTitle>
-              <CardDescription className="text-gray-500">
+              <CardDescription className="text-gray-500 dark:text-gray-400">
                 Perfect for getting started
               </CardDescription>
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-gray-900 dark:text-white">
                 ₹0
-                <span className="text-lg font-normal text-gray-500">/month</span>
+                <span className="text-lg font-normal text-gray-500 dark:text-gray-400">/month</span>
               </div>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3 mb-6 text-gray-700">
+              <ul className="space-y-3 mb-6 text-gray-700 dark:text-gray-300">
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-600" />
                   <span>10 free credits</span>
@@ -303,29 +303,29 @@ export default function PricingPage() {
           </Card>
 
           {/* Pro Plan */}
-          <Card className="relative bg-white border-gray-300 shadow-lg">
+          <Card className="relative bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 shadow-lg">
             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-              <Badge className="bg-gray-800 text-white px-4 py-1">
+              <Badge className="bg-gray-800 text-white px-4 py-1 dark:bg-gray-100 dark:text-gray-900">
                 <Star className="h-3 w-3 mr-1" />
                 Save ₹100 vs competitor
               </Badge>
             </div>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-gray-900">
-                <Star className="h-5 w-5 text-gray-700" />
+              <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+                <Star className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                 Pro Plan
               </CardTitle>
-              <CardDescription className="text-gray-500">
+              <CardDescription className="text-gray-500 dark:text-gray-400">
                 Most popular choice
               </CardDescription>
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-3xl font-bold text-gray-900 dark:text-white">
                 ₹1
-                <span className="text-lg font-normal text-gray-500">/one-time</span>
-                <span className="ml-2 text-xs font-normal text-amber-600">(Testing Mode)</span>
+                <span className="text-lg font-normal text-gray-500 dark:text-gray-400">/one-time</span>
+                <span className="ml-2 text-xs font-normal text-amber-600 dark:text-amber-400">(Testing Mode)</span>
               </div>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3 mb-6 text-gray-700">
+              <ul className="space-y-3 mb-6 text-gray-700 dark:text-gray-300">
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-600" />
                   <span>100 credits included</span>
@@ -362,7 +362,7 @@ export default function PricingPage() {
               <Button 
                 onClick={handlePurchase}
                 disabled={isLoading}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white dark:bg-gray-100 dark:hover:bg-gray-200 dark:text-gray-900"
               >
                 {isLoading ? "Processing..." : "Buy now"}
               </Button>
@@ -371,7 +371,7 @@ export default function PricingPage() {
         </div>
 
         <div className="text-center mt-12">
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Need more credits? Purchase additional credits anytime from your dashboard.
           </p>
         </div>
