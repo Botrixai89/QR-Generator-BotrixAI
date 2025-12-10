@@ -43,8 +43,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create Razorpay order for ₹1 (100 paise) - TESTING MODE
-    // TODO: Change back to 30000 (₹300) for production
+    // Create Razorpay order for ₹399 (39900 paise) - PRODUCTION
     const razorpay = await getRazorpay()
     let order: any
     try {
@@ -52,7 +51,7 @@ export async function POST(request: NextRequest) {
       // Note: callback_url is not supported by Razorpay orders.create API
       // Payment success is handled via the frontend handler function
       const orderData: any = {
-        amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
+        amount: 39900, // ₹399 in paise
         currency: 'INR',
         receipt: `order_${Date.now()}`,
         notes: {
@@ -101,7 +100,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: session.user.id,
         razorpay_order_id: order.id,
-        amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
+        amount: 39900, // ₹399 in paise
         currency: 'INR',
         status: 'created',
         metadata: {

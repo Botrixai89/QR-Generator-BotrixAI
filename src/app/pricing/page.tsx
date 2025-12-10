@@ -113,12 +113,10 @@ export default function PricingPage() {
         })
       }
 
-      // Open Razorpay checkout
-      // TESTING MODE: Amount set to ₹1 (100 paise) for testing payment flow
-      // TODO: Change back to 30000 (₹300) for production
+      // Open Razorpay checkout (Production price)
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
+        amount: 39900, // ₹399 in paise
         currency: "INR",
         name: "QR Generator",
         description: "Pro Plan - 100 Credits",
@@ -319,9 +317,8 @@ export default function PricingPage() {
                 Most popular choice
               </CardDescription>
               <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                ₹1
+                ₹399
                 <span className="text-lg font-normal text-gray-500 dark:text-gray-400">/one-time</span>
-                <span className="ml-2 text-xs font-normal text-amber-600 dark:text-amber-400">(Testing Mode)</span>
               </div>
             </CardHeader>
             <CardContent>

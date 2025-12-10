@@ -19,7 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { QrCode, BarChart3, LogOut, CreditCard, Menu, Home, DollarSign, Info } from "lucide-react"
+import { QrCode, BarChart3, LogOut, CreditCard, Menu, Home, DollarSign, Info, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { ThemeToggle } from "./theme-toggle"
 import NotificationsDropdown from "./notifications-dropdown"
@@ -223,6 +223,12 @@ export default function Navigation() {
                   Pricing
                 </Link>
                 <Link 
+                  href="/guide" 
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Guide
+                </Link>
+                <Link 
                   href="/about" 
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
@@ -278,6 +284,14 @@ export default function Navigation() {
                   >
                     <DollarSign className="h-4 w-4" />
                     Pricing
+                  </Link>
+                  <Link 
+                    href="/guide" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Guide
                   </Link>
                   <Link 
                     href="/about" 

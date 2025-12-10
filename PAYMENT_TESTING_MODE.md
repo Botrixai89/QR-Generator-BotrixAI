@@ -1,8 +1,10 @@
-# 🧪 Payment Testing Mode - ₹1 Configuration
+# 🧪 Payment Testing Mode - ₹1 Configuration (historical)
 
-## ✅ Current Status: TESTING MODE ACTIVE
+## ✅ Current Status: PRODUCTION PRICE ACTIVE
 
-The payment amount has been set to **₹1 (100 paise)** for testing the payment flow.
+The payment amount is now **₹399 (39900 paise)** for production. The notes
+below remain for reference if you need to temporarily switch back to the ₹1
+testing mode.
 
 ## 📝 Files Modified
 
@@ -11,55 +13,55 @@ The payment amount has been set to **₹1 (100 paise)** for testing the payment 
    - Line 74: `amount: 100` (payment record)
 
 2. **`src/app/pricing/page.tsx`**
-   - Line 104: `amount: 100` (Razorpay checkout)
-   - Line 243: Display shows "₹1 (Testing Mode)"
-   - Line 280: Button shows "Buy now — ₹1 (Testing)"
+   - Line 104: `amount: 39900` (Razorpay checkout)
+   - Line 243: Display shows "₹399"
+   - Line 280: Button shows "Buy now"
 
-## 🔄 How to Switch Back to Production (₹300)
+## 🔄 How to Switch Back to Testing Mode (₹1)
 
-When you're ready to go live, change the following:
+If you need to return to test pricing, change the following:
 
 ### 1. Update API Route (`src/app/api/razorpay/create/route.ts`)
 
 ```typescript
 // Change from:
-amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
+amount: 39900, // ₹399 in paise
 
 // To:
-amount: 30000, // ₹300 in paise
+amount: 100, // ₹1 in paise (testing only)
 ```
 
 **Update in 2 places:**
 - Line 49: Razorpay order creation
 - Line 74: Payment record insertion
 
-### 2. Update Pricing Page (`src/app/pricing/page.tsx`)
+### 2. Update Pricing Page (`src/app/pricing/page.tsx`) to match testing price
 
 ```typescript
 // Change from:
-amount: 100, // ₹1 in paise (TESTING - change to 30000 for production)
+amount: 39900, // ₹399 in paise
 
 // To:
-amount: 30000, // ₹300 in paise
+amount: 100, // ₹1 in paise
 ```
 
 **Update display:**
 ```tsx
 // Change from:
-₹1
-<span className="ml-2 text-xs font-normal text-amber-600">(Testing Mode)</span>
+₹399
 
 // To:
-₹300
+₹1
+<span className="ml-2 text-xs font-normal text-amber-600">(Testing Mode)</span>
 ```
 
 **Update button:**
 ```tsx
 // Change from:
-{isLoading ? "Processing..." : "Buy now — ₹1 (Testing)"}
+{isLoading ? "Processing..." : "Buy now"}
 
 // To:
-{isLoading ? "Processing..." : "Buy now — ₹300"}
+{isLoading ? "Processing..." : "Buy now — ₹1 (Testing)"}
 ```
 
 ## ✅ Testing Checklist
