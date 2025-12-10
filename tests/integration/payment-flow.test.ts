@@ -30,7 +30,7 @@ vi.mock('razorpay', () => {
           const orderId = `order_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
           return Promise.resolve({
             id: orderId,
-            amount: 100, // ₹1 in paise
+            amount: 39900, // ₹399 in paise (production)
             currency: 'INR',
             status: 'created',
             receipt: `order_${Date.now()}`,
@@ -38,16 +38,16 @@ vi.mock('razorpay', () => {
         }),
         fetch: vi.fn().mockResolvedValue({
           id: 'order_test_123',
-          amount: 100,
+          amount: 39900,
           currency: 'INR',
           status: 'paid',
-          amount_paid: 100,
+          amount_paid: 39900,
         }),
         fetchPayments: vi.fn().mockResolvedValue({
           items: [{
             id: 'pay_test_123',
             status: 'captured',
-            amount: 100,
+            amount: 39900,
             currency: 'INR',
           }],
         }),
@@ -112,7 +112,7 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
 
       const data = await response.json()
       expect(data.order_id).toBeDefined()
-      expect(data.amount).toBe(100) // ₹1 in paise
+      expect(data.amount).toBe(39900) // ₹399 in paise
       expect(data.currency).toBe('INR')
       expect(data.payment_id).toBeDefined()
 
@@ -131,7 +131,7 @@ describe.skipIf(shouldSkip)('Payment Flow Integration Tests', () => {
 
       expect(payment).toBeDefined()
       expect(payment?.status).toBe('created')
-      expect(payment?.amount).toBe(100)
+      expect(payment?.amount).toBe(39900)
     })
 
     it('should fail for unauthorized users', async () => {
