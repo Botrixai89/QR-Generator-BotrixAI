@@ -50,18 +50,23 @@ export async function POST(request: NextRequest) {
     // This prevents race conditions and ensures data consistency
 
     const formData = await request.formData()
-    const url = formData.get("url") as string
-    const title = formData.get("title") as string
-    const foregroundColor = formData.get("foregroundColor") as string
-    const backgroundColor = formData.get("backgroundColor") as string
-    const dotType = formData.get("dotType") as string
-    const cornerType = formData.get("cornerType") as string
+    const rawUrl = formData.get("url")
+    const url = typeof rawUrl === "string" ? rawUrl : rawUrl != null ? String(rawUrl) : ""
+    const titleField = formData.get("title")
+    const title = typeof titleField === "string" ? titleField : titleField != null ? String(titleField) : ""
+    const foregroundColor =
+      String(formData.get("foregroundColor") ?? "").trim() || "#000000"
+    const backgroundColor =
+      String(formData.get("backgroundColor") ?? "").trim() || "#FFFFFF"
+    const dotType = String(formData.get("dotType") ?? "").trim() || "square"
+    const cornerType = String(formData.get("cornerType") ?? "").trim() || "square"
     const hasWatermark = formData.get("hasWatermark") === "true"
     const logoFile = formData.get("logo") as File | null
     const isDynamic = formData.get("isDynamic") === "true"
     const dynamicContent = formData.get("dynamicContent") as string
     const expiresAt = formData.get("expiresAt") as string
-    const maxScans = formData.get("maxScans") as string
+    const maxScansRaw = formData.get("maxScans")
+    const maxScans = typeof maxScansRaw === "string" ? maxScansRaw : maxScansRaw != null ? String(maxScansRaw) : ""
     const redirectUrl = formData.get("redirectUrl") as string
     const organizationId = formData.get("organizationId") as string | null
     const folderId = formData.get("folderId") as string | null
@@ -254,7 +259,10 @@ export async function POST(request: NextRequest) {
     if (isDynamic !== undefined) insertData.isDynamic = isDynamic || false
     if (parsedDynamicContent !== null) insertData.dynamicContent = parsedDynamicContent
     if (expiresAt) insertData.expiresAt = expiresAt
-    if (maxScans) insertData.maxScans = parseInt(maxScans)
+    if (maxScans) {
+      const n = parseInt(maxScans, 10)
+      if (Number.isFinite(n)) insertData.maxScans = n
+    }
     if (redirectUrl) insertData.redirectUrl = redirectUrl
 
     // Add advanced features
@@ -346,31 +354,34 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
-    // Paid plans consume 1 credit per QR create (FREE users skip this; value stays 0)
-    let creditsBeforeCreate = 0
-    if (userPlan !== 'FREE') {
-      const { data: userCreditsData, error: userCreditsError } = await supabaseAdmin!
-        .from('User')
-        .select('credits')
-        .eq('id', session.user.id)
-        .single()
+    // Ensure user row exists and load credits in one round-trip
+    const { data: userRow, error: userLookupError } = await supabaseAdmin!
+      .from('User')
+      .select('id, credits')
+      .eq('id', session.user.id)
+      .maybeSingle()
 
-      if (userCreditsError) {
-        return ApiErrors.databaseError('Failed to fetch user credits', userCreditsError.message).toResponse()
-      }
-
-      creditsBeforeCreate = userCreditsData?.credits ?? 0
-      if (creditsBeforeCreate <= 0) {
-        return ApiErrors.insufficientCredits(1, creditsBeforeCreate).toResponse()
-      }
+    if (userLookupError) {
+      return ApiErrors.databaseError('Failed to verify user', userLookupError.message).toResponse()
+    }
+    if (!userRow) {
+      return ApiErrors.unauthorized(
+        'Your account was not found. Please sign out and sign in again.'
+      ).toResponse()
     }
 
+
     console.log("Inserting QR code into database...")
+
+    // Drop undefined keys — PostgREST can reject payloads with undefined values
+    const insertPayload = Object.fromEntries(
+      Object.entries(insertData).filter(([, v]) => v !== undefined)
+    ) as Record<string, unknown>
 
     // We need to type the result correctly
     const { data: result, error } = await supabaseAdmin!
       .from('QrCode')
-      .insert(insertData)
+      .insert(insertPayload)
       .select()
       .single()
 
@@ -382,25 +393,10 @@ export async function POST(request: NextRequest) {
     const qrCode = result as Record<string, unknown>
     console.log("QR code created successfully:", qrCode)
 
-    // Deduct credit after successful creation for paid plans
-    if (userPlan !== 'FREE') {
-      const { error: creditUpdateError } = await supabaseAdmin!
-        .from('User')
-        .update({
-          credits: Math.max(0, creditsBeforeCreate - 1),
-          updatedAt: new Date().toISOString(),
-        })
-        .eq('id', session.user.id)
-
-      if (creditUpdateError) {
-        return ApiErrors.databaseError('Failed to deduct user credit', creditUpdateError.message).toResponse()
-      }
-    }
 
     // Invalidate caches after successful creation
     await Promise.all([
       QRCodeCache.invalidateUserList(session.user.id), // QR list changed
-      UserCreditsCache.invalidate(session.user.id), // credits changed for paid plans
     ])
 
     return createdResponse(qrCode)

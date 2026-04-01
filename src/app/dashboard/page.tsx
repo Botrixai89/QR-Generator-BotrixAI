@@ -289,7 +289,6 @@ export default function DashboardPage() {
     const user = session?.user as { id?: string } | undefined
     if (user?.id) {
       fetchQrCodes()
-      fetchUserCredits()
     }
   }, [session, isClientTestMode, hydrateTestData])
 
@@ -365,26 +364,7 @@ export default function DashboardPage() {
     }
   }
 
-  const fetchUserCredits = async () => {
-    try {
-      const response = await fetch("/api/user/credits", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-      
-      if (response.ok) {
-        const data = await response.json() as { credits?: number; plan?: string }
-        setUserCredits(data.credits ?? null)
-        setUserPlan(data.plan || 'FREE')
-      } else {
-        console.error("Failed to fetch user credits")
-      }
-    } catch (error) {
-      console.error("Error fetching user credits:", error)
-    }
-  }
+
 
   const handleDeleteClick = (qrCode: QRCodeData) => {
     setDeleteDialog({
@@ -515,84 +495,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            {/* Only show credits for paid plan users */}
-            {userPlan && userPlan !== 'FREE' && (() => {
-              // Map FLEX to PRO for credits calculation (legacy support)
-              const normalizedPlan = userPlan === 'FLEX' ? 'PRO' : userPlan
-              
-              // Get base credits allocated by the plan (100 for Pro, 0 for Free)
-              const planBaseCredits = getCreditsByPlan(normalizedPlan)
-              
-              // Calculate credits used from existing QR codes
-              const creditsUsed = calculateTotalCreditsUsed(qrCodes)
-              
-              // Calculate remaining credits
-              const remainingCredits = Math.max(0, planBaseCredits - creditsUsed)
-              
-              return (
-                <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg">
-                  <Zap className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                    Credits: {remainingCredits}
-                  </span>
-                  {remainingCredits <= 5 && (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/pricing">
-                        Buy More
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              )
-            })()}
-            {/* Only show plan info for paid plan users */}
-            {userPlan && userPlan !== 'FREE' && (
-              <div className="hidden sm:flex flex-col gap-1 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 rounded-lg min-w-[220px] border border-amber-200 dark:border-amber-800">
-                <div className="flex items-center justify-between text-xs text-amber-900 dark:text-amber-100">
-                  <span>Plan: <strong>{(() => {
-                    // Map FLEX to PRO (legacy support)
-                    const normalizedPlan = userPlan === 'FLEX' ? 'PRO' : userPlan
-                    if (normalizedPlan === 'PRO') return 'Pro'
-                    if (normalizedPlan === 'BUSINESS') return 'Business'
-                    return normalizedPlan
-                  })()}</strong></span>
-                </div>
-                {(() => {
-                  // Map FLEX to PRO for credits calculation (legacy support)
-                  const normalizedPlan = userPlan === 'FLEX' ? 'PRO' : userPlan
-                  
-                  // Get base credits allocated by the plan (100 for Pro, 0 for Free)
-                  // Free users don't have credits - they have feature restrictions instead
-                  const planBaseCredits = getCreditsByPlan(normalizedPlan)
-                  
-                  // Calculate credits used from existing QR codes
-                  // Note: This calculates what credits would be used based on QR code types
-                  // Free users' QR codes are also calculated, but they don't consume credits
-                  // Only Pro users actually consume credits when creating QR codes
-                  const creditsUsed = calculateTotalCreditsUsed(qrCodes)
-                  
-                  // Progress based on credits used vs plan's base allocation (0-100%)
-                  const creditsPct = planBaseCredits > 0 ? Math.min(100, Math.round((creditsUsed / planBaseCredits) * 100)) : 0
-                  
-                  return (
-                    <div className="space-y-1">
-                      <Progress value={creditsPct} />
-                      <div className="text-[11px] text-amber-900 dark:text-amber-200">
-                        {creditsUsed} / {planBaseCredits} credits used
-                      </div>
-                    </div>
-                  )
-                })()}
-              </div>
-            )}
-            {/* Show upgrade button for free users */}
-            {userPlan === 'FREE' && (
-              <Button variant="outline" asChild>
-                <Link href="/pricing">
-                  Upgrade to Pro
-                </Link>
-              </Button>
-            )}
+
             <Button asChild>
               <Link href="/">
                 <Plus className="h-4 w-4 mr-2" />

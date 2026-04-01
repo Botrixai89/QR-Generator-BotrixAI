@@ -438,7 +438,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   const isPlanLoading = userPlan === 'LOADING'
   const isPlanReady = !isPlanLoading
   const isGuest = userPlan === 'GUEST'
-  const isFreeTier = userPlan === 'FREE' || isGuest
+  const isFreeTier = false
 
   const requirePlanResolution = () => {
     if (!isPlanReady) {
@@ -457,9 +457,8 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     // No pricing redirect for now — just inform the user
   }
 
-  // Fetch user plan
+  // Set user plan
   useEffect(() => {
-    let cancelled = false
     if (!userId || !session?.user) {
       setUserPlan(sessionUserPlan || 'GUEST')
       return
@@ -470,40 +469,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
       return
     }
 
-    const fetchUserPlan = async () => {
-      setUserPlan('LOADING')
-      try {
-        const response = await fetch('/api/user/credits')
-        if (!cancelled) {
-          if (response.ok) {
-            const data = await response.json()
-            setUserPlan((data.plan || 'FREE') as PlanState)
-          } else {
-            setUserPlan('FREE')
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user plan:', error)
-        if (!cancelled) {
-          setUserPlan('FREE')
-        }
-      }
-    }
-
-    fetchUserPlan()
-
-    return () => {
-      cancelled = true
-    }
+    setUserPlan((sessionUserPlan || 'FREE') as PlanState)
   }, [userId, session?.user, isClientTestMode, sessionUserPlan])
 
-  // Force watermark ON for users on the free tier (including guests) once plan is known
-  useEffect(() => {
-    if (!isPlanReady) return
-    if (isFreeTier && !qrOptions.watermark) {
-      setQrOptions(prev => ({ ...prev, watermark: true }))
-    }
-  }, [isPlanReady, isFreeTier, qrOptions.watermark])
+
 
   // Function to generate vCard 3.0 string for Contact QR codes
   const generateVCardString = useCallback((
@@ -967,70 +936,91 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         toast.success("QR code saved successfully!")
         router.push("/dashboard")
       } else {
-        // Safely parse error response
+        // Safely parse error response (supports ApiErrors shape and plain { error, message } from routes)
         let errorMessage = "Failed to save QR code"
         try {
-          const errorData = await response.json()
+          const errorData = (await response.json()) as Record<string, unknown>
 
-          // Ensure errorMessage is extracted as a string
-          if (typeof errorData.error === 'string') {
-            errorMessage = errorData.error
-          } else if (errorData.error && typeof errorData.error.message === 'string') {
-            errorMessage = errorData.error.message
-          } else if (typeof errorData.message === 'string') {
-            errorMessage = errorData.message
+          const topMessage = typeof errorData.message === 'string' ? errorData.message : ''
+          const err = errorData.error
+          const nestedMessage =
+            err && typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string'
+              ? (err as { message: string }).message
+              : ''
+          const nestedCode =
+            err && typeof err === 'object' && err !== null && 'code' in err && typeof (err as { code: unknown }).code === 'string'
+              ? (err as { code: string }).code
+              : ''
+          const nestedDetailsRaw =
+            err && typeof err === 'object' && err !== null && 'details' in err
+              ? (err as { details: unknown }).details
+              : undefined
+          const nestedDetails =
+            typeof nestedDetailsRaw === 'string'
+              ? nestedDetailsRaw
+              : nestedDetailsRaw != null
+                ? String(nestedDetailsRaw)
+                : ''
+          const flatErrorString = typeof err === 'string' ? err : ''
+
+          if (topMessage) {
+            errorMessage = topMessage
+          } else if (nestedMessage) {
+            errorMessage = nestedMessage
+          } else if (flatErrorString) {
+            errorMessage = flatErrorString
           }
 
-          // Handle specific error cases
-          if (response.status === 402 && (
-            errorData.error === 'no_credits' ||
-            errorData.code === 'no_credits' ||
-            (typeof errorData.error === 'object' && errorData.error?.code === 'no_credits')
-          )) {
+          // Surface Postgres / API details (e.g. constraint name) when message is generic
+          if (nestedDetails && response.status >= 500) {
+            errorMessage = errorMessage.includes(nestedDetails)
+              ? errorMessage
+              : `${errorMessage} (${nestedDetails})`
+          }
+
+          const creditCode =
+            nestedCode === 'no_credits' ||
+            flatErrorString === 'no_credits' ||
+            (typeof errorData.code === 'string' && errorData.code === 'no_credits')
+
+          if (response.status === 402 && creditCode) {
             toast.error("You have no credits left. Please purchase more credits to continue.")
             router.push("/pricing")
             return
           }
 
-          if (response.status === 401 || response.status === 403) {
-            errorMessage = errorData.message || "Authentication required. Please sign in."
+          if (response.status === 401) {
+            errorMessage = topMessage || nestedMessage || "Authentication required. Please sign in."
             toast.error(errorMessage)
             router.push("/auth/signin")
             return
           }
 
+          // 403: plan limits, feature not allowed, etc. — show API message; do not force sign-in
+
           if (response.status === 429) {
             errorMessage = "Too many requests. Please try again later."
           }
-        } catch (parseError) {
-          // If response is not JSON, try to get text
+        } catch {
           try {
             const errorText = await response.text()
             if (errorText) {
-              errorMessage = errorText.substring(0, 200) // Limit length
+              errorMessage = errorText.substring(0, 200)
             }
-          } catch (textError) {
-            // Fallback to status-based message
+          } catch {
             errorMessage = `Request failed with status ${response.status}`
           }
         }
 
-        // Final safety net to prevent React crash
         if (typeof errorMessage !== 'string') {
-          console.error("Non-string error message extracted:", errorMessage)
-          try {
-            errorMessage = JSON.stringify(errorMessage)
-          } catch (e) {
-            errorMessage = "An unknown error occurred"
-          }
+          errorMessage = "An unknown error occurred"
         }
 
         toast.error(errorMessage)
-        console.error("QR code creation failed:", {
-          status: response.status,
-          statusText: response.statusText,
-          message: errorMessage
-        })
+        // Single-line log so Next.js dev overlay shows a readable message (objects often render as {})
+        console.error(
+          `QR code creation failed: ${response.status} ${response.statusText || ''} — ${errorMessage}`
+        )
       }
     } catch (error) {
       console.error("Error saving QR code:", error)
@@ -1288,32 +1278,16 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                           <div className="space-y-0.5 flex-1">
                             <Label className="text-sm sm:text-base">BotrixAI Watermark</Label>
                             <p className="text-xs sm:text-sm text-muted-foreground">
-                              {isPlanLoading
-                                ? "Checking your plan..."
-                                : isFreeTier
-                                  ? "Watermark is required for free users. Sign in or upgrade to remove it."
-                                  : "Add our watermark to your QR code"}
+                              Add our watermark to your QR code
                             </p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            {!isPlanLoading && isFreeTier && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handlePremiumAccessPrompt('Watermark removal')}
-                                className="text-xs whitespace-nowrap"
-                              >
-                                Upgrade
-                              </Button>
-                            )}
+
                             <Switch
                               checked={qrOptions.watermark || false}
                               onCheckedChange={(checked) => {
                                 if (!requirePlanResolution()) return
-                                if (isFreeTier) {
-                                  handlePremiumAccessPrompt('Watermark removal')
-                                  return
-                                }
+
                                 setQrOptions(prev => ({ ...prev, watermark: checked }))
                               }}
                               disabled={isPlanLoading || isFreeTier}
@@ -1970,58 +1944,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Upgrade Modal for Advanced Customization */}
-      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <div className="flex justify-center mb-4">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Sparkles className="h-7 w-7 text-primary" />
-              </div>
-            </div>
-            <DialogTitle className="text-center text-xl">Unlock Premium Customization</DialogTitle>
-            <DialogDescription className="text-center">
-              Transform your QR codes into stunning, branded masterpieces! Get access to custom shapes, vibrant colors, eye-catching effects, and exclusive templates.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-3">
-            <div className="flex items-center gap-3 text-sm">
-              <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
-              <span>All premium templates & shapes</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
-              <span>Custom colors & gradients</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
-              <span>3D effects, shadows & glow</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
-              <span>Exclusive stickers & decorations</span>
-            </div>
-          </div>
-          <DialogFooter className="flex flex-col gap-2 sm:flex-col">
-            <Button
-              className="w-full"
-              onClick={() => {
-                setShowUpgradeModal(false)
-                router.push('/pricing')
-              }}
-            >
-              Upgrade Now
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setShowUpgradeModal(false)}
-            >
-              Maybe later
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Login Modal — shown when a guest tries to generate or download */}
       <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>

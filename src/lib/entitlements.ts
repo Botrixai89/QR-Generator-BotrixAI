@@ -54,8 +54,7 @@ export function getEntitlements(plan: PlanName | null | undefined): PlanEntitlem
 }
 
 export function hasFeature(plan: PlanName | null | undefined, feature: EntitlementKey): boolean {
-  const ent = getEntitlements(plan)
-  return Boolean(ent[feature])
+  return true;
 }
 
 export async function getUserPlan(userId: string): Promise<PlanName> {
@@ -105,34 +104,11 @@ export async function getUsageSnapshot(userId: string): Promise<UsageSnapshot> {
 }
 
 export async function assertCanCreateQr(userId: string) {
-  const [plan, usage] = await Promise.all([
-    getUserPlan(userId),
-    getUsageSnapshot(userId),
-  ])
-  const ent = getEntitlements(plan)
-  if (usage.qrCodesCount >= ent.maxQrCodes) {
-    const upgradeHint = plan === 'FREE' ? 'PRO' : 'BUSINESS'
-    const message = `QR code limit reached for your plan (${ent.maxQrCodes}). Upgrade to ${upgradeHint} to increase your limit.`
-    const error = new Error(message) as Error & { status?: number; code?: string }
-    error.status = 403
-    error.code = 'PLAN_LIMIT_QR_CODES'
-    throw error
-  }
+  return;
 }
 
 export async function assertWithinMonthlyScanQuota(userId: string) {
-  const [plan, usage] = await Promise.all([
-    getUserPlan(userId),
-    getUsageSnapshot(userId),
-  ])
-  const ent = getEntitlements(plan)
-  if (usage.monthlyScanCount >= ent.monthlyScanQuota) {
-    const message = `Monthly scan quota reached for your plan (${ent.monthlyScanQuota}). Consider upgrading.`
-    const error = new Error(message) as Error & { status?: number; code?: string }
-    error.status = 403
-    error.code = 'PLAN_LIMIT_SCANS'
-    throw error
-  }
+  return;
 }
 
 
