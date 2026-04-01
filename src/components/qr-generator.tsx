@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -1260,17 +1261,45 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                         </div>
 
                         {/* Logo Upload */}
-                        <div className="space-y-2">
-                          <Label>Logo (Optional)</Label>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleLogoUpload}
-                              className="flex-1"
-                            />
-                            <Upload className="h-4 w-4 text-muted-foreground" />
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Logo (Optional)</Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleLogoUpload}
+                                className="flex-1"
+                              />
+                              <Upload className="h-4 w-4 text-muted-foreground" />
+                            </div>
                           </div>
+
+                          {qrOptions.logo && qrOptions.logo.image && (
+                            <div className="space-y-3 pt-2">
+                              <div className="flex flex-row items-center justify-between">
+                                <Label className="text-xs font-medium text-muted-foreground">Logo Size</Label>
+                                <span className="text-xs text-muted-foreground">{Math.round((qrOptions.logo.size || 0.3) * 100)}%</span>
+                              </div>
+                              <Slider
+                                min={0.1}
+                                max={0.6}
+                                step={0.05}
+                                value={[qrOptions.logo.size || 0.3]}
+                                onValueChange={([value]) => {
+                                  setQrOptions(prev => ({
+                                    ...prev,
+                                    logo: {
+                                      ...prev.logo,
+                                      image: prev.logo?.image || "",
+                                      size: value
+                                    }
+                                  }))
+                                }}
+                                className="w-full"
+                              />
+                            </div>
+                          )}
                         </div>
 
                         {/* Watermark Toggle */}
