@@ -1,8 +1,8 @@
 import QRCodeStyling from 'qr-code-styling'
-import { 
-  AdvancedQROptions, 
-  QRGradient, 
-  QRStickerConfig, 
+import {
+  AdvancedQROptions,
+  QRGradient,
+  QRStickerConfig,
   QR_TEMPLATES
 } from '@/types/qr-code-advanced'
 
@@ -55,21 +55,22 @@ export class AdvancedQRCodeGenerator {
     this.container = container
     container.innerHTML = ''
 
-    // Apply template settings first if specified
+    // Apply template STYLE settings (dot/corner/eye shapes) if a template is specified.
+    // Do NOT override colors here — colors are already correctly set in this.options
+    // by the caller (handleTemplateSelect sets template colors; color pickers override them).
     let finalOptions = { ...this.options }
     if (this.options.template) {
       const template = QR_TEMPLATES[this.options.template as keyof typeof QR_TEMPLATES]
       if (template) {
         finalOptions = {
           ...finalOptions,
-          foregroundColor: template.colors.foreground,
-          backgroundColor: template.colors.background,
-          gradient: template.colors.gradient,
-          dotType: template.styles.dotType,
-          cornerType: template.styles.cornerType,
-          eyePattern: template.styles.eyePattern,
-          shape: template.shape || finalOptions.shape,
-          sticker: template.sticker || finalOptions.sticker,
+          // Only apply style-related properties from the template
+          dotType: finalOptions.dotType || template.styles.dotType,
+          cornerType: finalOptions.cornerType || template.styles.cornerType,
+          eyePattern: finalOptions.eyePattern || template.styles.eyePattern,
+          shape: finalOptions.shape || template.shape,
+          sticker: finalOptions.sticker || template.sticker,
+          // Colors remain from finalOptions (i.e., qrOptions from React state)
         }
       }
     }
@@ -210,8 +211,8 @@ export class AdvancedQRCodeGenerator {
         // Heart shape centered and scaled to fit
         const s = Math.min(width, height) / 512 // Scale factor based on 512 viewbox
         const heartPath = `M ${cx} ${height * 0.85}
-          C ${cx - 180*s} ${height * 0.55}, ${cx - 220*s} ${height * 0.15}, ${cx} ${height * 0.35}
-          C ${cx + 220*s} ${height * 0.15}, ${cx + 180*s} ${height * 0.55}, ${cx} ${height * 0.85} Z`
+          C ${cx - 180 * s} ${height * 0.55}, ${cx - 220 * s} ${height * 0.15}, ${cx} ${height * 0.35}
+          C ${cx + 220 * s} ${height * 0.15}, ${cx + 180 * s} ${height * 0.55}, ${cx} ${height * 0.85} Z`
         path.setAttribute('d', heartPath)
         return path
       }
@@ -384,7 +385,7 @@ export class AdvancedQRCodeGenerator {
     }
 
     if (stickerConfig.rotation) {
-      group.setAttribute('transform', `rotate(${stickerConfig.rotation} ${x + size/2} ${y + size/2})`)
+      group.setAttribute('transform', `rotate(${stickerConfig.rotation} ${x + size / 2} ${y + size / 2})`)
     }
 
     return group
@@ -393,12 +394,12 @@ export class AdvancedQRCodeGenerator {
   // Create sticker shape
   private createStickerShape(stickerType: string, size: number): SVGElement | null {
     const element = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    
+
     // Enhanced sticker implementations
     switch (stickerType) {
       case 'heart-frame':
         const heart = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        heart.setAttribute('d', `M${size/2},${size*0.7} C${size/2},${size*0.7} ${size*0.1},${size*0.3} ${size*0.1},${size*0.5} C${size*0.1},${size*0.6} ${size*0.2},${size*0.7} ${size*0.3},${size*0.7} C${size*0.4},${size*0.7} ${size/2},${size*0.9} ${size/2},${size*0.9} C${size/2},${size*0.9} ${size*0.6},${size*0.7} ${size*0.7},${size*0.7} C${size*0.8},${size*0.7} ${size*0.9},${size*0.6} ${size*0.9},${size*0.5} C${size*0.9},${size*0.3} ${size/2},${size*0.7} ${size/2},${size*0.7} Z`)
+        heart.setAttribute('d', `M${size / 2},${size * 0.7} C${size / 2},${size * 0.7} ${size * 0.1},${size * 0.3} ${size * 0.1},${size * 0.5} C${size * 0.1},${size * 0.6} ${size * 0.2},${size * 0.7} ${size * 0.3},${size * 0.7} C${size * 0.4},${size * 0.7} ${size / 2},${size * 0.9} ${size / 2},${size * 0.9} C${size / 2},${size * 0.9} ${size * 0.6},${size * 0.7} ${size * 0.7},${size * 0.7} C${size * 0.8},${size * 0.7} ${size * 0.9},${size * 0.6} ${size * 0.9},${size * 0.5} C${size * 0.9},${size * 0.3} ${size / 2},${size * 0.7} ${size / 2},${size * 0.7} Z`)
         heart.setAttribute('fill', 'none')
         heart.setAttribute('stroke', '#ff6b6b')
         heart.setAttribute('stroke-width', '3')
@@ -406,7 +407,7 @@ export class AdvancedQRCodeGenerator {
         break
       case 'star-frame':
         const star = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        star.setAttribute('d', `M${size/2},0 L${size*0.6},${size*0.4} L${size},${size*0.4} L${size*0.7},${size*0.6} L${size*0.8},${size} L${size/2},${size*0.8} L${size*0.2},${size} L${size*0.3},${size*0.6} L0,${size*0.4} L${size*0.4},${size*0.4} Z`)
+        star.setAttribute('d', `M${size / 2},0 L${size * 0.6},${size * 0.4} L${size},${size * 0.4} L${size * 0.7},${size * 0.6} L${size * 0.8},${size} L${size / 2},${size * 0.8} L${size * 0.2},${size} L${size * 0.3},${size * 0.6} L0,${size * 0.4} L${size * 0.4},${size * 0.4} Z`)
         star.setAttribute('fill', 'none')
         star.setAttribute('stroke', '#ffd93d')
         star.setAttribute('stroke-width', '3')
@@ -414,9 +415,9 @@ export class AdvancedQRCodeGenerator {
         break
       case 'circle-frame':
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-        circle.setAttribute('cx', (size/2).toString())
-        circle.setAttribute('cy', (size/2).toString())
-        circle.setAttribute('r', (size/2 - 5).toString())
+        circle.setAttribute('cx', (size / 2).toString())
+        circle.setAttribute('cy', (size / 2).toString())
+        circle.setAttribute('r', (size / 2 - 5).toString())
         circle.setAttribute('fill', 'none')
         circle.setAttribute('stroke', '#4ecdc4')
         circle.setAttribute('stroke-width', '4')
@@ -454,7 +455,7 @@ export class AdvancedQRCodeGenerator {
         rainbowFrame.setAttribute('stroke', 'url(#rainbow-gradient)')
         rainbowFrame.setAttribute('stroke-width', '4')
         element.appendChild(rainbowFrame)
-        
+
         // Add rainbow gradient definition
         const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
         const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient')
@@ -463,7 +464,7 @@ export class AdvancedQRCodeGenerator {
         gradient.setAttribute('y1', '0%')
         gradient.setAttribute('x2', '100%')
         gradient.setAttribute('y2', '0%')
-        
+
         const colors = ['#ff0000', '#ff8000', '#ffff00', '#80ff00', '#00ffff', '#8000ff', '#ff0080']
         colors.forEach((color, index) => {
           const stop = document.createElementNS('http://www.w3.org/2000/svg', 'stop')
@@ -471,227 +472,227 @@ export class AdvancedQRCodeGenerator {
           stop.setAttribute('stop-color', color)
           gradient.appendChild(stop)
         })
-        
+
         defs.appendChild(gradient)
         element.appendChild(defs)
         break
       case 'christmas-tree':
         const tree = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        
+
         // Tree layers
         const layer1 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        layer1.setAttribute('d', `M${size/2},${size*0.1} L${size*0.2},${size*0.4} L${size*0.8},${size*0.4} Z`)
+        layer1.setAttribute('d', `M${size / 2},${size * 0.1} L${size * 0.2},${size * 0.4} L${size * 0.8},${size * 0.4} Z`)
         layer1.setAttribute('fill', '#228B22')
         tree.appendChild(layer1)
-        
+
         const layer2 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        layer2.setAttribute('d', `M${size/2},${size*0.3} L${size*0.15},${size*0.6} L${size*0.85},${size*0.6} Z`)
+        layer2.setAttribute('d', `M${size / 2},${size * 0.3} L${size * 0.15},${size * 0.6} L${size * 0.85},${size * 0.6} Z`)
         layer2.setAttribute('fill', '#228B22')
         tree.appendChild(layer2)
-        
+
         const layer3 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        layer3.setAttribute('d', `M${size/2},${size*0.5} L${size*0.1},${size*0.8} L${size*0.9},${size*0.8} Z`)
+        layer3.setAttribute('d', `M${size / 2},${size * 0.5} L${size * 0.1},${size * 0.8} L${size * 0.9},${size * 0.8} Z`)
         layer3.setAttribute('fill', '#228B22')
         tree.appendChild(layer3)
-        
+
         // Trunk
         const trunk = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-        trunk.setAttribute('x', (size*0.4).toString())
-        trunk.setAttribute('y', (size*0.8).toString())
-        trunk.setAttribute('width', (size*0.2).toString())
-        trunk.setAttribute('height', (size*0.2).toString())
+        trunk.setAttribute('x', (size * 0.4).toString())
+        trunk.setAttribute('y', (size * 0.8).toString())
+        trunk.setAttribute('width', (size * 0.2).toString())
+        trunk.setAttribute('height', (size * 0.2).toString())
         trunk.setAttribute('fill', '#8B4513')
         tree.appendChild(trunk)
-        
+
         element.appendChild(tree)
         break
       case 'santa':
         const santa = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        
+
         // Santa hat
         const hat = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        hat.setAttribute('d', `M${size*0.2},${size*0.3} L${size*0.5},${size*0.1} L${size*0.8},${size*0.3} L${size*0.7},${size*0.4} L${size*0.3},${size*0.4} Z`)
+        hat.setAttribute('d', `M${size * 0.2},${size * 0.3} L${size * 0.5},${size * 0.1} L${size * 0.8},${size * 0.3} L${size * 0.7},${size * 0.4} L${size * 0.3},${size * 0.4} Z`)
         hat.setAttribute('fill', '#ff0000')
         santa.appendChild(hat)
-        
+
         // Hat pom-pom
         const pomPom = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-        pomPom.setAttribute('cx', (size*0.5).toString())
-        pomPom.setAttribute('cy', (size*0.1).toString())
-        pomPom.setAttribute('r', (size*0.05).toString())
+        pomPom.setAttribute('cx', (size * 0.5).toString())
+        pomPom.setAttribute('cy', (size * 0.1).toString())
+        pomPom.setAttribute('r', (size * 0.05).toString())
         pomPom.setAttribute('fill', '#ffffff')
         santa.appendChild(pomPom)
-        
+
         // Face
         const face = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-        face.setAttribute('cx', (size/2).toString())
-        face.setAttribute('cy', (size*0.6).toString())
-        face.setAttribute('r', (size*0.2).toString())
+        face.setAttribute('cx', (size / 2).toString())
+        face.setAttribute('cy', (size * 0.6).toString())
+        face.setAttribute('r', (size * 0.2).toString())
         face.setAttribute('fill', '#ffdbac')
         santa.appendChild(face)
-        
+
         element.appendChild(santa)
         break
       case 'snowman':
         const snowman = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        
+
         // Bottom circle
         const bottomCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-        bottomCircle.setAttribute('cx', (size/2).toString())
-        bottomCircle.setAttribute('cy', (size*0.7).toString())
-        bottomCircle.setAttribute('r', (size*0.25).toString())
+        bottomCircle.setAttribute('cx', (size / 2).toString())
+        bottomCircle.setAttribute('cy', (size * 0.7).toString())
+        bottomCircle.setAttribute('r', (size * 0.25).toString())
         bottomCircle.setAttribute('fill', '#ffffff')
         bottomCircle.setAttribute('stroke', '#cccccc')
         bottomCircle.setAttribute('stroke-width', '2')
         snowman.appendChild(bottomCircle)
-        
+
         // Top circle
         const topCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-        topCircle.setAttribute('cx', (size/2).toString())
-        topCircle.setAttribute('cy', (size*0.4).toString())
-        topCircle.setAttribute('r', (size*0.2).toString())
+        topCircle.setAttribute('cx', (size / 2).toString())
+        topCircle.setAttribute('cy', (size * 0.4).toString())
+        topCircle.setAttribute('r', (size * 0.2).toString())
         topCircle.setAttribute('fill', '#ffffff')
         topCircle.setAttribute('stroke', '#cccccc')
         topCircle.setAttribute('stroke-width', '2')
         snowman.appendChild(topCircle)
-        
+
         // Eyes
         const snowmanLeftEye = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-        snowmanLeftEye.setAttribute('cx', (size*0.45).toString())
-        snowmanLeftEye.setAttribute('cy', (size*0.35).toString())
-        snowmanLeftEye.setAttribute('r', (size*0.02).toString())
+        snowmanLeftEye.setAttribute('cx', (size * 0.45).toString())
+        snowmanLeftEye.setAttribute('cy', (size * 0.35).toString())
+        snowmanLeftEye.setAttribute('r', (size * 0.02).toString())
         snowmanLeftEye.setAttribute('fill', '#000000')
         snowman.appendChild(snowmanLeftEye)
-        
+
         const snowmanRightEye = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-        snowmanRightEye.setAttribute('cx', (size*0.55).toString())
-        snowmanRightEye.setAttribute('cy', (size*0.35).toString())
-        snowmanRightEye.setAttribute('r', (size*0.02).toString())
+        snowmanRightEye.setAttribute('cx', (size * 0.55).toString())
+        snowmanRightEye.setAttribute('cy', (size * 0.35).toString())
+        snowmanRightEye.setAttribute('r', (size * 0.02).toString())
         snowmanRightEye.setAttribute('fill', '#000000')
         snowman.appendChild(snowmanRightEye)
-        
+
         element.appendChild(snowman)
         break
       case 'gift-box':
         const giftBox = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        
+
         // Box
         const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-        box.setAttribute('x', (size*0.2).toString())
-        box.setAttribute('y', (size*0.3).toString())
-        box.setAttribute('width', (size*0.6).toString())
-        box.setAttribute('height', (size*0.5).toString())
+        box.setAttribute('x', (size * 0.2).toString())
+        box.setAttribute('y', (size * 0.3).toString())
+        box.setAttribute('width', (size * 0.6).toString())
+        box.setAttribute('height', (size * 0.5).toString())
         box.setAttribute('fill', '#ff6b6b')
         giftBox.appendChild(box)
-        
+
         // Ribbon
         const ribbon = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-        ribbon.setAttribute('x', (size*0.2).toString())
-        ribbon.setAttribute('y', (size*0.45).toString())
-        ribbon.setAttribute('width', (size*0.6).toString())
-        ribbon.setAttribute('height', (size*0.1).toString())
+        ribbon.setAttribute('x', (size * 0.2).toString())
+        ribbon.setAttribute('y', (size * 0.45).toString())
+        ribbon.setAttribute('width', (size * 0.6).toString())
+        ribbon.setAttribute('height', (size * 0.1).toString())
         ribbon.setAttribute('fill', '#ffffff')
         giftBox.appendChild(ribbon)
-        
+
         element.appendChild(giftBox)
         break
       case 'pumpkin':
         const pumpkin = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        
+
         // Pumpkin body
         const pumpkinBody = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        pumpkinBody.setAttribute('d', `M${size/2},${size*0.1} C${size*0.3},${size*0.1} ${size*0.1},${size*0.3} ${size*0.1},${size*0.6} C${size*0.1},${size*0.8} ${size*0.3},${size*0.9} ${size/2},${size*0.9} C${size*0.7},${size*0.9} ${size*0.9},${size*0.8} ${size*0.9},${size*0.6} C${size*0.9},${size*0.3} ${size*0.7},${size*0.1} ${size/2},${size*0.1} Z`)
+        pumpkinBody.setAttribute('d', `M${size / 2},${size * 0.1} C${size * 0.3},${size * 0.1} ${size * 0.1},${size * 0.3} ${size * 0.1},${size * 0.6} C${size * 0.1},${size * 0.8} ${size * 0.3},${size * 0.9} ${size / 2},${size * 0.9} C${size * 0.7},${size * 0.9} ${size * 0.9},${size * 0.8} ${size * 0.9},${size * 0.6} C${size * 0.9},${size * 0.3} ${size * 0.7},${size * 0.1} ${size / 2},${size * 0.1} Z`)
         pumpkinBody.setAttribute('fill', '#ff8c00')
         pumpkin.appendChild(pumpkinBody)
-        
+
         // Eyes
         const pumpkinLeftEye = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        pumpkinLeftEye.setAttribute('d', `M${size*0.35},${size*0.4} L${size*0.4},${size*0.35} L${size*0.35},${size*0.3} L${size*0.3},${size*0.35} Z`)
+        pumpkinLeftEye.setAttribute('d', `M${size * 0.35},${size * 0.4} L${size * 0.4},${size * 0.35} L${size * 0.35},${size * 0.3} L${size * 0.3},${size * 0.35} Z`)
         pumpkinLeftEye.setAttribute('fill', '#000000')
         pumpkin.appendChild(pumpkinLeftEye)
-        
+
         const pumpkinRightEye = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        pumpkinRightEye.setAttribute('d', `M${size*0.65},${size*0.4} L${size*0.7},${size*0.35} L${size*0.65},${size*0.3} L${size*0.6},${size*0.35} Z`)
+        pumpkinRightEye.setAttribute('d', `M${size * 0.65},${size * 0.4} L${size * 0.7},${size * 0.35} L${size * 0.65},${size * 0.3} L${size * 0.6},${size * 0.35} Z`)
         pumpkinRightEye.setAttribute('fill', '#000000')
         pumpkin.appendChild(pumpkinRightEye)
-        
+
         // Mouth
         const pumpkinMouth = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        pumpkinMouth.setAttribute('d', `M${size*0.3},${size*0.6} Q${size/2},${size*0.7} ${size*0.7},${size*0.6}`)
+        pumpkinMouth.setAttribute('d', `M${size * 0.3},${size * 0.6} Q${size / 2},${size * 0.7} ${size * 0.7},${size * 0.6}`)
         pumpkinMouth.setAttribute('fill', 'none')
         pumpkinMouth.setAttribute('stroke', '#000000')
         pumpkinMouth.setAttribute('stroke-width', '2')
         pumpkin.appendChild(pumpkinMouth)
-        
+
         element.appendChild(pumpkin)
         break
       case 'bat':
         const bat = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        
+
         // Bat body
         const batBody = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse')
-        batBody.setAttribute('cx', (size/2).toString())
-        batBody.setAttribute('cy', (size*0.6).toString())
-        batBody.setAttribute('rx', (size*0.15).toString())
-        batBody.setAttribute('ry', (size*0.2).toString())
+        batBody.setAttribute('cx', (size / 2).toString())
+        batBody.setAttribute('cy', (size * 0.6).toString())
+        batBody.setAttribute('rx', (size * 0.15).toString())
+        batBody.setAttribute('ry', (size * 0.2).toString())
         batBody.setAttribute('fill', '#2c2c2c')
         bat.appendChild(batBody)
-        
+
         // Wings
         const leftWing = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        leftWing.setAttribute('d', `M${size*0.35},${size*0.6} Q${size*0.1},${size*0.4} ${size*0.1},${size*0.6} Q${size*0.1},${size*0.8} ${size*0.35},${size*0.6} Z`)
+        leftWing.setAttribute('d', `M${size * 0.35},${size * 0.6} Q${size * 0.1},${size * 0.4} ${size * 0.1},${size * 0.6} Q${size * 0.1},${size * 0.8} ${size * 0.35},${size * 0.6} Z`)
         leftWing.setAttribute('fill', '#2c2c2c')
         bat.appendChild(leftWing)
-        
+
         const rightWing = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        rightWing.setAttribute('d', `M${size*0.65},${size*0.6} Q${size*0.9},${size*0.4} ${size*0.9},${size*0.6} Q${size*0.9},${size*0.8} ${size*0.65},${size*0.6} Z`)
+        rightWing.setAttribute('d', `M${size * 0.65},${size * 0.6} Q${size * 0.9},${size * 0.4} ${size * 0.9},${size * 0.6} Q${size * 0.9},${size * 0.8} ${size * 0.65},${size * 0.6} Z`)
         rightWing.setAttribute('fill', '#2c2c2c')
         bat.appendChild(rightWing)
-        
+
         element.appendChild(bat)
         break
       case 'skull':
         const skull = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        
+
         // Skull
         const skullHead = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-        skullHead.setAttribute('cx', (size/2).toString())
-        skullHead.setAttribute('cy', (size*0.5).toString())
-        skullHead.setAttribute('r', (size*0.3).toString())
+        skullHead.setAttribute('cx', (size / 2).toString())
+        skullHead.setAttribute('cy', (size * 0.5).toString())
+        skullHead.setAttribute('r', (size * 0.3).toString())
         skullHead.setAttribute('fill', '#ffffff')
         skullHead.setAttribute('stroke', '#cccccc')
         skullHead.setAttribute('stroke-width', '2')
         skull.appendChild(skullHead)
-        
+
         // Eyes
         const skullLeftEye = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-        skullLeftEye.setAttribute('cx', (size*0.4).toString())
-        skullLeftEye.setAttribute('cy', (size*0.45).toString())
-        skullLeftEye.setAttribute('r', (size*0.05).toString())
+        skullLeftEye.setAttribute('cx', (size * 0.4).toString())
+        skullLeftEye.setAttribute('cy', (size * 0.45).toString())
+        skullLeftEye.setAttribute('r', (size * 0.05).toString())
         skullLeftEye.setAttribute('fill', '#000000')
         skull.appendChild(skullLeftEye)
-        
+
         const skullRightEye = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-        skullRightEye.setAttribute('cx', (size*0.6).toString())
-        skullRightEye.setAttribute('cy', (size*0.45).toString())
-        skullRightEye.setAttribute('r', (size*0.05).toString())
+        skullRightEye.setAttribute('cx', (size * 0.6).toString())
+        skullRightEye.setAttribute('cy', (size * 0.45).toString())
+        skullRightEye.setAttribute('r', (size * 0.05).toString())
         skullRightEye.setAttribute('fill', '#000000')
         skull.appendChild(skullRightEye)
-        
+
         // Nose
         const skullNose = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        skullNose.setAttribute('d', `M${size/2},${size*0.5} L${size*0.45},${size*0.55} L${size*0.55},${size*0.55} Z`)
+        skullNose.setAttribute('d', `M${size / 2},${size * 0.5} L${size * 0.45},${size * 0.55} L${size * 0.55},${size * 0.55} Z`)
         skullNose.setAttribute('fill', '#000000')
         skull.appendChild(skullNose)
-        
+
         // Mouth
         const skullMouth = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        skullMouth.setAttribute('d', `M${size*0.35},${size*0.6} Q${size/2},${size*0.7} ${size*0.65},${size*0.6}`)
+        skullMouth.setAttribute('d', `M${size * 0.35},${size * 0.6} Q${size / 2},${size * 0.7} ${size * 0.65},${size * 0.6}`)
         skullMouth.setAttribute('fill', 'none')
         skullMouth.setAttribute('stroke', '#000000')
         skullMouth.setAttribute('stroke-width', '2')
         skull.appendChild(skullMouth)
-        
+
         element.appendChild(skull)
         break
       default:
@@ -818,7 +819,7 @@ export class AdvancedQRCodeGenerator {
     if (!svg) return
 
     const filenameWithTimestamp = `${filename || 'qr-code'}-${Date.now()}`
-    
+
     if (format === 'svg') {
       // For SVG, use the built-in download method
       this.qrCode.download({
@@ -838,36 +839,36 @@ export class AdvancedQRCodeGenerator {
       'print': { scale: 4, suffix: 'Print' },
       'ultra-hd': { scale: 8, suffix: 'HD' }
     }
-    
+
     const settings = qualitySettings[quality]
-    
+
     // Create high-resolution canvas
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    
+
     const baseSize = this.options.width
     canvas.width = baseSize * settings.scale
     canvas.height = baseSize * settings.scale
-    
+
     // Enable high DPI rendering
     ctx.scale(settings.scale, settings.scale)
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = 'high'
-    
+
     // Set background
     ctx.fillStyle = this.options.backgroundColor || '#ffffff'
     ctx.fillRect(0, 0, baseSize, baseSize)
-    
+
     // Convert SVG to image and draw
     const svgData = new XMLSerializer().serializeToString(svg)
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
     const svgUrl = URL.createObjectURL(svgBlob)
-    
+
     const img = new Image()
     img.onload = () => {
       ctx.drawImage(img, 0, 0, baseSize, baseSize)
-      
+
       canvas.toBlob((blob) => {
         if (blob) {
           const url = URL.createObjectURL(blob)

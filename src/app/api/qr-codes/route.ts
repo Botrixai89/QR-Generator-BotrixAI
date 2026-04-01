@@ -12,13 +12,13 @@ import { UserCreditsCache, QRCodeCache } from "@/lib/cache"
 export async function POST(request: NextRequest) {
   try {
     console.log("=== QR Code API POST Request Started ===")
-    
+
     // Check environment variables
     console.log("Environment check:")
     console.log("- NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "Set" : "Missing")
     console.log("- NEXT_PUBLIC_SUPABASE_ANON_KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "Set" : "Missing")
     console.log("- SUPABASE_SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "Set" : "Missing")
-    
+
     // Add timeout handling
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Request timeout')), 10000)
@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
 
     const sessionPromise = getServerSession(authOptions)
     const session = await Promise.race([sessionPromise, timeoutPromise]) as { user?: { id: string } } | null
-    
+
     console.log("Session check:", session ? "Found" : "Not found")
     console.log("User ID:", session?.user?.id || "None")
-    
+
     if (!session?.user?.id) {
       console.log("ERROR: No valid session or user ID")
       return ApiErrors.unauthorized().toResponse()
@@ -49,16 +49,6 @@ export async function POST(request: NextRequest) {
     // Credit check will be done atomically in the database function
     // This prevents race conditions and ensures data consistency
 
-    // Enforce plan entitlements: QR creation limit
-    try {
-      await assertCanCreateQr(session.user.id)
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'plan_limit'
-      const status = (e as { status?: number })?.status || 403
-      const code = (e as { code?: string })?.code || 'plan_limit'
-      return NextResponse.json({ error: code, message }, { status })
-    }
-
     const formData = await request.formData()
     const url = formData.get("url") as string
     const title = formData.get("title") as string
@@ -76,7 +66,7 @@ export async function POST(request: NextRequest) {
     const organizationId = formData.get("organizationId") as string | null
     const folderId = formData.get("folderId") as string | null
     const fileId = formData.get("fileId") as string | null
-    
+
     // Advanced QR code features
     const shape = formData.get("shape") as string
     const template = formData.get("template") as string
@@ -100,22 +90,22 @@ export async function POST(request: NextRequest) {
         if (!allowedTypes.includes(logoFile.type)) {
           return ApiErrors.invalidFileType(allowedTypes).toResponse()
         }
-        
+
         // Validate file size (max 5MB)
         const maxSize = 5 * 1024 * 1024 // 5MB in bytes
         if (logoFile.size > maxSize) {
           return ApiErrors.fileTooLarge('5MB').toResponse()
         }
-        
+
         // Create a unique filename
         const timestamp = Date.now()
         const sanitizedFileName = logoFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
         const fileName = `${timestamp}-${sanitizedFileName}`
-        
+
         // Convert File to Buffer and optimize
         const bytes = await logoFile.arrayBuffer()
         let buffer: Buffer = Buffer.from(new Uint8Array(bytes))
-        
+
         // Optimize image if optimization utility is available
         try {
           const { optimizeImage } = await import('@/lib/image-optimization')
@@ -129,7 +119,7 @@ export async function POST(request: NextRequest) {
           console.warn('Image optimization not available, using original:', error)
           // Continue with original buffer
         }
-        
+
         // Ensure bucket exists (auto-create if missing)
         try {
           const storageAny = (supabaseAdmin as { storage?: { listBuckets?: () => Promise<{ data?: Array<{ name?: string; id?: string }> }>; createBucket?: (name: string, options: { public: boolean }) => Promise<unknown> } }).storage
@@ -199,13 +189,13 @@ export async function POST(request: NextRequest) {
     console.log("- URL:", url)
     console.log("- Title:", title)
     console.log("- Original URL:", originalUrl)
-    
+
     const qrCodeId = randomUUID()
     const now = new Date().toISOString()
-    
+
     console.log("Attempting to insert into database...")
     console.log("SupabaseAdmin available:", !!supabaseAdmin)
-    
+
     // Parse dynamic content if provided
     let parsedDynamicContent = null
     if (dynamicContent) {
@@ -338,37 +328,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Use atomic transaction function to create QR code and deduct credit
-    // This ensures both operations succeed or both fail - no data inconsistency
-    console.log("Calling atomic transaction function...")
-    
+    // Directly insert the QR code without deducting credits
+    // This makes QR code generation completely free
+    console.log("Directly inserting QR code into database...")
+
+    // We need to type the result correctly
     const { data: result, error } = await supabaseAdmin!
-      .rpc('create_qr_code_with_credit_deduction', {
-        p_qr_data: insertData,
-        p_user_id: session.user.id
-      })
+      .from('QrCode')
+      .insert(insertData)
+      .select()
+      .single()
 
     if (error) {
-      console.error("Transaction error details:", error)
-      
-      // Handle specific error cases
-      if (error.message?.includes('Insufficient credits')) {
-        return ApiErrors.insufficientCredits().toResponse()
-      }
-      
-      if (error.message?.includes('User not found')) {
-        return ApiErrors.userNotFound(session.user.id).toResponse()
-      }
-      
+      console.error("Database insert error details:", error)
       return ApiErrors.databaseError('Failed to create QR code', error.message).toResponse()
     }
-    
+
     const qrCode = result as Record<string, unknown>
-    console.log("QR code created successfully with atomic transaction:", qrCode)
+    console.log("QR code created successfully:", qrCode)
 
     // Invalidate caches after successful creation
     await Promise.all([
-      UserCreditsCache.invalidate(session.user.id), // Credits changed
       QRCodeCache.invalidateUserList(session.user.id), // QR list changed
     ])
 
@@ -392,7 +372,7 @@ export async function GET() {
 
     const sessionPromise = getServerSession(authOptions)
     const session = await Promise.race([sessionPromise, timeoutPromise]) as { user?: { id: string } } | null
-    
+
     if (!session?.user?.id) {
       return ApiErrors.unauthorized().toResponse()
     }
@@ -402,9 +382,9 @@ export async function GET() {
       .from('OrganizationMember')
       .select('organizationId')
       .eq('userId', session.user.id)
-    
+
     const orgIds = orgMembers?.map(m => m.organizationId) || []
-    
+
     // Fetch QR codes: user-owned OR org-owned (where user is member)
     const { data: qrCodes, error } = await supabaseAdmin!
       .from('QrCode')

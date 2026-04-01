@@ -124,12 +124,7 @@ export default function Navigation() {
                 <span>Dashboard</span>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/pricing" className="flex items-center">
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Pricing</span>
-              </Link>
-            </DropdownMenuItem>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="flex items-center">
               <LogOut className="mr-2 h-4 w-4" />
@@ -162,13 +157,13 @@ export default function Navigation() {
                 <QrCode className="h-5 w-5 sm:h-6 sm:w-6" />
                 <span className="font-bold text-base sm:text-lg">QR Generator</span>
               </Link>
-              
+
               <div className="flex items-center justify-center space-x-1 sm:space-x-2 text-muted-foreground ml-2 sm:ml-4 md:ml-8">
                 <span className="text-[10px] sm:text-xs font-medium mr-[1px] sm:mr-[2px]">powered by</span>
                 {/* Light theme logo */}
-                <Link 
-                  href="https://www.botrixai.com" 
-                  target="_blank" 
+                <Link
+                  href="https://www.botrixai.com"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="block dark:hidden hover:opacity-80 transition-opacity"
                   aria-label="Visit BotrixAI Platform"
@@ -183,8 +178,8 @@ export default function Navigation() {
                   />
                 </Link>
                 {/* Dark & system theme logo */}
-                <Link 
-                  href="https://www.botrixai.com" 
+                <Link
+                  href="https://www.botrixai.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hidden dark:block hover:opacity-80 transition-opacity"
@@ -201,35 +196,30 @@ export default function Navigation() {
                 </Link>
               </div>
             </div>
-            
+
             {session && (
               <div className="hidden md:flex items-center space-x-6">
-                <Link 
-                  href="/" 
+                <Link
+                  href="/"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Generator
                 </Link>
-                <Link 
-                  href="/dashboard" 
+                <Link
+                  href="/dashboard"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Dashboard
                 </Link>
-                <Link 
-                  href="/pricing" 
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Pricing
-                </Link>
-                <Link 
-                  href="/guide" 
+
+                <Link
+                  href="/guide"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Guide
                 </Link>
-                <Link 
-                  href="/about" 
+                <Link
+                  href="/about"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   About
@@ -242,7 +232,7 @@ export default function Navigation() {
             {session && <NotificationsDropdown />}
             <ThemeToggle />
             {renderAuthSection()}
-            
+
             {/* Mobile Menu Button */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -259,8 +249,8 @@ export default function Navigation() {
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-1 mt-6">
-                  <Link 
-                    href="/" 
+                  <Link
+                    href="/"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
                   >
@@ -268,8 +258,8 @@ export default function Navigation() {
                     Generator
                   </Link>
                   {session && (
-                    <Link 
-                      href="/dashboard" 
+                    <Link
+                      href="/dashboard"
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
                     >
@@ -277,35 +267,28 @@ export default function Navigation() {
                       Dashboard
                     </Link>
                   )}
-                  <Link 
-                    href="/pricing" 
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
-                  >
-                    <DollarSign className="h-4 w-4" />
-                    Pricing
-                  </Link>
-                  <Link 
-                    href="/guide" 
+
+                  <Link
+                    href="/guide"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
                   >
                     <BookOpen className="h-4 w-4" />
                     Guide
                   </Link>
-                  <Link 
-                    href="/about" 
+                  <Link
+                    href="/about"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium hover:bg-accent transition-colors"
                   >
                     <Info className="h-4 w-4" />
                     About
                   </Link>
-                  
+
                   {session && (
                     <>
                       <div className="my-2 border-t" />
-                      <button 
+                      <button
                         onClick={() => {
                           setMobileMenuOpen(false)
                           handleSignOut()

@@ -1,4 +1,5 @@
 import CredentialsProvider from "next-auth/providers/credentials"
+import GoogleProvider from "next-auth/providers/google"
 import { supabaseAdmin } from "@/lib/supabase"
 import bcrypt from "bcryptjs"
 
@@ -18,10 +19,10 @@ const buildTestUser = (email: string, name?: string) => ({
 function getNextAuthUrl(): string {
   // In production (Vercel), use NEXTAUTH_URL if set, otherwise use VERCEL_URL
   if (process.env.NODE_ENV === 'production') {
-    return process.env.NEXTAUTH_URL || 
-           (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://qr-generator.botrixai.com')
+    return process.env.NEXTAUTH_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://qr-generator.botrixai.com')
   }
-  
+
   // In development, always use localhost
   return process.env.NEXTAUTH_URL || 'http://localhost:3000'
 }
@@ -85,6 +86,10 @@ export const authOptions = {
         }
       }
     }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    }),
   ],
   session: {
     strategy: jwtStrategy,
@@ -98,6 +103,60 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
   },
   callbacks: {
+    // Auto-create Supabase user on first Google login
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async signIn({ user, account }: { user: any; account: any }) {
+      if (account?.provider === 'google') {
+        if (!supabaseAdmin || !user?.email) return true
+        try {
+          const { data: existingUser } = await supabaseAdmin
+            .from('User')
+            .select('id, isActive')
+            .eq('email', user.email)
+            .single()
+
+          if (existingUser) {
+            if (existingUser.isActive === false) return false
+            await supabaseAdmin
+              .from('User')
+              .update({
+                lastLoginAt: new Date().toISOString(),
+                name: user.name ?? undefined,
+                image: user.image ?? null,
+              })
+              .eq('id', existingUser.id)
+            user.id = existingUser.id
+          } else {
+            const { data: newUser, error } = await supabaseAdmin
+              .from('User')
+              .insert({
+                email: user.email,
+                name: user.name ?? user.email.split('@')[0],
+                image: user.image ?? null,
+                password: null,
+                emailVerified: new Date().toISOString(),
+                isActive: true,
+                plan: 'FREE',
+                credits: 10,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                lastLoginAt: new Date().toISOString(),
+              })
+              .select('id')
+              .single()
+
+            if (error) {
+              console.error('Error creating Google user in Supabase:', error)
+              return true
+            }
+            if (newUser) user.id = newUser.id
+          }
+        } catch (err) {
+          console.error('Google signIn callback error:', err)
+        }
+      }
+      return true
+    },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async jwt({ token, user, trigger }: { token: Record<string, unknown>; user?: any; trigger?: string }) {
       // Initial sign in
@@ -142,7 +201,7 @@ export const authOptions = {
           token.name = user.name
           token.image = user.image
           token.emailVerified = user.emailVerified
-          
+
           // Check if account is still active
           if (user.isActive === false) {
             throw new Error('Account deactivated')
