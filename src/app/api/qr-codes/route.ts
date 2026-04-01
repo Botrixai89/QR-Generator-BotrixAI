@@ -265,10 +265,12 @@ export async function POST(request: NextRequest) {
     if (parsedSticker) insertData.sticker = parsedSticker
     if (parsedEffects) insertData.effects = parsedEffects
 
+    // Resolve plan once for all entitlement and credit logic
+    const userPlan = await getUserPlan(session.user.id)
+
     // Enforce dynamic QR entitlement
     if (insertData.isDynamic) {
-      const plan = await getUserPlan(session.user.id)
-      if (!hasFeature(plan, 'dynamicQrAllowed')) {
+      if (!hasFeature(userPlan, 'dynamicQrAllowed')) {
         return NextResponse.json(
           { error: 'feature_not_allowed', message: 'Dynamic QR codes are not available on your plan.' },
           { status: 403 }
@@ -328,9 +330,42 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Directly insert the QR code without deducting credits
-    // This makes QR code generation completely free
-    console.log("Directly inserting QR code into database...")
+    // Enforce plan QR-code limits before creation
+    try {
+      await assertCanCreateQr(session.user.id)
+    } catch (error) {
+      const status = (error as { status?: number }).status
+      const code = (error as { code?: string }).code
+      const message = error instanceof Error ? error.message : 'Plan limit reached'
+      if (status === 403 && code === 'PLAN_LIMIT_QR_CODES') {
+        return NextResponse.json(
+          { error: code, message },
+          { status: 403 }
+        )
+      }
+      throw error
+    }
+
+    // Paid plans consume 1 credit per QR create
+    let availableCredits: number | null = null
+    if (userPlan !== 'FREE') {
+      const { data: userCreditsData, error: userCreditsError } = await supabaseAdmin!
+        .from('User')
+        .select('credits')
+        .eq('id', session.user.id)
+        .single()
+
+      if (userCreditsError) {
+        return ApiErrors.databaseError('Failed to fetch user credits', userCreditsError.message).toResponse()
+      }
+
+      availableCredits = userCreditsData?.credits ?? 0
+      if (availableCredits <= 0) {
+        return ApiErrors.insufficientCredits(1, availableCredits).toResponse()
+      }
+    }
+
+    console.log("Inserting QR code into database...")
 
     // We need to type the result correctly
     const { data: result, error } = await supabaseAdmin!
@@ -347,9 +382,25 @@ export async function POST(request: NextRequest) {
     const qrCode = result as Record<string, unknown>
     console.log("QR code created successfully:", qrCode)
 
+    // Deduct credit after successful creation for paid plans
+    if (userPlan !== 'FREE') {
+      const { error: creditUpdateError } = await supabaseAdmin!
+        .from('User')
+        .update({
+          credits: Math.max(0, (availableCredits ?? 0) - 1),
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', session.user.id)
+
+      if (creditUpdateError) {
+        return ApiErrors.databaseError('Failed to deduct user credit', creditUpdateError.message).toResponse()
+      }
+    }
+
     // Invalidate caches after successful creation
     await Promise.all([
       QRCodeCache.invalidateUserList(session.user.id), // QR list changed
+      UserCreditsCache.invalidate(session.user.id), // credits changed for paid plans
     ])
 
     return createdResponse(qrCode)
