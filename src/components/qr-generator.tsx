@@ -377,6 +377,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   const [userPlan, setUserPlan] = useState<PlanState>(initialPlanState)
   const [activeTab, setActiveTab] = useState<string>('basic')
   const [showGuestUpsell, setShowGuestUpsell] = useState(false)
+  const [showGuestReadyMessage, setShowGuestReadyMessage] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
 
@@ -449,7 +450,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
 
   const handlePremiumAccessPrompt = (featureName: string) => {
     if (isGuest) {
-      setShowLoginModal(true)
+      setShowGuestUpsell(true)
       return
     }
     toast.info(`Unlock ${featureName} with a paid plan.`)
@@ -796,6 +797,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   }
 
   const handleTabChange = (value: string) => {
+    if (isGuest && (value === 'social' || value === 'upi' || value === 'dynamic')) {
+      setShowGuestUpsell(true)
+      return
+    }
     // Sync boolean flags when switching tabs
     setIsUpiPayment(value === 'upi')
     setIsDynamic(value === 'dynamic')
@@ -839,8 +844,23 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     setIsGenerating(true)
 
     if (!userId) {
-      setShowLoginModal(true)
-      setIsGenerating(false)
+      try {
+        setShowGuestReadyMessage(false)
+        setQrOptions((prev) => ({ ...prev }))
+        const deadline = Date.now() + 8000
+        while (Date.now() < deadline) {
+          if (qrRef.current?.querySelector('svg')) break
+          await new Promise((r) => setTimeout(r, 50))
+        }
+        if (!qrRef.current?.querySelector('svg')) {
+          toast.error('Could not generate QR code preview. Please try again.')
+          return
+        }
+        setShowGuestReadyMessage(true)
+        setShowGuestUpsell(true)
+      } finally {
+        setIsGenerating(false)
+      }
       return
     }
 
@@ -1031,12 +1051,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   const handleDownload = async (format: "png" | "svg") => {
     if (!requirePlanResolution()) return
 
-    // Guest users must log in before downloading
-    if (isGuest) {
-      setShowLoginModal(true)
-      return
-    }
-
     if (isFreeTier) {
       const proCheck = isUsingProFeature()
       if (proCheck.isPro) {
@@ -1051,6 +1065,7 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   }
 
   const handleReset = () => {
+    setShowGuestReadyMessage(false)
     setQrOptions({
       data: url || "https://example.com",
       width: 300,
@@ -1198,12 +1213,18 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                   </CardHeader>
                   <CardContent>
                     <Tabs defaultValue="basic" value={activeTab} onValueChange={handleTabChange} className="w-full">
-                      <TabsList className="grid w-full grid-cols-4 h-auto gap-1 p-1 bg-muted">
+                      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto gap-1 p-1 bg-muted">
                         <TabsTrigger
                           value="basic"
                           className="px-2 py-2 text-xs sm:text-sm font-medium data-[state=active]:shadow-sm"
                         >
                           Basic
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="social"
+                          className="px-2 py-2 text-xs sm:text-sm font-medium data-[state=active]:shadow-sm"
+                        >
+                          Social
                         </TabsTrigger>
                         <TabsTrigger
                           value="upi"
@@ -1366,6 +1387,33 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             </div>
                           </div>
 
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="social" className="space-y-4 mt-4">
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium">Social media</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Choose a platform to apply branded styling to your QR code.
+                          </p>
+                          <div
+                            className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1"
+                            style={{ scrollbarWidth: 'thin' }}
+                          >
+                            {Object.entries(QR_TEMPLATES)
+                              .filter(([id]) =>
+                                SOCIAL_MEDIA_PLATFORMS.includes(id as SocialMediaPlatform)
+                              )
+                              .map(([id, template]) => (
+                                <div key={id} className="flex-shrink-0 w-[110px]">
+                                  <TemplatePreview
+                                    template={template}
+                                    isSelected={qrOptions.template === id}
+                                    onClick={() => handleTemplateSelect(id as QRTemplate)}
+                                  />
+                                </div>
+                              ))}
+                          </div>
                         </div>
                       </TabsContent>
 
@@ -1832,6 +1880,12 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                         </div>
                       )}
                     </div>
+
+                    {showGuestReadyMessage && (
+                      <p className="text-center text-green-600 dark:text-green-400 font-medium text-sm">
+                        QR code is ready
+                      </p>
+                    )}
 
                     {url && (
                       <div className="space-y-3">

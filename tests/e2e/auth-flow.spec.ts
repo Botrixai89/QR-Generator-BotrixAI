@@ -107,8 +107,8 @@ test.describe('Guest User Flow', () => {
     // Generate QR code
     await page.click('button:has-text("Generate QR Code")')
 
-    // Should show success message and signin modal
-    await expect(page.locator('text=/QR code is ready/i')).toBeVisible({ timeout: 10000 })
+    // Should show success message and signin modal (single in-page message; avoid duplicate toast + text strict mode)
+    await expect(page.getByText('QR code is ready', { exact: true })).toBeVisible({ timeout: 10000 })
     
     // Modal should appear
     await expect(page.locator('text=/Sign in to unlock/i')).toBeVisible({ timeout: 5000 })
@@ -328,17 +328,22 @@ test.describe('Upgrade Flow', () => {
     await page.goto('/')
     await waitForGeneratorInputs(page)
 
-    // Try to access Social Media tab
-    await page.click('button:has-text("Social"), button:has-text("Social Media")')
-    await page.waitForTimeout(1000)
-    
-    // PRO users get access, FREE users get redirect/prompt - both are valid outcomes
+    // Social tab (Radix tabs use role="tab")
+    await page.getByRole('tab', { name: 'Social' }).click()
+    await page.waitForTimeout(500)
+
+    // PRO users get access to Social; FREE users may see templates or upgrade copy — any is valid
     const onPricing = page.url().includes('/pricing')
     const hasPrompt = await page.locator('text=/Upgrade|paid plan|Pro Feature/i').first().isVisible().catch(() => false)
-    const hasAccess = await page.locator('button:has-text("Social"), [data-state="active"]').first().isVisible().catch(() => false)
-    
-    // Test passes if any expected behavior occurred
-    expect(onPricing || hasPrompt || hasAccess).toBe(true)
+    const socialTabActive =
+      (await page.getByRole('tab', { name: 'Social' }).getAttribute('data-state').catch(() => null)) === 'active'
+    const socialSectionVisible = await page
+      .getByText(/Choose a platform to apply branded styling/i)
+      .first()
+      .isVisible()
+      .catch(() => false)
+
+    expect(onPricing || hasPrompt || socialTabActive || socialSectionVisible).toBe(true)
   })
 })
 
