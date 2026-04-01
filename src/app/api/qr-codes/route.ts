@@ -346,8 +346,8 @@ export async function POST(request: NextRequest) {
       throw error
     }
 
-    // Paid plans consume 1 credit per QR create
-    let availableCredits: number | null = null
+    // Paid plans consume 1 credit per QR create (FREE users skip this; value stays 0)
+    let creditsBeforeCreate = 0
     if (userPlan !== 'FREE') {
       const { data: userCreditsData, error: userCreditsError } = await supabaseAdmin!
         .from('User')
@@ -359,9 +359,9 @@ export async function POST(request: NextRequest) {
         return ApiErrors.databaseError('Failed to fetch user credits', userCreditsError.message).toResponse()
       }
 
-      availableCredits = userCreditsData?.credits ?? 0
-      if (availableCredits <= 0) {
-        return ApiErrors.insufficientCredits(1, availableCredits).toResponse()
+      creditsBeforeCreate = userCreditsData?.credits ?? 0
+      if (creditsBeforeCreate <= 0) {
+        return ApiErrors.insufficientCredits(1, creditsBeforeCreate).toResponse()
       }
     }
 
@@ -387,7 +387,7 @@ export async function POST(request: NextRequest) {
       const { error: creditUpdateError } = await supabaseAdmin!
         .from('User')
         .update({
-          credits: Math.max(0, (availableCredits ?? 0) - 1),
+          credits: Math.max(0, creditsBeforeCreate - 1),
           updatedAt: new Date().toISOString(),
         })
         .eq('id', session.user.id)
