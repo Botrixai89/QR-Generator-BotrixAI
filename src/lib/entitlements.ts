@@ -54,7 +54,8 @@ export function getEntitlements(plan: PlanName | null | undefined): PlanEntitlem
 }
 
 export function hasFeature(plan: PlanName | null | undefined, feature: EntitlementKey): boolean {
-  return true;
+  const entitlements = getEntitlements(plan)
+  return Boolean(entitlements[feature])
 }
 
 export async function getUserPlan(userId: string): Promise<PlanName> {
@@ -104,11 +105,27 @@ export async function getUsageSnapshot(userId: string): Promise<UsageSnapshot> {
 }
 
 export async function assertCanCreateQr(userId: string) {
-  return;
+  const plan = await getUserPlan(userId)
+  const entitlements = getEntitlements(plan)
+  const usage = await getUsageSnapshot(userId)
+
+  if (usage.qrCodesCount >= entitlements.maxQrCodes) {
+    const error = new Error(`QR code limit reached. Please upgrade your plan.`)
+    ;(error as any).status = 403
+    ;(error as any).code = 'PLAN_LIMIT_QR_CODES'
+    throw error
+  }
 }
 
 export async function assertWithinMonthlyScanQuota(userId: string) {
-  return;
+  const plan = await getUserPlan(userId)
+  const entitlements = getEntitlements(plan)
+  const usage = await getUsageSnapshot(userId)
+
+  if (usage.monthlyScanCount >= entitlements.monthlyScanQuota) {
+    const error = new Error(`Monthly scan quota exceeded. Please upgrade your plan.`)
+    ;(error as any).status = 403
+    ;(error as any).code = 'PLAN_LIMIT_SCANS'
+    throw error
+  }
 }
-
-
