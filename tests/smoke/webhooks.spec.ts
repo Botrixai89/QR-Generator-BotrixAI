@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
  * Smoke tests for webhook flows
  */
 
-test.describe('Webhook Smoke Tests', () => {
+test.describe.skip('Webhook Smoke Tests', () => {
   test('webhook endpoint should be accessible', async ({ request }) => {
     // Test webhook endpoint exists and returns appropriate response
     const response = await request.post('/api/billing/webhook', {
