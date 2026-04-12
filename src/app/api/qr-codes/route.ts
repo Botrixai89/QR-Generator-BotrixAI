@@ -3,11 +3,10 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { supabaseAdmin } from "@/lib/supabase"
 import { randomUUID } from "crypto"
-import { assertCanCreateQr, getUserPlan, hasFeature } from "@/lib/entitlements"
 import { rateLimit } from "@/lib/rate-limit"
 import { canAccessOrgResource } from "@/lib/rbac"
 import { ApiErrors, handleApiError, createdResponse } from "@/lib/api-errors"
-import { UserCreditsCache, QRCodeCache } from "@/lib/cache"
+import { QRCodeCache } from "@/lib/cache"
 
 export async function POST(request: NextRequest) {
   try {
@@ -273,18 +272,7 @@ export async function POST(request: NextRequest) {
     if (parsedSticker) insertData.sticker = parsedSticker
     if (parsedEffects) insertData.effects = parsedEffects
 
-    // Resolve plan once for all entitlement and credit logic
-    const userPlan = await getUserPlan(session.user.id)
-
-    // Enforce dynamic QR entitlement
-    if (insertData.isDynamic) {
-      if (!hasFeature(userPlan, 'dynamicQrAllowed')) {
-        return NextResponse.json(
-          { error: 'feature_not_allowed', message: 'Dynamic QR codes are not available on your plan.' },
-          { status: 403 }
-        )
-      }
-    }
+    // All features are free — no plan or credit checks needed
 
     // Validate organization access if organizationId provided
     if (organizationId) {
@@ -338,39 +326,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Enforce plan QR-code limits before creation
-    try {
-      await assertCanCreateQr(session.user.id)
-    } catch (error) {
-      const status = (error as { status?: number }).status
-      const code = (error as { code?: string }).code
-      const message = error instanceof Error ? error.message : 'Plan limit reached'
-      if (status === 403 && code === 'PLAN_LIMIT_QR_CODES') {
-        return NextResponse.json(
-          { error: code, message },
-          { status: 403 }
-        )
-      }
-      throw error
-    }
-
-    // Ensure user row exists and load credits in one round-trip
-    const { data: userRow, error: userLookupError } = await supabaseAdmin!
-      .from('User')
-      .select('id, credits')
-      .eq('id', session.user.id)
-      .maybeSingle()
-
-    if (userLookupError) {
-      return ApiErrors.databaseError('Failed to verify user', userLookupError.message).toResponse()
-    }
-    if (!userRow) {
-      return ApiErrors.unauthorized(
-        'Your account was not found. Please sign out and sign in again.'
-      ).toResponse()
-    }
-
-
     console.log("Inserting QR code into database...")
 
     // Drop undefined keys — PostgREST can reject payloads with undefined values
@@ -378,29 +333,23 @@ export async function POST(request: NextRequest) {
       Object.entries(insertData).filter(([, v]) => v !== undefined)
     ) as Record<string, unknown>
 
-    // We need to type the result correctly
-    const { data: result, error } = await supabaseAdmin!
-      .rpc('create_qr_code_with_credit_deduction', {
-        p_qr_data: insertPayload,
-        p_user_id: session.user.id
-      })
+    // Plain insert — no credits, no plan limits, everything is free
+    const { data: qrCode, error } = await supabaseAdmin!
+      .from('QrCode')
+      .insert(insertPayload)
+      .select()
+      .single()
 
     if (error) {
       console.error("Database insert error details:", error)
-      if (error.message?.includes('Insufficient credits')) {
-        return ApiErrors.insufficientCredits(1, userRow.credits).toResponse()
-      }
       return ApiErrors.databaseError('Failed to create QR code', error.message).toResponse()
     }
 
-    const qrCode = result as Record<string, unknown>
     console.log("QR code created successfully:", qrCode)
 
 
     // Invalidate caches after successful creation
-    await Promise.all([
-      QRCodeCache.invalidateUserList(session.user.id), // QR list changed
-    ])
+    await QRCodeCache.invalidateUserList(session.user.id)
 
     return createdResponse(qrCode)
   } catch (error) {

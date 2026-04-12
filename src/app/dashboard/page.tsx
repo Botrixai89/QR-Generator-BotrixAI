@@ -29,7 +29,7 @@ import FolderManager from "@/components/folder-manager"
 import FileManager from "@/components/file-manager"
 import { readTestQrCodes, writeTestQrCodes, type E2ETestQrCodeRecord } from "@/lib/e2e-test-storage"
 import { useEffectiveSession } from "@/hooks/use-effective-session"
-import { calculateTotalCreditsUsed, getMaxQRCodesFromCredits, getCreditsByPlan } from "@/lib/credit-calculator"
+
 
 interface QRCodeData {
   id: string
@@ -175,8 +175,6 @@ export default function DashboardPage() {
     scansThisMonth: 0,
     scansLastMonth: 0
   })
-  const [userCredits, setUserCredits] = useState<number | null>(null)
-  const [userPlan, setUserPlan] = useState<string | null>(null)
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean
@@ -265,8 +263,6 @@ export default function DashboardPage() {
       scansThisMonth: 0,
       scansLastMonth: 0
     })
-    setUserCredits(999)
-    setUserPlan('PRO')
     setIsLoading(false)
   }, [convertRecordToQrCode])
 
@@ -482,16 +478,6 @@ export default function DashboardPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
             <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
               Welcome back, {session.user?.name || session.user?.email}
-            </p>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-              {(() => {
-                // Map FLEX to PRO (legacy support)
-                const normalizedPlan = userPlan === 'FLEX' ? 'PRO' : userPlan
-                if (normalizedPlan === 'FREE') return 'Free Plan'
-                if (normalizedPlan === 'PRO') return 'Pro Plan'
-                if (normalizedPlan === 'BUSINESS') return 'Business Plan'
-                return `${normalizedPlan} Plan`
-              })()}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">

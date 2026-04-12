@@ -1,131 +1,81 @@
-import { supabaseAdmin } from '@/lib/supabase'
-import type { PlanEntitlements, PlanName, UsageSnapshot, EntitlementKey } from '@/types/billing'
+/**
+ * Entitlements — everything is free, no plan tiers.
+ * All features are unlocked for all signed-in users.
+ */
+
+export type PlanName = 'FREE' | 'PRO' | 'BUSINESS'
+
+export interface UsageSnapshot {
+  userId: string
+  qrCodesCount: number
+  monthlyScanCount: number
+}
+
+export interface PlanEntitlements {
+  name: PlanName
+  label: string
+  monthlyPriceCents: number
+  maxQrCodes: number
+  monthlyScanQuota: number
+  dynamicQrAllowed: boolean
+  customDomainsAllowed: boolean
+  webhooksAllowed: boolean
+  removeWatermarkAllowed: boolean
+  removeAdsAllowed: boolean
+  logoUploadsAllowed: boolean
+  fileStorageMB: number
+}
+
+export type EntitlementKey = keyof Omit<PlanEntitlements, 'name' | 'label' | 'monthlyPriceCents' | 'maxQrCodes' | 'monthlyScanQuota' | 'fileStorageMB'>
+
+/** Single unlimited tier — all features free */
+const UNLIMITED: PlanEntitlements = {
+  name: 'FREE',
+  label: 'Free',
+  monthlyPriceCents: 0,
+  maxQrCodes: Number.MAX_SAFE_INTEGER,
+  monthlyScanQuota: Number.MAX_SAFE_INTEGER,
+  dynamicQrAllowed: true,
+  customDomainsAllowed: true,
+  webhooksAllowed: true,
+  removeWatermarkAllowed: true,
+  removeAdsAllowed: true,
+  logoUploadsAllowed: true,
+  fileStorageMB: 10000,
+}
 
 export const PLAN_MATRIX: Record<PlanName, PlanEntitlements> = {
-  FREE: {
-    name: 'FREE',
-    label: 'Free',
-    monthlyPriceCents: 0,
-    maxQrCodes: 10,
-    monthlyScanQuota: 1000,
-    dynamicQrAllowed: false,
-    customDomainsAllowed: false,
-    webhooksAllowed: false,
-    removeWatermarkAllowed: false,
-    removeAdsAllowed: true, // Ads feature removed - all plans have no ads
-    logoUploadsAllowed: true,
-    fileStorageMB: 100,
-  },
-  PRO: {
-    name: 'PRO',
-    label: 'Pro',
-    monthlyPriceCents: 1999,
-    maxQrCodes: 1000,
-    monthlyScanQuota: 100000,
-    dynamicQrAllowed: true,
-    customDomainsAllowed: true,
-    webhooksAllowed: true,
-    removeWatermarkAllowed: true,
-    removeAdsAllowed: true, // Ads feature removed - all plans have no ads
-    logoUploadsAllowed: true,
-    fileStorageMB: 500,
-  },
-  BUSINESS: {
-    name: 'BUSINESS',
-    label: 'Business',
-    monthlyPriceCents: 4999,
-    maxQrCodes: 10000,
-    monthlyScanQuota: 1000000,
-    dynamicQrAllowed: true,
-    customDomainsAllowed: true,
-    webhooksAllowed: true,
-    removeWatermarkAllowed: true,
-    removeAdsAllowed: true, // Ads feature removed - all plans have no ads
-    logoUploadsAllowed: true,
-    fileStorageMB: 2000,
-  },
+  FREE: UNLIMITED,
+  PRO: UNLIMITED,
+  BUSINESS: UNLIMITED,
 }
 
-export function getEntitlements(plan: PlanName | null | undefined): PlanEntitlements {
-  // Map FLEX to PRO (legacy support - FLEX plan was renamed to PRO)
-  const normalizedPlan = (plan as string) === 'FLEX' ? 'PRO' : plan
-  const key: PlanName = (normalizedPlan as PlanName) || 'FREE'
-  return PLAN_MATRIX[key] || PLAN_MATRIX.FREE
+export function getEntitlements(_plan?: PlanName | string | null): PlanEntitlements {
+  return UNLIMITED
 }
 
-export function hasFeature(plan: PlanName | null | undefined, feature: EntitlementKey): boolean {
-  const entitlements = getEntitlements(plan)
-  return Boolean(entitlements[feature])
+export function hasFeature(_plan: PlanName | null | undefined, _feature: EntitlementKey): boolean {
+  return true
 }
 
-export async function getUserPlan(userId: string): Promise<PlanName> {
-  const { data, error } = await supabaseAdmin!
-    .from('User')
-    .select('plan')
-    .eq('id', userId)
-    .single()
+export async function getUserPlan(_userId: string): Promise<PlanName> {
+  return 'FREE'
+}
 
-  if (error || !data?.plan) return 'FREE'
-  const plan = (data.plan as string).toUpperCase()
-  // Map FLEX to PRO (legacy support - FLEX plan was renamed to PRO)
-  const normalizedPlan = plan === 'FLEX' ? 'PRO' : (plan as PlanName)
-  return PLAN_MATRIX[normalizedPlan] ? normalizedPlan : 'FREE'
+/** No-op — creation is always allowed */
+export async function assertCanCreateQr(_userId: string): Promise<void> {
+  // No limits — everything is free
+}
+
+/** No-op — scan quota is unlimited */
+export async function assertWithinMonthlyScanQuota(_userId: string): Promise<void> {
+  // No limits — everything is free
 }
 
 export async function getUsageSnapshot(userId: string): Promise<UsageSnapshot> {
-  // Count QR codes
-  const { count: qrCodesCount } = await supabaseAdmin!
-    .from('QrCode')
-    .select('id', { count: 'exact', head: true })
-    .eq('userId', userId)
-
-  // Count scans this calendar month across all user's QR codes
-  const startOfMonth = new Date()
-  startOfMonth.setUTCDate(1)
-  startOfMonth.setUTCHours(0, 0, 0, 0)
-
-  const { count: monthlyScanCount } = await supabaseAdmin!
-    .from('QrCodeScan')
-    .select('id', { count: 'exact', head: true })
-    .gte('createdAt', startOfMonth.toISOString())
-    .in('qrCodeId',
-      (
-        await supabaseAdmin!
-          .from('QrCode')
-          .select('id')
-          .eq('userId', userId)
-      ).data?.map(r => r.id) || []
-    )
-
   return {
     userId,
-    qrCodesCount: qrCodesCount || 0,
-    monthlyScanCount: monthlyScanCount || 0,
-  }
-}
-
-export async function assertCanCreateQr(userId: string) {
-  const plan = await getUserPlan(userId)
-  const entitlements = getEntitlements(plan)
-  const usage = await getUsageSnapshot(userId)
-
-  if (usage.qrCodesCount >= entitlements.maxQrCodes) {
-    const error = new Error(`QR code limit reached. Please upgrade your plan.`)
-    ;(error as any).status = 403
-    ;(error as any).code = 'PLAN_LIMIT_QR_CODES'
-    throw error
-  }
-}
-
-export async function assertWithinMonthlyScanQuota(userId: string) {
-  const plan = await getUserPlan(userId)
-  const entitlements = getEntitlements(plan)
-  const usage = await getUsageSnapshot(userId)
-
-  if (usage.monthlyScanCount >= entitlements.monthlyScanQuota) {
-    const error = new Error(`Monthly scan quota exceeded. Please upgrade your plan.`)
-    ;(error as any).status = 403
-    ;(error as any).code = 'PLAN_LIMIT_SCANS'
-    throw error
+    qrCodesCount: 0,
+    monthlyScanCount: 0,
   }
 }

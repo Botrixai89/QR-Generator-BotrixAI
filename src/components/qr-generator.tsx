@@ -2,7 +2,7 @@
 import React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
 import type { QRTemplateConfig, QRStickerConfig } from "@/types/qr-code-advanced"
-import type { PlanName } from "@/types/billing"
+
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -73,8 +73,6 @@ import {
 interface QRGeneratorProps {
   userId?: string
 }
-
-type PlanState = PlanName | 'GUEST' | 'LOADING'
 
 // Shape icons mapping
 const shapeIcons: Record<QRShape, React.ComponentType<{ className?: string }>> = {
@@ -368,19 +366,15 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   const [title, setTitle] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isClient, setIsClient] = useState(false)
-  const [downloadQuality, setDownloadQuality] = useState<'web' | 'print' | 'ultra-hd'>('ultra-hd')
-  const [downloadMessage] = useState<string | null>(null)
   const isClientTestMode = process.env.NEXT_PUBLIC_E2E_TEST_MODE === 'true'
-  const sessionUserPlan = (session?.user as { plan?: PlanState })?.plan
-  const initialPlanState: PlanState = isClientTestMode
-    ? sessionUserPlan || (userId ? 'FREE' : 'GUEST')
-    : userId && session?.user ? 'LOADING' : 'GUEST'
-  const [userPlan, setUserPlan] = useState<PlanState>(initialPlanState)
   const [activeTab, setActiveTab] = useState<string>('basic')
   const [showGuestUpsell, setShowGuestUpsell] = useState(false)
-  const [showGuestReadyMessage, setShowGuestReadyMessage] = useState(false)
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [downloadQuality, setDownloadQuality] = useState<'web' | 'print' | 'ultra-hd'>('ultra-hd')
+  const [downloadMessage] = useState<string | null>(null)
+  const [showGuestReadyMessage, setShowGuestReadyMessage] = useState(false)
+  const isGuest = !userId || !session?.user
+
 
   // Dynamic QR code states
   const [isDynamic, setIsDynamic] = useState(false)
@@ -435,44 +429,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
     download?: (filename?: string, format?: "png" | "svg", quality?: "web" | "print" | "ultra-hd") => void
   } | null>(null)
   const retryOnceRef = useRef<boolean>(false)
-
-  const isPlanLoading = userPlan === 'LOADING'
-  const isPlanReady = !isPlanLoading
-  const isGuest = userPlan === 'GUEST'
-  const isFreeTier = false
-
-  const requirePlanResolution = () => {
-    if (!isPlanReady) {
-      toast.info("Checking your plan. Please wait a moment...")
-      return false
-    }
-    return true
-  }
-
-  const handlePremiumAccessPrompt = (featureName: string) => {
-    if (isGuest) {
-      setShowGuestUpsell(true)
-      return
-    }
-    toast.info(`Unlock ${featureName} with a paid plan.`)
-    // No pricing redirect for now — just inform the user
-  }
-
-  // Set user plan
-  useEffect(() => {
-    if (!userId || !session?.user) {
-      setUserPlan(sessionUserPlan || 'GUEST')
-      return
-    }
-
-    if (isClientTestMode) {
-      setUserPlan(sessionUserPlan || 'FREE')
-      return
-    }
-
-    setUserPlan((sessionUserPlan || 'FREE') as PlanState)
-  }, [userId, session?.user, isClientTestMode, sessionUserPlan])
-
 
 
   // Function to generate vCard 3.0 string for Contact QR codes
@@ -779,20 +735,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   }
 
   const handleGenerate = async () => {
-    if (!requirePlanResolution()) return
-
-    if (isFreeTier) {
-      const proCheck = isUsingProFeature()
-      if (proCheck.isPro) {
-        handlePremiumAccessPrompt(proCheck.featureName || 'this feature')
-        return
-      }
-
-      if (!qrOptions.watermark) {
-        setQrOptions(prev => ({ ...prev, watermark: true }))
-      }
-    }
-
     // Validate input based on mode
     if (isUpiPayment) {
       if (!upiId.trim()) {
@@ -1040,16 +982,6 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
   }
 
   const handleDownload = async (format: "png" | "svg") => {
-    if (!requirePlanResolution()) return
-
-    if (isFreeTier) {
-      const proCheck = isUsingProFeature()
-      if (proCheck.isPro) {
-        handlePremiumAccessPrompt(proCheck.featureName || 'this feature')
-        return
-      }
-    }
-
     if (qrGeneratorRef.current?.download) {
       qrGeneratorRef.current.download(title || "qr-code", format, downloadQuality)
     }
@@ -1316,11 +1248,8 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                             <Switch
                               checked={qrOptions.watermark || false}
                               onCheckedChange={(checked) => {
-                                if (!requirePlanResolution()) return
-
                                 setQrOptions(prev => ({ ...prev, watermark: checked }))
                               }}
-                              disabled={isPlanLoading || isFreeTier}
                             />
                           </div>
                         </div>
