@@ -86,6 +86,10 @@ export function isSupabaseConfigured(): boolean {
   if (isCI && isDefaultTestKey) {
     return false
   }
+
+  if (isCI && (supabaseUrl.includes('localhost') || supabaseUrl.includes('127.0.0.1'))) {
+    return false
+  }
   
   return true
 }
