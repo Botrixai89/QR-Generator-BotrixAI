@@ -1290,9 +1290,10 @@ export default function QRGenerator({ userId }: QRGeneratorProps) {
                                   setQrOptions(prev => ({
                                     ...prev,
                                     logo: {
-                                      ...prev.logo,
                                       image: prev.logo?.image || "",
-                                      size: value
+                                      size: value,
+                                      margin: prev.logo?.margin || 5,
+                                      opacity: prev.logo?.opacity || 1
                                     }
                                   }))
                                 }}
