@@ -380,13 +380,16 @@ export async function POST(request: NextRequest) {
 
     // We need to type the result correctly
     const { data: result, error } = await supabaseAdmin!
-      .from('QrCode')
-      .insert(insertPayload)
-      .select()
-      .single()
+      .rpc('create_qr_code_with_credit_deduction', {
+        p_qr_data: insertPayload,
+        p_user_id: session.user.id
+      })
 
     if (error) {
       console.error("Database insert error details:", error)
+      if (error.message?.includes('Insufficient credits')) {
+        return ApiErrors.insufficientCredits(1, userRow.credits).toResponse()
+      }
       return ApiErrors.databaseError('Failed to create QR code', error.message).toResponse()
     }
 
